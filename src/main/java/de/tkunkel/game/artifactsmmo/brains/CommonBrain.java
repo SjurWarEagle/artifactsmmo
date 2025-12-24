@@ -1,0 +1,351 @@
+package de.tkunkel.game.artifactsmmo.brains;
+
+import de.tkunkel.game.artifactsmmo.BrainCompletedException;
+import de.tkunkel.game.artifactsmmo.Caches;
+import de.tkunkel.game.artifactsmmo.Config;
+import de.tkunkel.games.artifactsmmo.ApiClient;
+import de.tkunkel.games.artifactsmmo.ApiException;
+import de.tkunkel.games.artifactsmmo.api.CharactersApi;
+import de.tkunkel.games.artifactsmmo.api.MyCharactersApi;
+import de.tkunkel.games.artifactsmmo.api.ServerDetailsApi;
+import de.tkunkel.games.artifactsmmo.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import java.time.OffsetDateTime;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+
+@Service
+public abstract class CommonBrain implements Brain {
+    protected final Caches caches;
+
+    @Override
+    public abstract boolean shouldBeUsed(String characterName);
+
+    private Logger logger = LoggerFactory.getLogger(CommonBrain.class.getName());
+    protected final ApiClient apiClient = new ApiClient();
+    protected final MyCharactersApi myCharactersApi;
+    protected final CharactersApi charactersApi;
+    protected final ServerDetailsApi serverDetailsApi;
+
+    public CommonBrain(Caches caches) {
+        this.caches = caches;
+        apiClient.setBearerToken(Config.API_TOKEN);
+        apiClient.setBasePath("https://api.artifactsmmo.com");
+        myCharactersApi = new MyCharactersApi(apiClient);
+        charactersApi = new CharactersApi(apiClient);
+        serverDetailsApi = new ServerDetailsApi(apiClient);
+    }
+
+    public int cntItemsInInventory(CharacterResponseSchema character) {
+        return character.getData()
+                        .getInventory()
+                        .stream()
+                        .mapToInt(InventorySlot::getQuantity)
+                        .sum();
+    }
+
+    @Override
+    public boolean isCharCooldown(CharacterResponseSchema character) {
+        OffsetDateTime serverTime = null;
+        try {
+            serverTime = serverDetailsApi.getServerDetailsGet()
+                                         .getData()
+                                         .getServerTime();
+            character = charactersApi.getCharacterCharactersNameGet(character.getData()
+                                                                             .getName());
+        } catch (ApiException e) {
+            throw new RuntimeException(e);
+        }
+        //logger.info("Checking if character {} is in cooldown with server time={} and cooldown={}", character.getData().getName(), serverTime, character.getData().getCooldownExpiration());
+        if (character.getData()
+                     .getCooldownExpiration()
+                     .isAfter(serverTime) && character.getData()
+                                                      .getCooldown() > 0) {
+            logger.info("Character {} is in cooldown until {} ", character.getData()
+                                                                          .getName(), character.getData()
+                                                                                               .getCooldownExpiration()
+            );
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public void runBaseLoop(String characterName) throws BrainCompletedException {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    public void eatFoodOrRestIfNeeded(CharacterResponseSchema character) {
+        logger.info("Checking if character {} needs to rest", character.getData()
+                                                                       .getName()
+        );
+        // heal if 75% left
+        // TODO change to calculate the max damage of my enemy
+        if (character.getData()
+                     .getHp() > character.getData()
+                                         .getMaxHp() * 0.75) {
+            return;
+        }
+        if (eatFoodIfHasFood(character)) {
+            return;
+        }
+        try {
+            if (isCharCooldown(character)) {
+                return;
+            }
+            myCharactersApi.actionRestMyNameActionRestPost(character.getData()
+                                                                    .getName());
+        } catch (ApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private boolean eatFoodIfHasFood(CharacterResponseSchema character) {
+        for (InventorySlot inventorySlot : character.getData()
+                                                    .getInventory()) {
+            if (inventorySlot.getQuantity() >= 1) {
+                if ((inventorySlot.getCode()
+                                  .equalsIgnoreCase("apple")) || inventorySlot.getCode()
+                                                                              .equalsIgnoreCase("cooked_chicken")) {
+                    try {
+                        SimpleItemSchema simpleItemSchema = new SimpleItemSchema().quantity(1)
+                                                                                  .code(inventorySlot.getCode());
+                        if (isCharCooldown(character)) {
+                            return true;
+                        }
+                        myCharactersApi.actionUseItemMyNameActionUsePost(character.getData()
+                                                                                  .getName(), simpleItemSchema
+                        );
+                        return true;
+                    } catch (ApiException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    public Optional<MapSchema> findLocationOfClosestMonster(CharacterResponseSchema character, String monster) {
+        logger.info("Starting findClosestMonster");
+        AtomicReference<Optional<MapSchema>> rc = new AtomicReference<>(Optional.empty());
+
+        //TODO sort by distance to character
+        caches.cachedMap.stream()
+                        .filter(mapSchema -> mapSchema.getInteractions()
+                                                      .getContent() != null)
+//                .filter(mapSchema -> mapSchema.getInteractions().getContent().getType().equals(MapContentType.MONSTER))
+                        .filter(mapSchema -> mapSchema.getInteractions()
+                                                      .getContent()
+                                                      .getCode()
+                                                      .equals(monster))
+                        .forEach(mapSchema -> {
+                            IO.println(mapSchema);
+                            rc.set(Optional.of(mapSchema));
+                        })
+        ;
+        return rc.get();
+    }
+
+    public Optional<MapSchema> findClosestLocation(CharacterResponseSchema character, String activity) {
+        AtomicReference<Optional<MapSchema>> rc = new AtomicReference<>(Optional.empty());
+
+        //TODO sort by distance to character
+        int charX = character.getData()
+                             .getX();
+        int charY = character.getData()
+                             .getY();
+        caches.cachedMap.stream()
+                        .filter(mapSchema -> mapSchema.getInteractions()
+                                                      .getContent() != null)
+                        .filter(mapSchema -> mapSchema.getInteractions()
+                                                      .getContent()
+                                                      .getCode()
+                                                      .equals(activity))
+                        .sorted((mapSchema1, mapSchema2) -> {
+                            int distance1 = Math.abs(mapSchema1.getX() - charX) + Math.abs(mapSchema1.getY() - charY);
+                            int distance2 = Math.abs(mapSchema2.getX() - charX) + Math.abs(mapSchema2.getY() - charY);
+                            return distance2 - distance1;
+                        })
+                        .forEach(mapSchema -> {
+                            IO.println(mapSchema);
+                            rc.set(Optional.of(mapSchema));
+                        })
+        ;
+        return rc.get();
+    }
+
+    public void equipGearIfNotEquipped(String characterName, String gear, ItemSlot itemSlot) {
+        EquipSchema equipSchema = new EquipSchema().slot(itemSlot)
+                                                   .code(gear);
+        try {
+            CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
+            boolean alreadyEquipped = checkIfEquipped(gear, itemSlot, character);
+            if (alreadyEquipped) {
+                return;
+            }
+            if (isCharCooldown(character)) {
+                return;
+            }
+            myCharactersApi.actionEquipItemMyNameActionEquipPost(character.getData()
+                                                                          .getName(), equipSchema
+            );
+        } catch (ApiException e) {
+            if (!e.getMessage()
+                  .toLowerCase()
+                  .contains("missing")) {
+                logger.error("Error equipping item", e);
+            }
+        }
+    }
+
+    public boolean checkIfEquipped(String characterName, String gear, ItemSlot itemSlot) {
+        CharacterResponseSchema character;
+        try {
+            character = charactersApi.getCharacterCharactersNameGet(characterName);
+        } catch (ApiException e) {
+            throw new RuntimeException(e);
+        }
+        return checkIfEquipped(gear, itemSlot, character);
+    }
+
+    public boolean checkIfEquipped(String gear, ItemSlot itemSlot, CharacterResponseSchema character) {
+        boolean alreadyEquiped = switch (itemSlot) {
+            case BOOTS -> character.getData()
+                                   .getBootsSlot()
+                                   .equalsIgnoreCase(gear)
+            ;
+            case SHIELD -> character.getData()
+                                    .getShieldSlot()
+                                    .equalsIgnoreCase(gear)
+            ;
+            case HELMET -> character.getData()
+                                    .getHelmetSlot()
+                                    .equalsIgnoreCase(gear)
+            ;
+            case WEAPON -> character.getData()
+                                    .getWeaponSlot()
+                                    .equalsIgnoreCase(gear)
+            ;
+            case BODY_ARMOR -> character.getData()
+                                        .getBodyArmorSlot()
+                                        .equalsIgnoreCase(gear)
+            ;
+            case LEG_ARMOR -> character.getData()
+                                       .getLegArmorSlot()
+                                       .equalsIgnoreCase(gear)
+            ;
+            case RING1 -> character.getData()
+                                   .getRing1Slot()
+                                   .equalsIgnoreCase(gear)
+            ;
+            case RING2 -> character.getData()
+                                   .getRing2Slot()
+                                   .equalsIgnoreCase(gear)
+            ;
+            case AMULET -> character.getData()
+                                    .getAmuletSlot()
+                                    .equalsIgnoreCase(gear)
+            ;
+            case ARTIFACT1 -> character.getData()
+                                       .getArtifact1Slot()
+                                       .equalsIgnoreCase(gear)
+            ;
+            case ARTIFACT2 -> character.getData()
+                                       .getArtifact2Slot()
+                                       .equalsIgnoreCase(gear)
+            ;
+            case ARTIFACT3 -> character.getData()
+                                       .getArtifact3Slot()
+                                       .equalsIgnoreCase(gear)
+            ;
+            case UTILITY1 -> character.getData()
+                                      .getUtility1Slot()
+                                      .equalsIgnoreCase(gear)
+            ;
+            case UTILITY2 -> character.getData()
+                                      .getUtility2Slot()
+                                      .equalsIgnoreCase(gear)
+            ;
+            case BAG -> character.getData()
+                                 .getBagSlot()
+                                 .equalsIgnoreCase(gear)
+            ;
+            case RUNE -> character.getData()
+                                  .getRuneSlot()
+                                  .equalsIgnoreCase(gear)
+            ;
+        };
+        return alreadyEquiped;
+    }
+
+    public void craftGearIfNotAtCharacter(String characterName, String gear, String craftingStation, ItemSlot slot) {
+        try {
+            CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
+            boolean enoughResourcesToCraft = character.getData()
+                                                      .getInventory()
+                                                      .stream()
+                                                      .filter(inventorySlot -> inventorySlot.getCode()
+                                                                                            .equals("copper_bar"))
+                                                      .mapToInt(InventorySlot::getQuantity)
+                                                      .sum() >= 10;
+            if (!enoughResourcesToCraft) {
+                return;
+            }
+            if (isCharCooldown(character)) {
+                return;
+            }
+            boolean equipped = checkIfEquipped(gear, slot, character);
+            if (equipped) {
+                return;
+            }
+
+            Optional<MapSchema> closestLocation = findClosestLocation(character, craftingStation);
+            if (closestLocation.isEmpty()) {
+                logger.error("No location found for {}", craftingStation);
+                return;
+            }
+            moveToLocation(character, closestLocation.get());
+            if (isCharCooldown(character)) {
+                return;
+            }
+            CraftingSchema craftingSchema = new CraftingSchema().code(gear)
+                                                                .quantity(1);
+            myCharactersApi.actionCraftingMyNameActionCraftingPost(character.getData()
+                                                                            .getName(), craftingSchema
+            );
+
+        } catch (ApiException e) {
+            logger.error("Error equipping gear", e);
+        }
+    }
+
+
+    public boolean moveToLocation(CharacterResponseSchema character, MapSchema destination) {
+        try {
+            boolean alreadyReached = destination.getX()
+                                                .equals(character.getData()
+                                                                 .getX()) && destination.getY()
+                                                                                        .equals(character.getData()
+                                                                                                         .getY());
+            if (alreadyReached) {
+                return false;
+            }
+            if (isCharCooldown(character)) {
+                return true;
+            }
+            DestinationSchema destinationSchema = new DestinationSchema().x(destination.getX())
+                                                                         .y(destination.getY());
+            myCharactersApi.actionMoveMyNameActionMovePost(character.getData()
+                                                                    .getName(), destinationSchema
+            );
+            return true;
+        } catch (ApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+}
