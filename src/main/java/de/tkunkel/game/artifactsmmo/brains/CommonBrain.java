@@ -21,16 +21,13 @@ import java.util.concurrent.atomic.AtomicReference;
 public abstract class CommonBrain implements Brain {
     protected final Caches caches;
 
-    @Override
-    public abstract boolean shouldBeUsed(String characterName);
-
-    private Logger logger = LoggerFactory.getLogger(CommonBrain.class.getName());
+    private final Logger logger = LoggerFactory.getLogger(CommonBrain.class.getName());
     protected final ApiClient apiClient = new ApiClient();
     protected final MyCharactersApi myCharactersApi;
     protected final CharactersApi charactersApi;
     protected final ServerDetailsApi serverDetailsApi;
 
-    public CommonBrain(Caches caches) {
+    protected CommonBrain(Caches caches) {
         this.caches = caches;
         apiClient.setBearerToken(Config.API_TOKEN);
         apiClient.setBasePath("https://api.artifactsmmo.com");
@@ -49,7 +46,7 @@ public abstract class CommonBrain implements Brain {
 
     @Override
     public boolean isCharCooldown(CharacterResponseSchema character) {
-        OffsetDateTime serverTime = null;
+        OffsetDateTime serverTime;
         try {
             serverTime = serverDetailsApi.getServerDetailsGet()
                                          .getData()
@@ -106,30 +103,32 @@ public abstract class CommonBrain implements Brain {
     private boolean eatFoodIfHasFood(CharacterResponseSchema character) {
         for (InventorySlot inventorySlot : character.getData()
                                                     .getInventory()) {
-            if (inventorySlot.getQuantity() >= 1) {
-                if ((inventorySlot.getCode()
-                                  .equalsIgnoreCase("apple")) || inventorySlot.getCode()
-                                                                              .equalsIgnoreCase("cooked_chicken")) {
-                    try {
-                        SimpleItemSchema simpleItemSchema = new SimpleItemSchema().quantity(1)
-                                                                                  .code(inventorySlot.getCode());
-                        if (isCharCooldown(character)) {
-                            return true;
-                        }
-                        myCharactersApi.actionUseItemMyNameActionUsePost(character.getData()
-                                                                                  .getName(), simpleItemSchema
-                        );
+            if (inventorySlot.getQuantity() >= 1
+                    && (inventorySlot.getCode()
+                                     .equalsIgnoreCase("apple")
+                    || inventorySlot.getCode()
+                                    .equalsIgnoreCase("cooked_chicken"))
+            ) {
+                try {
+                    SimpleItemSchema simpleItemSchema = new SimpleItemSchema().quantity(1)
+                                                                              .code(inventorySlot.getCode());
+                    if (isCharCooldown(character)) {
                         return true;
-                    } catch (ApiException e) {
-                        throw new RuntimeException(e);
                     }
+                    myCharactersApi.actionUseItemMyNameActionUsePost(character.getData()
+                                                                              .getName(), simpleItemSchema
+                    );
+                    return true;
+                } catch (ApiException e) {
+                    throw new RuntimeException(e);
                 }
             }
+
         }
         return false;
     }
 
-    public Optional<MapSchema> findLocationOfClosestMonster(CharacterResponseSchema character, String monster) {
+    public Optional<MapSchema> findLocationOfClosestMonster(String monster) {
         logger.info("Starting findClosestMonster");
         AtomicReference<Optional<MapSchema>> rc = new AtomicReference<>(Optional.empty());
 

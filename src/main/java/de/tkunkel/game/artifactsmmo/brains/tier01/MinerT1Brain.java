@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 public class MinerT1Brain extends CommonBrain {
-    private Logger logger = LoggerFactory.getLogger(MinerT1Brain.class.getName());
+    private final Logger logger = LoggerFactory.getLogger(MinerT1Brain.class.getName());
 
     public MinerT1Brain(Caches caches) {
         super(caches);

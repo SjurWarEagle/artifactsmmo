@@ -18,7 +18,7 @@ import java.util.Optional;
 
 @Component
 public class Caches {
-    private Logger logger = LoggerFactory.getLogger(Caches.class.getName());
+    private final Logger logger = LoggerFactory.getLogger(Caches.class.getName());
 
     protected final ApiClient apiClient = new ApiClient();
     protected MapsApi mapsApi;
@@ -27,9 +27,9 @@ public class Caches {
     protected ResourcesApi resourcesApi;
 
     public final List<MapSchema> cachedMap = new ArrayList<>();
-    public final List<MonsterSchema> cachedMonsters = new ArrayList<MonsterSchema>();
-    public final List<ItemSchema> cachedItems = new ArrayList<ItemSchema>();
-    public final List<ResourceSchema> cachedResources = new ArrayList<ResourceSchema>();
+    public final List<MonsterSchema> cachedMonsters = new ArrayList<>();
+    public final List<ItemSchema> cachedItems = new ArrayList<>();
+    public final List<ResourceSchema> cachedResources = new ArrayList<>();
 
     @PostConstruct
     public void init() {

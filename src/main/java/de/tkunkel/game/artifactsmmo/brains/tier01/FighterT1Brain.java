@@ -13,7 +13,7 @@ import java.util.Optional;
 
 @Service
 public class FighterT1Brain extends CommonBrain {
-    private Logger logger = LoggerFactory.getLogger(FighterT1Brain.class.getName());
+    private final Logger logger = LoggerFactory.getLogger(FighterT1Brain.class.getName());
 
     @Override
     public boolean shouldBeUsed(String characterName) {
@@ -42,7 +42,7 @@ public class FighterT1Brain extends CommonBrain {
             }
 
             String enemyToHunt = decideWhatEnemyToHunt(character);
-            Optional<MapSchema> locationOfClosestMonster = findLocationOfClosestMonster(character, enemyToHunt);
+            Optional<MapSchema> locationOfClosestMonster = findLocationOfClosestMonster(enemyToHunt);
             if (locationOfClosestMonster.isEmpty()) {
                 logger.error("Could not find location of closest monster ({})", enemyToHunt);
                 return;

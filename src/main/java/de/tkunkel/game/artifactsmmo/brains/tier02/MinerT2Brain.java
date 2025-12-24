@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 public class MinerT2Brain extends CommonBrain {
-    private Logger logger = LoggerFactory.getLogger(MinerT2Brain.class.getName());
+    private final Logger logger = LoggerFactory.getLogger(MinerT2Brain.class.getName());
 
     public boolean hasMaxCraftableGearEquipped(String characterName) {
         return checkIfEquipped(characterName, "copper_dagger", ItemSlot.WEAPON)
@@ -56,9 +56,7 @@ public class MinerT2Brain extends CommonBrain {
             hasItemsToCraftInInventory &= inventory.stream()
                                                    .filter(inventorySlot -> inventorySlot.getCode()
                                                                                          .equals(simpleItemSchema.getCode()))
-                                                   .filter(inventorySlot -> inventorySlot.getQuantity() >= simpleItemSchema.getQuantity())
-                                                   .findFirst()
-                                                   .isPresent();
+                                                   .anyMatch(inventorySlot -> inventorySlot.getQuantity() >= simpleItemSchema.getQuantity());
         }
         return hasItemsToCraftInInventory;
     }

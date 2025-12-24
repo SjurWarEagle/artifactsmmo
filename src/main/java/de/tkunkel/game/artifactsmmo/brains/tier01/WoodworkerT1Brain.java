@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 public class WoodworkerT1Brain extends CommonBrain {
-    private Logger logger = LoggerFactory.getLogger(WoodworkerT1Brain.class.getName());
+    private final Logger logger = LoggerFactory.getLogger(WoodworkerT1Brain.class.getName());
 
     public WoodworkerT1Brain(Caches caches) {
         super(caches);
