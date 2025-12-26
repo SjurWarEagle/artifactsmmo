@@ -5,7 +5,6 @@ import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.BrainCompletedException;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
-import de.tkunkel.game.artifactsmmo.shopping.Wish;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.*;
@@ -119,7 +118,7 @@ public class MinerT1Brain extends CommonBrain {
                 throw new RuntimeException(e);
             }
 
-            updateOrRequestEquipment(character);
+            updateOrRequestEquipment(character, "mining");
             depositInBankIfInventoryIsFull(character);
 
             equipGearIfNotEquipped(character.getData()
@@ -175,45 +174,5 @@ public class MinerT1Brain extends CommonBrain {
 
     }
 
-    private void updateOrRequestEquipment(CharacterResponseSchema character) {
-        Optional<ItemSchema> bestToolForSkill = caches.findBestToolForSkill("mining", character.getData()
-                                                                                               .getMiningLevel()
-        );
-        if (bestToolForSkill.isEmpty()) {
-            return;
-        }
-        ItemSlot itemSlot = ItemSlot.fromValue(bestToolForSkill.get()
-                                                               .getType());
-        if (checkIfEquipped(character.getData()
-                                     .getName(), bestToolForSkill.get()
-                                                                 .getCode(), itemSlot
-        )) {
-            return;
-        }
-        //        logger.info("Equipping {}", bestToolForSkill.get()
-        //                                                  .getCode()
-        //       );
-        Optional<InventorySlot> inventorySlot = character.getData()
-                                                         .getInventory()
-                                                         .stream()
-                                                         .filter(innerInventorySlot -> innerInventorySlot.getCode()
-                                                                                                         .equals(bestToolForSkill.get()
-                                                                                                                                 .getCode()))
-                                                         .findFirst()
-                ;
-        if (inventorySlot.isEmpty()) {
-            logger.info("Best tool not in inventory, requesting");
-            wishList.addRequest(new Wish(character.getData()
-                                                  .getName(), bestToolForSkill.get()
-                                                                              .getCode()
-                    , 1
-            ));
-            return;
-        }
-        equipGearIfNotEquipped(character.getData()
-                                        .getName(), bestToolForSkill.get()
-                                                                    .getCode(), itemSlot
-        );
-    }
 
 }

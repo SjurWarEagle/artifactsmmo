@@ -22,7 +22,8 @@ public class CraftItemTask {
             );
             brain.waitUntilCooldownDone(characterName);
         } catch (ApiException e) {
-            throw new RuntimeException(e);
+            logger.error("Error crafting item", e);
+            // throw new RuntimeException(e);
         }
     }
 

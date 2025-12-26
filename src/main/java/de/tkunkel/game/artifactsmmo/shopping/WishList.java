@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -19,7 +20,7 @@ public class WishList {
     private final Logger logger = LoggerFactory.getLogger(WishList.class.getName());
     private final Caches caches;
     private final ApiHolder apiHolder;
-    private Set<Wish> allWishes = new HashSet<>();
+    private final Set<Wish> allWishes = new HashSet<>();
 
     public WishList(Caches caches, ApiHolder apiHolder) {
         this.caches = caches;
@@ -33,7 +34,7 @@ public class WishList {
         if (hasAlreadyInBank(wish)) {
             return;
         }
-// 1
+
         this.allWishes.add(wish);
         addWishesForComponents(wish);
         // logger.info("Added wish for {}", wish.itemCode);
@@ -76,5 +77,9 @@ public class WishList {
                           addRequest(new Wish(wish.characterName, component.getCode(), component.getQuantity()));
                       })
         ;
+    }
+
+    public Set<Wish> getAllWishes() {
+        return Collections.unmodifiableSet(allWishes);
     }
 }

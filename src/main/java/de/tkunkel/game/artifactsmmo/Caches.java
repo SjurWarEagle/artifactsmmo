@@ -83,7 +83,6 @@ public class Caches {
         } catch (ApiException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     private void cacheMonsters() {
@@ -100,7 +99,6 @@ public class Caches {
         } catch (ApiException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     private void cacheItems() {
@@ -117,7 +115,6 @@ public class Caches {
         } catch (ApiException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     public void cacheMap() {
@@ -153,19 +150,18 @@ public class Caches {
                                                    .max((o1, o2) -> o1.getLevel() - o2.getLevel())
                 ;
         return bestTool;
-
     }
 
-    public String findHighestFarmableRessourceForSkillLevel(Integer fishingLevel, GatheringSkill gatheringSkill) {
+    public String findHighestFarmableResourceForSkillLevel(Integer skillLevel, GatheringSkill skill) {
         Optional<ResourceSchema> resource = cachedResources.stream()
-                                                           .filter(resourceSchema -> resourceSchema.getLevel() <= fishingLevel)
+                                                           .filter(resourceSchema -> resourceSchema.getLevel() <= skillLevel)
                                                            .filter(resourceSchema -> resourceSchema.getSkill()
-                                                                                                   .equals(gatheringSkill))
+                                                                                                   .equals(skill))
                                                            .sorted((o1, o2) -> o2.getLevel() - o1.getLevel())
                                                            .findFirst()
                 ;
         if (resource.isEmpty()) {
-            throw new RuntimeException("No resource found for skill " + gatheringSkill + " and level " + fishingLevel);
+            throw new RuntimeException("No resource found for skill " + skill + " and level " + skillLevel);
         }
         return resource.get()
                        .getCode();

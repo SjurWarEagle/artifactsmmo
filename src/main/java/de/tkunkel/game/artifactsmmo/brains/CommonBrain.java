@@ -3,6 +3,7 @@ package de.tkunkel.game.artifactsmmo.brains;
 import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.BrainCompletedException;
 import de.tkunkel.game.artifactsmmo.Caches;
+import de.tkunkel.game.artifactsmmo.shopping.Wish;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.*;
@@ -153,12 +154,19 @@ public abstract class CommonBrain implements Brain {
             long timeToWait = character.getData()
                                        .getCooldownExpiration()
                                        .toEpochSecond() - serverTime.toEpochSecond();
+            logger.info("Server time: {}", serverTime);
+            logger.info("Character cooldown expiration: {}", character.getData()
+                                                                      .getCooldownExpiration()
+            );
+            logger.info("Waiting for cooldown: {} seconds", timeToWait);
             if (timeToWait > 0) {
                 Thread.sleep(timeToWait + 1);
             }
         } catch (ApiException e) {
+            logger.error("Error waiting for cooldown", e);
             throw new RuntimeException(e);
         } catch (InterruptedException e) {
+            logger.error("Error waiting for cooldown", e);
             throw new RuntimeException(e);
         }
         long secondsToWait = (character.getData()
@@ -485,6 +493,8 @@ public abstract class CommonBrain implements Brain {
             apiHolder.myCharactersApi.actionMoveMyNameActionMovePost(character.getData()
                                                                               .getName(), destinationSchema
             );
+            waitUntilCooldownDone(character.getData()
+                                           .getName());
             return true;
         } catch (ApiException e) {
             throw new RuntimeException(e);
@@ -522,5 +532,45 @@ public abstract class CommonBrain implements Brain {
         throw new UnsupportedOperationException("Not implemented");
     }
 
+    public void updateOrRequestEquipment(CharacterResponseSchema character, String skillName) {
+        Optional<ItemSchema> bestToolForSkill = caches.findBestToolForSkill(skillName, character.getData()
+                                                                                                .getMiningLevel()
+        );
+        if (bestToolForSkill.isEmpty()) {
+            return;
+        }
+        ItemSlot itemSlot = ItemSlot.fromValue(bestToolForSkill.get()
+                                                               .getType());
+        if (checkIfEquipped(character.getData()
+                                     .getName(), bestToolForSkill.get()
+                                                                 .getCode(), itemSlot
+        )) {
+            return;
+        }
+        //        logger.info("Equipping {}", bestToolForSkill.get()
+        //                                                  .getCode()
+        //       );
+        Optional<InventorySlot> inventorySlot = character.getData()
+                                                         .getInventory()
+                                                         .stream()
+                                                         .filter(innerInventorySlot -> innerInventorySlot.getCode()
+                                                                                                         .equals(bestToolForSkill.get()
+                                                                                                                                 .getCode()))
+                                                         .findFirst()
+                ;
+        if (inventorySlot.isEmpty()) {
+            logger.info("Best tool not in inventory, requesting");
+            wishList.addRequest(new Wish(character.getData()
+                                                  .getName(), bestToolForSkill.get()
+                                                                              .getCode()
+                    , 1
+            ));
+            return;
+        }
+        equipGearIfNotEquipped(character.getData()
+                                        .getName(), bestToolForSkill.get()
+                                                                    .getCode(), itemSlot
+        );
+    }
 
 }

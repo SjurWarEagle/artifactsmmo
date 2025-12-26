@@ -36,8 +36,8 @@ public class AlchemistT1Brain extends CommonBrain {
     public String decideWhatResourceToFarm(String characterName) {
         try {
             CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-            String ressource = caches.findHighestFarmableRessourceForSkillLevel(character.getData()
-                                                                                         .getAlchemyLevel(), GatheringSkill.ALCHEMY
+            String ressource = caches.findHighestFarmableResourceForSkillLevel(character.getData()
+                                                                                        .getAlchemyLevel(), GatheringSkill.ALCHEMY
             );
             return ressource;
         } catch (ApiException e) {
@@ -51,7 +51,11 @@ public class AlchemistT1Brain extends CommonBrain {
     public void runBaseLoop(String characterName) {
         try {
             CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+            waitUntilCooldownDone(character);
             depositInBankIfInventoryIsFull(character);
+            updateOrRequestEquipment(character, "alchemy");
+
+            character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
             Optional<String> itemToCraft = findPossibleItemToCraft(character);
             if (itemToCraft.isPresent()) {
                 craftItemTask.craftItem(this, characterName, itemToCraft.get());

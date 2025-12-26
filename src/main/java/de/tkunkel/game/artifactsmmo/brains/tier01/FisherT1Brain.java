@@ -38,21 +38,24 @@ public class FisherT1Brain extends CommonBrain {
         try {
             CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
 
-            String resource = caches.findHighestFarmableRessourceForSkillLevel(character.getData()
-                                                                                        .getFishingLevel(), GatheringSkill.FISHING
+            String resource = caches.findHighestFarmableResourceForSkillLevel(character.getData()
+                                                                                       .getFishingLevel(), GatheringSkill.FISHING
             );
             return resource;
         } catch (ApiException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     @Override
     public void runBaseLoop(String characterName) throws BrainCompletedException {
         try {
             CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+            waitUntilCooldownDone(character);
             depositInBankIfInventoryIsFull(character);
+            updateOrRequestEquipment(character);
+
+            character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
             Optional<String> itemToCraft = findPossibleItemToCraft(character);
             if (itemToCraft.isPresent()) {
                 craftItemTask.craftItem(this, characterName, itemToCraft.get());
@@ -64,6 +67,4 @@ public class FisherT1Brain extends CommonBrain {
             throw new RuntimeException(e);
         }
     }
-
-
 }

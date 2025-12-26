@@ -184,7 +184,6 @@ public class WoodworkerT1Brain extends CommonBrain {
                                                                       .quantity(itemsToDelete.get(0)
                                                                                              .getQuantity());
             try {
-
                 apiHolder.myCharactersApi.actionDeleteItemMyNameActionDeletePost(character.getData()
                                                                                           .getName(), simpleItemSchema
                 );
@@ -193,5 +192,4 @@ public class WoodworkerT1Brain extends CommonBrain {
             }
         }
     }
-
 }
