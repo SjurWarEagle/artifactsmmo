@@ -1,22 +1,18 @@
 package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
-import de.tkunkel.game.artifactsmmo.brains.tier01.FisherT1Brain;
 import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.MapSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
+@Service
 public class FarmHighestResourceTask {
-    private final Logger logger = LoggerFactory.getLogger(FisherT1Brain.class.getName());
-    private final CommonBrain brain;
+    private final Logger logger = LoggerFactory.getLogger(FarmHighestResourceTask.class.getName());
 
-    public FarmHighestResourceTask(CommonBrain brain) {
-        this.brain = brain;
-    }
-
-    public void farmResource(String characterName) throws ApiException {
+    public void farmResource(CommonBrain brain, String characterName) throws ApiException {
         String resourceToFarm = brain.decideWhatResourceToFarm(characterName);
 
         MapSchema whereToGather = brain.findLocationWhereToFarm(resourceToFarm);

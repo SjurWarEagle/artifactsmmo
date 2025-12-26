@@ -5,6 +5,7 @@ import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
+import de.tkunkel.game.artifactsmmo.tasks.CraftItemTask;
 import de.tkunkel.game.artifactsmmo.tasks.FarmHighestResourceTask;
 import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
@@ -18,9 +19,13 @@ import java.util.Optional;
 @Service
 public class AlchemistT1Brain extends CommonBrain {
     private final Logger logger = LoggerFactory.getLogger(AlchemistT1Brain.class.getName());
+    private final CraftItemTask craftItemTask;
+    private final FarmHighestResourceTask farmHighestResourceTask;
 
-    public AlchemistT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder) {
+    public AlchemistT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, CraftItemTask craftItemTask, FarmHighestResourceTask farmHighestResourceTask) {
         super(caches, wishList, apiHolder);
+        this.craftItemTask = craftItemTask;
+        this.farmHighestResourceTask = farmHighestResourceTask;
     }
 
     @Override
@@ -36,6 +41,7 @@ public class AlchemistT1Brain extends CommonBrain {
             );
             return ressource;
         } catch (ApiException e) {
+            logger.error("Error while deciding what resource to farm", e);
             throw new RuntimeException(e);
         }
 
@@ -48,14 +54,13 @@ public class AlchemistT1Brain extends CommonBrain {
             depositInBankIfInventoryIsFull(character);
             Optional<String> itemToCraft = findPossibleItemToCraft(character);
             if (itemToCraft.isPresent()) {
-                craftItem(characterName, itemToCraft.get());
+                craftItemTask.craftItem(this, characterName, itemToCraft.get());
             } else {
-                new FarmHighestResourceTask(this).farmResource(characterName);
+                farmHighestResourceTask.farmResource(this, characterName);
             }
         } catch (ApiException e) {
+            logger.error("Error while running base loop", e);
             throw new RuntimeException(e);
         }
     }
-
-
 }

@@ -41,7 +41,7 @@ public abstract class CommonBrain implements Brain {
         return true;
     }
 
-    private MapSchema findLocationToCraftItem(String characterName, String itemToCraft) {
+    public MapSchema findLocationToCraftItem(String characterName, String itemToCraft) {
         Optional<ItemSchema> itemSchemaOptional = caches.cachedItems.stream()
                                                                     .filter(item -> item.getCode()
                                                                                         .equals(itemToCraft))
@@ -68,20 +68,6 @@ public abstract class CommonBrain implements Brain {
                                                                                      .getSkill());
         }
         return map.get();
-    }
-
-    public void craftItem(String characterName, String itemToCraft) {
-        MapSchema map = findLocationToCraftItem(characterName, itemToCraft);
-        moveToLocation(characterName, map);
-        waitUntilCooldownDone(characterName);
-        try {
-            apiHolder.myCharactersApi.actionCraftingMyNameActionCraftingPost(characterName, new CraftingSchema().code(itemToCraft)
-                                                                                                                .quantity(1)
-            );
-            waitUntilCooldownDone(characterName);
-        } catch (ApiException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public Optional<String> findPossibleItemToCraft(CharacterResponseSchema character) {

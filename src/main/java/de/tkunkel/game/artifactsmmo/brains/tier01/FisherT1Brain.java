@@ -6,6 +6,7 @@ import de.tkunkel.game.artifactsmmo.BrainCompletedException;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
+import de.tkunkel.game.artifactsmmo.tasks.CraftItemTask;
 import de.tkunkel.game.artifactsmmo.tasks.FarmHighestResourceTask;
 import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
@@ -19,9 +20,13 @@ import java.util.Optional;
 @Service
 public class FisherT1Brain extends CommonBrain {
     private final Logger logger = LoggerFactory.getLogger(FisherT1Brain.class.getName());
+    private FarmHighestResourceTask farmHighestResourceTask;
+    private CraftItemTask craftItemTask;
 
-    public FisherT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder) {
+    public FisherT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, FarmHighestResourceTask farmHighestResourceTask, CraftItemTask craftItemTask) {
         super(caches, wishList, apiHolder);
+        this.farmHighestResourceTask = farmHighestResourceTask;
+        this.craftItemTask = craftItemTask;
     }
 
     @Override
@@ -50,9 +55,9 @@ public class FisherT1Brain extends CommonBrain {
             depositInBankIfInventoryIsFull(character);
             Optional<String> itemToCraft = findPossibleItemToCraft(character);
             if (itemToCraft.isPresent()) {
-                craftItem(characterName, itemToCraft.get());
+                craftItemTask.craftItem(this, characterName, itemToCraft.get());
             } else {
-                new FarmHighestResourceTask(this).farmResource(characterName);
+                farmHighestResourceTask.farmResource(this, characterName);
             }
         } catch (ApiException e) {
             logger.error("Error while farming", e);

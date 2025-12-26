@@ -41,7 +41,7 @@ public class Caches {
 
     @PostConstruct
     public void init() {
-        // using it's own ApiClient instance per api client, seems to work better with multithreading
+        // using its own ApiClient instance per api client, seems to work better with multithreading
         mapsApi = new MapsApi(createApiClient());
         itemsApi = new ItemsApi(createApiClient());
         monstersApi = new MonstersApi(createApiClient());
