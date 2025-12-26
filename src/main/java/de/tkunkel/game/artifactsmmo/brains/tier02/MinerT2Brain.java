@@ -1,9 +1,11 @@
 package de.tkunkel.game.artifactsmmo.brains.tier02;
 
 
+import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.BrainCompletedException;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
+import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
@@ -28,7 +30,7 @@ public class MinerT2Brain extends CommonBrain {
     @Override
     public boolean shouldBeUsed(String characterName) {
         try {
-            CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
+            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
             boolean hasStickySword = character.getData()
                                               .getWeaponSlot()
                                               .equalsIgnoreCase("sticky_sword")
@@ -61,17 +63,14 @@ public class MinerT2Brain extends CommonBrain {
         return hasItemsToCraftInInventory;
     }
 
-    public MinerT2Brain(Caches caches) {
-        super(caches);
+    public MinerT2Brain(Caches caches, WishList wishList, ApiHolder apiHolder) {
+        super(caches, wishList, apiHolder);
     }
 
     public boolean mineIfNotEnoughInInventory(String characterName, String oreName, int amount) {
         try {
-            CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
-            if (isCharCooldown(character)) {
-                return false;
-            }
-
+            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+            waitUntilCooldownDone(character);
             List<InventorySlot> inventory = character.getData()
                                                      .getInventory();
 
@@ -99,12 +98,10 @@ public class MinerT2Brain extends CommonBrain {
     }
 
     private void gather(CharacterResponseSchema character) {
-        if (isCharCooldown(character)) {
-            return;
-        }
+        waitUntilCooldownDone(character);
         try {
-            myCharactersApi.actionGatheringMyNameActionGatheringPost(character.getData()
-                                                                              .getName());
+            apiHolder.myCharactersApi.actionGatheringMyNameActionGatheringPost(character.getData()
+                                                                                        .getName());
         } catch (ApiException e) {
             throw new RuntimeException(e);
         }
@@ -113,23 +110,19 @@ public class MinerT2Brain extends CommonBrain {
 
     public void smelt(String characterName, String toCraft) {
         try {
-            CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
+            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
             Optional<MapSchema> smelter = findClosestLocation(character, "mining");
             if (smelter.isEmpty()) {
                 logger.error("No smelter fonud.");
                 throw new RuntimeException("no smelter found");
             }
-            if (isCharCooldown(character)) {
-                return;
-            }
+            waitUntilCooldownDone(character);
             moveToLocation(character, smelter.get());
-            if (isCharCooldown(character)) {
-                return;
-            }
+            waitUntilCooldownDone(character);
             CraftingSchema craftingSchema = new CraftingSchema().code(toCraft)
                                                                 .quantity(1);
-            myCharactersApi.actionCraftingMyNameActionCraftingPost(character.getData()
-                                                                            .getName(), craftingSchema
+            apiHolder.myCharactersApi.actionCraftingMyNameActionCraftingPost(character.getData()
+                                                                                      .getName(), craftingSchema
             );
         } catch (ApiException e) {
             throw new RuntimeException(e);
@@ -142,18 +135,16 @@ public class MinerT2Brain extends CommonBrain {
         while (true) {
             CharacterResponseSchema character = null;
             try {
-                character = charactersApi.getCharacterCharactersNameGet(characterName);
+                character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
             } catch (ApiException e) {
                 throw new RuntimeException(e);
             }
 
-            if (isCharCooldown(character)) {
-                try {
-                    Thread.sleep(TimeUnit.SECONDS.toMillis(5));
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-
+            waitUntilCooldownDone(character);
+            try {
+                Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
 
             equipGearIfNotEquipped(character.getData()
@@ -201,7 +192,7 @@ public class MinerT2Brain extends CommonBrain {
                 logger.info("mined, but still not enough in inventory, waiting for next cycle");
             }
             try {
-                Thread.sleep(TimeUnit.SECONDS.toMillis(5));
+                Thread.sleep(TimeUnit.SECONDS.toMillis(1));
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }

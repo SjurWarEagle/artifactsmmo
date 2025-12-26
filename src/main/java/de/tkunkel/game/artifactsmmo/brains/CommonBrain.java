@@ -1,42 +1,143 @@
 package de.tkunkel.game.artifactsmmo.brains;
 
+import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.BrainCompletedException;
 import de.tkunkel.game.artifactsmmo.Caches;
-import de.tkunkel.game.artifactsmmo.Config;
-import de.tkunkel.games.artifactsmmo.ApiClient;
+import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.games.artifactsmmo.ApiException;
-import de.tkunkel.games.artifactsmmo.api.CharactersApi;
-import de.tkunkel.games.artifactsmmo.api.MyCharactersApi;
-import de.tkunkel.games.artifactsmmo.api.ServerDetailsApi;
 import de.tkunkel.games.artifactsmmo.model.*;
+import org.jetbrains.annotations.UnknownNullability;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 public abstract class CommonBrain implements Brain {
     protected final Caches caches;
+    protected final WishList wishList;
+    public final ApiHolder apiHolder;
 
     private final Logger logger = LoggerFactory.getLogger(CommonBrain.class.getName());
-    protected final ApiClient apiClient = new ApiClient();
-    protected final MyCharactersApi myCharactersApi;
-    protected final CharactersApi charactersApi;
-    protected final ServerDetailsApi serverDetailsApi;
 
-    protected CommonBrain(Caches caches) {
+    protected CommonBrain(Caches caches, WishList wishList, ApiHolder apiHolder) {
         this.caches = caches;
-        apiClient.setBearerToken(Config.API_TOKEN);
-        apiClient.setBasePath("https://api.artifactsmmo.com");
-        myCharactersApi = new MyCharactersApi(apiClient);
-        charactersApi = new CharactersApi(apiClient);
-        serverDetailsApi = new ServerDetailsApi(apiClient);
+        this.wishList = wishList;
+        this.apiHolder = apiHolder;
     }
 
-    public int cntItemsInInventory(CharacterResponseSchema character) {
+    public boolean hasAllItemsInInventory(CharacterResponseSchema character, List<SimpleItemSchema> items) {
+        for (SimpleItemSchema requiredItem : items) {
+            if (cntSpecificItemsInInventory(character, requiredItem.getCode()) < requiredItem.getQuantity()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private MapSchema findLocationToCraftItem(String characterName, String itemToCraft) {
+        Optional<ItemSchema> itemSchemaOptional = caches.cachedItems.stream()
+                                                                    .filter(item -> item.getCode()
+                                                                                        .equals(itemToCraft))
+                                                                    .findFirst()
+                ;
+        if (itemSchemaOptional.isEmpty()) {
+            throw new RuntimeException("Item " + itemToCraft + " not found");
+        }
+        Optional<MapSchema> map = caches.cachedMap.stream()
+                                                  .filter(mapSchema -> mapSchema.getInteractions()
+                                                                                .getContent() != null)
+                                                  .filter(mapSchema -> mapSchema.getInteractions()
+                                                                                .getContent()
+                                                                                .getCode()
+                                                                                .equals(itemSchemaOptional.get()
+                                                                                                          .getCraft()
+                                                                                                          .getSkill()
+                                                                                                          .getValue()))
+                                                  .findFirst()
+                ;
+        if (map.isEmpty()) {
+            throw new RuntimeException("No map found for skill " + itemSchemaOptional.get()
+                                                                                     .getCraft()
+                                                                                     .getSkill());
+        }
+        return map.get();
+    }
+
+    public void craftItem(String characterName, String itemToCraft) {
+        MapSchema map = findLocationToCraftItem(characterName, itemToCraft);
+        moveToLocation(characterName, map);
+        waitUntilCooldownDone(characterName);
+        try {
+            apiHolder.myCharactersApi.actionCraftingMyNameActionCraftingPost(characterName, new CraftingSchema().code(itemToCraft)
+                                                                                                                .quantity(1)
+            );
+            waitUntilCooldownDone(characterName);
+        } catch (ApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public Optional<String> findPossibleItemToCraft(CharacterResponseSchema character) {
+        return caches.cachedItems.stream()
+                                 .filter(
+                                         item -> item.getCraft() != null)
+                                 .filter(
+                                         item -> item.getCraft()
+                                                     .getItems() != null)
+                                 .filter(
+                                         item -> item.getCraft()
+                                                     .getSkill() != null)
+                                 .filter(item -> {
+                                     String requiredSkill = item.getCraft()
+                                                                .getSkill()
+                                                                .getValue()
+                                             ;
+                                     int requiredSkillLevel = item.getCraft()
+                                                                  .getLevel();
+                                     return charHasRequiredSkillLevel(character, requiredSkill, requiredSkillLevel);
+                                 })
+                                 .sorted(Comparator.comparingInt(o -> o.getCraft()
+                                                                       .getLevel()))
+                                 .filter(item -> hasAllItemsInInventory(character, item.getCraft()
+                                                                                       .getItems()
+                                 ))
+                                 .map(itemSchema -> itemSchema.getCode())
+                                 .findFirst()
+                ;
+    }
+
+    private boolean charHasRequiredSkillLevel(CharacterResponseSchema character, @UnknownNullability String requiredSkill, int requiredSkillLevel) {
+        int charSkillLevel = 0;
+        charSkillLevel = switch (requiredSkill) {
+            case "alchemy" -> character.getData()
+                                       .getAlchemyLevel();
+            case "fishing" -> character.getData()
+                                       .getFishingLevel();
+            case "jewelrycrafting" -> character.getData()
+                                               .getJewelrycraftingLevel();
+            case "woodcutting" -> character.getData()
+                                           .getWoodcuttingLevel();
+            case "mining" -> character.getData()
+                                      .getMiningLevel();
+            case "weaponcrafting" -> character.getData()
+                                              .getWeaponcraftingLevel();
+            case "gearcrafting" -> character.getData()
+                                            .getGearcraftingLevel();
+            case "cooking" -> character.getData()
+                                       .getCookingLevel();
+            default -> throw new RuntimeException("unknown skill: " + requiredSkill);
+        };
+        return charSkillLevel >= requiredSkillLevel;
+    }
+
+    public int cntAllItemsInInventory(CharacterResponseSchema character) {
         return character.getData()
                         .getInventory()
                         .stream()
@@ -44,30 +145,47 @@ public abstract class CommonBrain implements Brain {
                         .sum();
     }
 
+    public int cntSpecificItemsInInventory(CharacterResponseSchema character, String itemCode) {
+        return character.getData()
+                        .getInventory()
+                        .stream()
+                        .filter(inventorySlot -> inventorySlot.getCode()
+                                                              .equals(itemCode))
+                        .mapToInt(InventorySlot::getQuantity)
+                        .sum();
+    }
+
     @Override
-    public boolean isCharCooldown(CharacterResponseSchema character) {
+    public void waitUntilCooldownDone(CharacterResponseSchema character) {
         OffsetDateTime serverTime;
         try {
-            serverTime = serverDetailsApi.getServerDetailsGet()
-                                         .getData()
-                                         .getServerTime();
-            character = charactersApi.getCharacterCharactersNameGet(character.getData()
-                                                                             .getName());
+            serverTime = apiHolder.serverDetailsApi.getServerDetailsGet()
+                                                   .getData()
+                                                   .getServerTime();
+            character = apiHolder.charactersApi.getCharacterCharactersNameGet(character.getData()
+                                                                                       .getName());
+            long timeToWait = character.getData()
+                                       .getCooldownExpiration()
+                                       .toEpochSecond() - serverTime.toEpochSecond();
+            if (timeToWait > 0) {
+                Thread.sleep(timeToWait + 1);
+            }
         } catch (ApiException e) {
             throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
-        //logger.info("Checking if character {} is in cooldown with server time={} and cooldown={}", character.getData().getName(), serverTime, character.getData().getCooldownExpiration());
-        if (character.getData()
-                     .getCooldownExpiration()
-                     .isAfter(serverTime) && character.getData()
-                                                      .getCooldown() > 0) {
-            logger.info("Character {} is in cooldown until {} ", character.getData()
-                                                                          .getName(), character.getData()
-                                                                                               .getCooldownExpiration()
-            );
-            return true;
+        long secondsToWait = (character.getData()
+                                       .getCooldownExpiration()
+                                       .toEpochSecond()) - serverTime.toEpochSecond();
+        if (secondsToWait > 0) {
+            // has active cooldown
+            try {
+                Thread.sleep(TimeUnit.SECONDS.toMillis(secondsToWait + 1));
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
-        return false;
     }
 
     @Override
@@ -90,11 +208,10 @@ public abstract class CommonBrain implements Brain {
             return;
         }
         try {
-            if (isCharCooldown(character)) {
-                return;
-            }
-            myCharactersApi.actionRestMyNameActionRestPost(character.getData()
-                                                                    .getName());
+            waitUntilCooldownDone(character);
+            apiHolder.myCharactersApi.actionRestMyNameActionRestPost(character.getData()
+                                                                              .getName());
+            waitUntilCooldownDone(character);
         } catch (ApiException e) {
             throw new RuntimeException(e);
         }
@@ -112,11 +229,9 @@ public abstract class CommonBrain implements Brain {
                 try {
                     SimpleItemSchema simpleItemSchema = new SimpleItemSchema().quantity(1)
                                                                               .code(inventorySlot.getCode());
-                    if (isCharCooldown(character)) {
-                        return true;
-                    }
-                    myCharactersApi.actionUseItemMyNameActionUsePost(character.getData()
-                                                                              .getName(), simpleItemSchema
+                    waitUntilCooldownDone(character);
+                    apiHolder.myCharactersApi.actionUseItemMyNameActionUsePost(character.getData()
+                                                                                        .getName(), simpleItemSchema
                     );
                     return true;
                 } catch (ApiException e) {
@@ -132,7 +247,7 @@ public abstract class CommonBrain implements Brain {
         logger.info("Starting findClosestMonster");
         AtomicReference<Optional<MapSchema>> rc = new AtomicReference<>(Optional.empty());
 
-        //TODO sort by distance to character
+        // TODO sort by distance to character
         caches.cachedMap.stream()
                         .filter(mapSchema -> mapSchema.getInteractions()
                                                       .getContent() != null)
@@ -152,7 +267,7 @@ public abstract class CommonBrain implements Brain {
     public Optional<MapSchema> findClosestLocation(CharacterResponseSchema character, String activity) {
         AtomicReference<Optional<MapSchema>> rc = new AtomicReference<>(Optional.empty());
 
-        //TODO sort by distance to character
+        // TODO sort by distance to character
         int charX = character.getData()
                              .getX();
         int charY = character.getData()
@@ -181,16 +296,14 @@ public abstract class CommonBrain implements Brain {
         EquipSchema equipSchema = new EquipSchema().slot(itemSlot)
                                                    .code(gear);
         try {
-            CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
+            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
             boolean alreadyEquipped = checkIfEquipped(gear, itemSlot, character);
             if (alreadyEquipped) {
                 return;
             }
-            if (isCharCooldown(character)) {
-                return;
-            }
-            myCharactersApi.actionEquipItemMyNameActionEquipPost(character.getData()
-                                                                          .getName(), equipSchema
+            waitUntilCooldownDone(character);
+            apiHolder.myCharactersApi.actionEquipItemMyNameActionEquipPost(character.getData()
+                                                                                    .getName(), equipSchema
             );
         } catch (ApiException e) {
             if (!e.getMessage()
@@ -204,7 +317,7 @@ public abstract class CommonBrain implements Brain {
     public boolean checkIfEquipped(String characterName, String gear, ItemSlot itemSlot) {
         CharacterResponseSchema character;
         try {
-            character = charactersApi.getCharacterCharactersNameGet(characterName);
+            character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
         } catch (ApiException e) {
             throw new RuntimeException(e);
         }
@@ -283,7 +396,7 @@ public abstract class CommonBrain implements Brain {
 
     public void craftGearIfNotAtCharacter(String characterName, String gear, String craftingStation, ItemSlot slot) {
         try {
-            CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
+            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
             boolean enoughResourcesToCraft = character.getData()
                                                       .getInventory()
                                                       .stream()
@@ -294,9 +407,7 @@ public abstract class CommonBrain implements Brain {
             if (!enoughResourcesToCraft) {
                 return;
             }
-            if (isCharCooldown(character)) {
-                return;
-            }
+            waitUntilCooldownDone(character);
             boolean equipped = checkIfEquipped(gear, slot, character);
             if (equipped) {
                 return;
@@ -308,13 +419,11 @@ public abstract class CommonBrain implements Brain {
                 return;
             }
             moveToLocation(character, closestLocation.get());
-            if (isCharCooldown(character)) {
-                return;
-            }
+            waitUntilCooldownDone(character);
             CraftingSchema craftingSchema = new CraftingSchema().code(gear)
                                                                 .quantity(1);
-            myCharactersApi.actionCraftingMyNameActionCraftingPost(character.getData()
-                                                                            .getName(), craftingSchema
+            apiHolder.myCharactersApi.actionCraftingMyNameActionCraftingPost(character.getData()
+                                                                                      .getName(), craftingSchema
             );
 
         } catch (ApiException e) {
@@ -322,6 +431,56 @@ public abstract class CommonBrain implements Brain {
         }
     }
 
+    public void depositInBankIfInventoryIsFull(CharacterResponseSchema character) {
+        int inventoryUsed = cntAllItemsInInventory(character);
+        // store if more than 75% are used
+        if (inventoryUsed < character.getData()
+                                     .getInventoryMaxItems() * 0.75) {
+            return;
+        }
+        Optional<MapSchema> bank = findClosestLocation(character, "bank");
+        if (bank.isEmpty()) {
+            throw new RuntimeException("Could not find bank for character " + character.getData()
+                                                                                       .getName());
+        }
+        moveToLocation(character, bank.get());
+        waitUntilCooldownDone(character);
+        List<SimpleItemSchema> itemsToDeposit = character.getData()
+                                                         .getInventory()
+                                                         .stream()
+                                                         .filter(inventorySlot -> {
+                                                             List<ItemSchema> item = caches.cachedItems.stream()
+                                                                                                       .filter(itemSchema -> itemSchema.getCode()
+                                                                                                                                       .equals(inventorySlot.getCode()))
+//                                                                                                          .filter(itemSchema -> !itemSchema.getSubtype()
+//                                                                                                                                           .equals("bar"))
+                                                                                                       .toList()
+                                                                     ;
+                                                             return !item.isEmpty();
+                                                         })
+                                                         .map(inventorySlot -> new SimpleItemSchema().code(inventorySlot.getCode())
+                                                                                                     .quantity(inventorySlot.getQuantity()))
+                                                         .toList()
+                ;
+        try {
+            apiHolder.myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
+                                                                                                    .getName(), itemsToDeposit
+            );
+            waitUntilCooldownDone(character);
+        } catch (ApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    public boolean moveToLocation(String characterName, MapSchema destination) {
+        try {
+            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+            return moveToLocation(character, destination);
+        } catch (ApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public boolean moveToLocation(CharacterResponseSchema character, MapSchema destination) {
         try {
@@ -333,18 +492,49 @@ public abstract class CommonBrain implements Brain {
             if (alreadyReached) {
                 return false;
             }
-            if (isCharCooldown(character)) {
-                return true;
-            }
+            waitUntilCooldownDone(character.getData()
+                                           .getName());
             DestinationSchema destinationSchema = new DestinationSchema().x(destination.getX())
                                                                          .y(destination.getY());
-            myCharactersApi.actionMoveMyNameActionMovePost(character.getData()
-                                                                    .getName(), destinationSchema
+            apiHolder.myCharactersApi.actionMoveMyNameActionMovePost(character.getData()
+                                                                              .getName(), destinationSchema
             );
             return true;
         } catch (ApiException e) {
             throw new RuntimeException(e);
         }
     }
+
+    public void waitUntilCooldownDone(String characterName) {
+        try {
+            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+            waitUntilCooldownDone(character);
+        } catch (ApiException e) {
+            logger.error("Error waiting for cooldown", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    public MapSchema findLocationWhereToFarm(String resourceToFarm) {
+        Optional<MapSchema> map = caches.cachedMap.stream()
+                                                  .filter(mapSchema -> mapSchema.getInteractions()
+                                                                                .getContent() != null)
+                                                  .filter(mapSchema -> mapSchema.getInteractions()
+                                                                                .getContent()
+                                                                                .getCode()
+                                                                                .equals(resourceToFarm))
+                                                  // todo order by distance to character
+                                                  .findFirst()
+                ;
+        if (map.isEmpty()) {
+            throw new RuntimeException("No map found for resource " + resourceToFarm);
+        }
+        return map.get();
+    }
+
+    public String decideWhatResourceToFarm(String characterName) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
 
 }

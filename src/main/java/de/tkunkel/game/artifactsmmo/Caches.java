@@ -15,38 +15,58 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class Caches {
     private final Logger logger = LoggerFactory.getLogger(Caches.class.getName());
 
-    protected final ApiClient apiClient = new ApiClient();
-    protected MapsApi mapsApi;
-    protected ItemsApi itemsApi;
-    protected MonstersApi monstersApi;
-    protected ResourcesApi resourcesApi;
+    private final Config config;
+    private MapsApi mapsApi;
+    private ItemsApi itemsApi;
+    private MonstersApi monstersApi;
+    private ResourcesApi resourcesApi;
 
+    private final ExecutorService executorService = Executors.newFixedThreadPool(4);
     public final List<MapSchema> cachedMap = new ArrayList<>();
     public final List<MonsterSchema> cachedMonsters = new ArrayList<>();
     public final List<ItemSchema> cachedItems = new ArrayList<>();
     public final List<ResourceSchema> cachedResources = new ArrayList<>();
 
+    public Caches(Config config) {
+        this.config = config;
+    }
+
     @PostConstruct
     public void init() {
-        apiClient.setBearerToken(Config.API_TOKEN);
-        apiClient.setBasePath("https://api.artifactsmmo.com");
-        mapsApi = new MapsApi(apiClient);
-        itemsApi = new ItemsApi(apiClient);
-        monstersApi = new MonstersApi(apiClient);
-        resourcesApi = new ResourcesApi(apiClient);
+        // using it's own ApiClient instance per api client, seems to work better with multithreading
+        mapsApi = new MapsApi(createApiClient());
+        itemsApi = new ItemsApi(createApiClient());
+        monstersApi = new MonstersApi(createApiClient());
+        resourcesApi = new ResourcesApi(createApiClient());
         fillCache();
     }
 
+    private ApiClient createApiClient() {
+        ApiClient rc = new ApiClient();
+        rc.setBearerToken(config.API_TOKEN);
+        rc.setBasePath("https://api.artifactsmmo.com");
+        return rc;
+    }
+
     public void fillCache() {
-        cacheMap();
-        cacheItems();
-        cacheMonsters();
-        cacheResources();
+        executorService.submit(this::cacheMap);
+        executorService.submit(this::cacheItems);
+        executorService.submit(this::cacheMonsters);
+        executorService.submit(this::cacheResources);
+        executorService.shutdown();
+        try {
+            executorService.awaitTermination(1, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void cacheResources() {
@@ -121,5 +141,33 @@ public class Caches {
                           .filter(itemSchema -> itemSchema.getCode()
                                                           .equals(code))
                           .findFirst();
+    }
+
+    public Optional<ItemSchema> findBestToolForSkill(String skill, Integer level) {
+        Optional<ItemSchema> bestTool = cachedItems.stream()
+                                                   .filter(itemSchema -> itemSchema.getEffects()
+                                                                                   .stream()
+                                                                                   .anyMatch(effectSchema -> effectSchema.getCode()
+                                                                                                                         .equals(skill)))
+                                                   .filter(itemSchema -> itemSchema.getLevel() <= level)
+                                                   .max((o1, o2) -> o1.getLevel() - o2.getLevel())
+                ;
+        return bestTool;
+
+    }
+
+    public String findHighestFarmableRessourceForSkillLevel(Integer fishingLevel, GatheringSkill gatheringSkill) {
+        Optional<ResourceSchema> resource = cachedResources.stream()
+                                                           .filter(resourceSchema -> resourceSchema.getLevel() <= fishingLevel)
+                                                           .filter(resourceSchema -> resourceSchema.getSkill()
+                                                                                                   .equals(gatheringSkill))
+                                                           .sorted((o1, o2) -> o2.getLevel() - o1.getLevel())
+                                                           .findFirst()
+                ;
+        if (resource.isEmpty()) {
+            throw new RuntimeException("No resource found for skill " + gatheringSkill + " and level " + fishingLevel);
+        }
+        return resource.get()
+                       .getCode();
     }
 }

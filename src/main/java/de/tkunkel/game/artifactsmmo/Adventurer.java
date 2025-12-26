@@ -1,9 +1,7 @@
 package de.tkunkel.game.artifactsmmo;
 
 import de.tkunkel.game.artifactsmmo.brains.Brain;
-import de.tkunkel.game.artifactsmmo.brains.tier01.FighterT1Brain;
-import de.tkunkel.game.artifactsmmo.brains.tier01.MinerT1Brain;
-import de.tkunkel.game.artifactsmmo.brains.tier01.WoodworkerT1Brain;
+import de.tkunkel.game.artifactsmmo.brains.tier01.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,19 +42,28 @@ public class Adventurer {
     }
 
     private Brain decideNewBrain() {
-        if (adventurerClass == AdventurerClass.MINER) {
-            Optional<Brain> optionalBrain = brains.stream().filter(brain -> brain instanceof MinerT1Brain).findFirst();
-            return optionalBrain.get();
-        }
-        if (adventurerClass == AdventurerClass.WOODWORKER) {
-            Optional<Brain> optionalBrain = brains.stream().filter(brain -> brain instanceof WoodworkerT1Brain).findFirst();
-            return optionalBrain.get();
-        }
-        if (adventurerClass == AdventurerClass.FIGHTER) {
-            Optional<Brain> optionalBrain = brains.stream().filter(brain -> brain instanceof FighterT1Brain).findFirst();
-            return optionalBrain.get();
-        }
-        Optional<Brain> optionalBrain = brains.stream().filter(brain -> brain instanceof MinerT1Brain).findFirst();
+        Optional<Brain> optionalBrain = switch (adventurerClass) {
+            case MINER -> brains.stream()
+                                .filter(brain -> brain instanceof MinerT1Brain)
+                                .findFirst()
+            ;
+            case FIGHTER -> brains.stream()
+                                  .filter(brain -> brain instanceof FighterT1Brain)
+                                  .findFirst()
+            ;
+            case WOODWORKER -> brains.stream()
+                                     .filter(brain -> brain instanceof WoodworkerT1Brain)
+                                     .findFirst()
+            ;
+            case ALCHEMIST -> brains.stream()
+                                    .filter(brain -> brain instanceof AlchemistT1Brain)
+                                    .findFirst()
+            ;
+            case FISHER -> brains.stream()
+                                 .filter(brain -> brain instanceof FisherT1Brain)
+                                 .findFirst()
+            ;
+        };
         return optionalBrain.get();
     }
 }

@@ -1,7 +1,9 @@
 package de.tkunkel.game.artifactsmmo.brains.tier01;
 
+import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
+import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
@@ -20,26 +22,22 @@ public class FighterT1Brain extends CommonBrain {
         return false;
     }
 
-    public FighterT1Brain(Caches caches) {
-        super(caches);
+    public FighterT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder) {
+        super(caches, wishList, apiHolder);
     }
 
     @Override
     public void runBaseLoop(String characterName) {
         try {
-            CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
-            if (isCharCooldown(character)) {
-                return;
-            }
+            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+            waitUntilCooldownDone(character);
             depositNonFoodAtBankIfInventoryIsFull(character);
             cookFoodIfHaveSome(character);
             eatFoodOrRestIfNeeded(character);
             completeCurrentTaskIfDone(character);
             getNewTaskIfCurrentTaskIsDone(character);
 
-            if (isCharCooldown(character)) {
-                return;
-            }
+            waitUntilCooldownDone(character);
 
             String enemyToHunt = decideWhatEnemyToHunt(character);
             Optional<MapSchema> locationOfClosestMonster = findLocationOfClosestMonster(enemyToHunt);
@@ -65,8 +63,8 @@ public class FighterT1Brain extends CommonBrain {
                                                                .getX());
                 destinationSchema.setY(locationOfClosestMonster.get()
                                                                .getY());
-                myCharactersApi.actionMoveMyNameActionMovePost(character.getData()
-                                                                        .getName(), destinationSchema
+                apiHolder.myCharactersApi.actionMoveMyNameActionMovePost(character.getData()
+                                                                                  .getName(), destinationSchema
                 );
                 logger.info("Moving to location of closest monster");
                 return;
@@ -76,12 +74,10 @@ public class FighterT1Brain extends CommonBrain {
                 );
             }
 
-            if (isCharCooldown(character)) {
-                return;
-            }
+            waitUntilCooldownDone(character);
             FightRequestSchema fightRequest = new FightRequestSchema();
-            myCharactersApi.actionFightMyNameActionFightPost(character.getData()
-                                                                      .getName(), fightRequest
+            apiHolder.myCharactersApi.actionFightMyNameActionFightPost(character.getData()
+                                                                                .getName(), fightRequest
             );
         } catch (ApiException e) {
             throw new RuntimeException(e);
@@ -89,8 +85,8 @@ public class FighterT1Brain extends CommonBrain {
     }
 
     private void depositNonFoodAtBankIfInventoryIsFull(CharacterResponseSchema character) {
-        int inventoryUsed = cntItemsInInventory(character);
-        //store if more than 75% are used
+        int inventoryUsed = cntAllItemsInInventory(character);
+        // store if more than 75% are used
         if (inventoryUsed <= character.getData()
                                       .getInventoryMaxItems() * 0.75) {
             return;
@@ -101,9 +97,7 @@ public class FighterT1Brain extends CommonBrain {
                                                                                        .getName());
         }
         moveToLocation(character, bank.get());
-        if (isCharCooldown(character)) {
-            return;
-        }
+        waitUntilCooldownDone(character);
         List<SimpleItemSchema> bankRequestSchema = character.getData()
                                                             .getInventory()
                                                             .stream()
@@ -122,8 +116,8 @@ public class FighterT1Brain extends CommonBrain {
                                                             .toList()
                 ;
         try {
-            myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
-                                                                                          .getName(), bankRequestSchema
+            apiHolder.myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
+                                                                                                    .getName(), bankRequestSchema
             );
         } catch (ApiException e) {
             throw new RuntimeException(e);
@@ -133,7 +127,7 @@ public class FighterT1Brain extends CommonBrain {
     private void getNewTaskIfCurrentTaskIsDone(CharacterResponseSchema character) {
         if (!"".equalsIgnoreCase(character.getData()
                                           .getTask())) {
-            //still has task
+            // still has task
             return;
         }
         try {
@@ -145,8 +139,8 @@ public class FighterT1Brain extends CommonBrain {
             if (moved) {
                 return;
             }
-            myCharactersApi.actionAcceptNewTaskMyNameActionTaskNewPost(character.getData()
-                                                                                .getName());
+            apiHolder.myCharactersApi.actionAcceptNewTaskMyNameActionTaskNewPost(character.getData()
+                                                                                          .getName());
         } catch (ApiException e) {
             throw new RuntimeException(e);
         }
@@ -170,8 +164,8 @@ public class FighterT1Brain extends CommonBrain {
             if (moved) {
                 return;
             }
-            myCharactersApi.actionCompleteTaskMyNameActionTaskCompletePost(character.getData()
-                                                                                    .getName());
+            apiHolder.myCharactersApi.actionCompleteTaskMyNameActionTaskCompletePost(character.getData()
+                                                                                              .getName());
         } catch (ApiException e) {
             throw new RuntimeException(e);
         }
@@ -184,7 +178,7 @@ public class FighterT1Brain extends CommonBrain {
                                                     .filter(inventorySlot -> inventorySlot.getCode()
                                                                                           .equalsIgnoreCase("raw_chicken"))
                                                     .filter(inventorySlot -> inventorySlot.getQuantity() >= 5)
-                                                    //TODO check cooking-skill .filter(inventorySlot -> inventorySlot.getCode().equalsIgnoreCase("egg"))
+                                                    // TODO check cooking-skill .filter(inventorySlot -> inventorySlot.getCode().equalsIgnoreCase("egg"))
                                                     .findAny()
                 ;
         if (foodItem.isPresent()) {
@@ -194,7 +188,7 @@ public class FighterT1Brain extends CommonBrain {
                 if (moved) {
                     return;
                 }
-                //TODO get targetCode from item-definition
+                // TODO get targetCode from item-definition
                 String targetCode = switch (foodItem.get()
                                                     .getCode()) {
                     case "raw_chicken" -> "cooked_chicken";
@@ -205,8 +199,8 @@ public class FighterT1Brain extends CommonBrain {
                                                                     .quantity(foodItem.get()
                                                                                       .getQuantity());
                 try {
-                    myCharactersApi.actionCraftingMyNameActionCraftingPost(character.getData()
-                                                                                    .getName(), craftingSchema
+                    apiHolder.myCharactersApi.actionCraftingMyNameActionCraftingPost(character.getData()
+                                                                                              .getName(), craftingSchema
                     );
                 } catch (ApiException e) {
                     throw new RuntimeException(e);
@@ -259,7 +253,7 @@ public class FighterT1Brain extends CommonBrain {
                                              .getLevel()) {
                 case 0, 1, 2 -> "chicken";
                 case 3, 4 -> "yellow_slime";
-                case 5, 6, 7, 8, 9, 10, 11 -> "green_slime";
+                case 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 -> "green_slime";
                 default -> "chicken";
             };
         }

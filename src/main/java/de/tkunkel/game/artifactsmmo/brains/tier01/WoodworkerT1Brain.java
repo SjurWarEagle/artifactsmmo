@@ -1,9 +1,11 @@
 package de.tkunkel.game.artifactsmmo.brains.tier01;
 
 
+import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.BrainCompletedException;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
+import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
@@ -18,8 +20,8 @@ import java.util.concurrent.TimeUnit;
 public class WoodworkerT1Brain extends CommonBrain {
     private final Logger logger = LoggerFactory.getLogger(WoodworkerT1Brain.class.getName());
 
-    public WoodworkerT1Brain(Caches caches) {
-        super(caches);
+    public WoodworkerT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder) {
+        super(caches, wishList, apiHolder);
     }
 
     @Override
@@ -29,11 +31,8 @@ public class WoodworkerT1Brain extends CommonBrain {
 
     public boolean gatherWoodIfNotEnoughInInventory(String characterName, String woodName, int amount) {
         try {
-            CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
-            if (isCharCooldown(character)) {
-                return false;
-            }
-
+            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+            waitUntilCooldownDone(character);
             List<InventorySlot> inventory = character.getData()
                                                      .getInventory();
 
@@ -87,12 +86,10 @@ public class WoodworkerT1Brain extends CommonBrain {
     }
 
     private void gather(CharacterResponseSchema character) {
-        if (isCharCooldown(character)) {
-            return;
-        }
+        waitUntilCooldownDone(character);
         try {
-            myCharactersApi.actionGatheringMyNameActionGatheringPost(character.getData()
-                                                                              .getName());
+            apiHolder.myCharactersApi.actionGatheringMyNameActionGatheringPost(character.getData()
+                                                                                        .getName());
         } catch (ApiException e) {
             throw new RuntimeException(e);
         }
@@ -101,24 +98,20 @@ public class WoodworkerT1Brain extends CommonBrain {
 
     public void cut(String characterName, String toCraft) {
         try {
-            //TODO make this more generic, check with cached items where to craft the item
-            CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
+            // TODO make this more generic, check with cached items where to craft the item
+            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
             Optional<MapSchema> woodcuter = findClosestLocation(character, "woodcutting");
             if (woodcuter.isEmpty()) {
                 logger.error("No wood cutter found.");
                 throw new RuntimeException("No wood cutter found");
             }
-            if (isCharCooldown(character)) {
-                return;
-            }
+            waitUntilCooldownDone(character);
             moveToLocation(character, woodcuter.get());
-            if (isCharCooldown(character)) {
-                return;
-            }
+            waitUntilCooldownDone(character);
             CraftingSchema craftingSchema = new CraftingSchema().code(toCraft)
                                                                 .quantity(1);
-            myCharactersApi.actionCraftingMyNameActionCraftingPost(character.getData()
-                                                                            .getName(), craftingSchema
+            apiHolder.myCharactersApi.actionCraftingMyNameActionCraftingPost(character.getData()
+                                                                                      .getName(), craftingSchema
             );
         } catch (ApiException e) {
             throw new RuntimeException(e);
@@ -132,18 +125,15 @@ public class WoodworkerT1Brain extends CommonBrain {
             logger.info("looping woodworker brain");
             CharacterResponseSchema character = null;
             try {
-                character = charactersApi.getCharacterCharactersNameGet(characterName);
+                character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
             } catch (ApiException e) {
                 throw new RuntimeException(e);
             }
 
-            if (isCharCooldown(character)) {
-                return;
-            }
+            waitUntilCooldownDone(character);
+            depositInBankIfInventoryIsFull(character);
             destroyItemsIfInventoryIsFull(character);
-            if (isCharCooldown(character)) {
-                return;
-            }
+            waitUntilCooldownDone(character);
 
             boolean enoughInInventory = gatherWoodIfNotEnoughInInventory(character.getData()
                                                                                   .getName(), "ash_wood", 10
@@ -157,16 +147,15 @@ public class WoodworkerT1Brain extends CommonBrain {
                 logger.info("cut, but still not enough in inventory, waiting for next cycle");
             }
             try {
-                Thread.sleep(TimeUnit.SECONDS.toMillis(5));
+                Thread.sleep(TimeUnit.SECONDS.toMillis(1));
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
         }
-
     }
 
     private void destroyItemsIfInventoryIsFull(CharacterResponseSchema character) {
-        int cntItemsInInventory = cntItemsInInventory(character);
+        int cntItemsInInventory = cntAllItemsInInventory(character);
         if (cntItemsInInventory >= character.getData()
                                             .getInventoryMaxItems() * 0.75) {
             logger.info("Inventory if {} is full, destroying items", character.getData()
@@ -186,14 +175,18 @@ public class WoodworkerT1Brain extends CommonBrain {
                                                          })
                                                          .toList()
                     ;
+            if (itemsToDelete.isEmpty()) {
+                return;
+            }
             logger.info("Items to delete: {}", itemsToDelete);
             SimpleItemSchema simpleItemSchema = new SimpleItemSchema().code(itemsToDelete.get(0)
                                                                                          .getCode())
                                                                       .quantity(itemsToDelete.get(0)
                                                                                              .getQuantity());
             try {
-                myCharactersApi.actionDeleteItemMyNameActionDeletePost(character.getData()
-                                                                                .getName(), simpleItemSchema
+
+                apiHolder.myCharactersApi.actionDeleteItemMyNameActionDeletePost(character.getData()
+                                                                                          .getName(), simpleItemSchema
                 );
             } catch (ApiException e) {
                 throw new RuntimeException(e);

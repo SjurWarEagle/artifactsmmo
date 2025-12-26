@@ -1,9 +1,12 @@
 package de.tkunkel.game.artifactsmmo.brains.tier01;
 
 
+import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.BrainCompletedException;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
+import de.tkunkel.game.artifactsmmo.shopping.Wish;
+import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
@@ -18,8 +21,8 @@ import java.util.concurrent.TimeUnit;
 public class MinerT1Brain extends CommonBrain {
     private final Logger logger = LoggerFactory.getLogger(MinerT1Brain.class.getName());
 
-    public MinerT1Brain(Caches caches) {
-        super(caches);
+    public MinerT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder) {
+        super(caches, wishList, apiHolder);
     }
 
     public boolean hasMaxCraftableGearEquipped(String characterName) {
@@ -37,11 +40,8 @@ public class MinerT1Brain extends CommonBrain {
 
     public boolean mineIfNotEnoughInInventory(String characterName, String oreName, int amount) {
         try {
-            CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
-            if (isCharCooldown(character)) {
-                return false;
-            }
-
+            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+            waitUntilCooldownDone(character);
             List<InventorySlot> inventory = character.getData()
                                                      .getInventory();
 
@@ -69,12 +69,10 @@ public class MinerT1Brain extends CommonBrain {
     }
 
     private void gather(CharacterResponseSchema character) {
-        if (isCharCooldown(character)) {
-            return;
-        }
+        waitUntilCooldownDone(character);
         try {
-            myCharactersApi.actionGatheringMyNameActionGatheringPost(character.getData()
-                                                                              .getName());
+            apiHolder.myCharactersApi.actionGatheringMyNameActionGatheringPost(character.getData()
+                                                                                        .getName());
         } catch (ApiException e) {
             throw new RuntimeException(e);
         }
@@ -83,23 +81,19 @@ public class MinerT1Brain extends CommonBrain {
 
     public void smelt(String characterName, String toCraft) {
         try {
-            CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
+            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
             Optional<MapSchema> smelter = findClosestLocation(character, "mining");
             if (smelter.isEmpty()) {
                 logger.error("No smelter found.");
                 throw new RuntimeException("no smelter found");
             }
-            if (isCharCooldown(character)) {
-                return;
-            }
+            waitUntilCooldownDone(character);
             moveToLocation(character, smelter.get());
-            if (isCharCooldown(character)) {
-                return;
-            }
+            waitUntilCooldownDone(character);
             CraftingSchema craftingSchema = new CraftingSchema().code(toCraft)
                                                                 .quantity(1);
-            myCharactersApi.actionCraftingMyNameActionCraftingPost(character.getData()
-                                                                            .getName(), craftingSchema
+            apiHolder.myCharactersApi.actionCraftingMyNameActionCraftingPost(character.getData()
+                                                                                      .getName(), craftingSchema
             );
         } catch (ApiException e) {
             throw new RuntimeException(e);
@@ -113,19 +107,20 @@ public class MinerT1Brain extends CommonBrain {
             logger.info("looping miner brain");
             CharacterResponseSchema character = null;
             try {
-                character = charactersApi.getCharacterCharactersNameGet(characterName);
+                character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
             } catch (ApiException e) {
                 throw new RuntimeException(e);
             }
 
-            if (isCharCooldown(character)) {
-                try {
-                    Thread.sleep(TimeUnit.SECONDS.toMillis(5));
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-
+            waitUntilCooldownDone(character);
+            try {
+                Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
+
+            updateOrRequestEquipment(character);
+            depositInBankIfInventoryIsFull(character);
 
             equipGearIfNotEquipped(character.getData()
                                             .getName(), "copper_boots", ItemSlot.BOOTS
@@ -143,7 +138,7 @@ public class MinerT1Brain extends CommonBrain {
             craftGearIfNotAtCharacter(character.getData()
                                                .getName(), "copper_dagger", "weaponcrafting", ItemSlot.WEAPON
             );
-            //todo chnage material if possible
+            // todo chnage material if possible
 //            boolean allCopperEquipped = hasMaxCraftableGearEquipped(character.getData().getName());
 //            if (allCopperEquipped) {
 //                throw new BrainCompletedException("All copper equipped");
@@ -172,12 +167,53 @@ public class MinerT1Brain extends CommonBrain {
                 logger.info("mined, but still not enough in inventory, waiting for next cycle");
             }
             try {
-                Thread.sleep(TimeUnit.SECONDS.toMillis(5));
+                Thread.sleep(TimeUnit.SECONDS.toMillis(1));
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
         }
 
+    }
+
+    private void updateOrRequestEquipment(CharacterResponseSchema character) {
+        Optional<ItemSchema> bestToolForSkill = caches.findBestToolForSkill("mining", character.getData()
+                                                                                               .getMiningLevel()
+        );
+        if (bestToolForSkill.isEmpty()) {
+            return;
+        }
+        ItemSlot itemSlot = ItemSlot.fromValue(bestToolForSkill.get()
+                                                               .getType());
+        if (checkIfEquipped(character.getData()
+                                     .getName(), bestToolForSkill.get()
+                                                                 .getCode(), itemSlot
+        )) {
+            return;
+        }
+        //        logger.info("Equipping {}", bestToolForSkill.get()
+        //                                                  .getCode()
+        //       );
+        Optional<InventorySlot> inventorySlot = character.getData()
+                                                         .getInventory()
+                                                         .stream()
+                                                         .filter(innerInventorySlot -> innerInventorySlot.getCode()
+                                                                                                         .equals(bestToolForSkill.get()
+                                                                                                                                 .getCode()))
+                                                         .findFirst()
+                ;
+        if (inventorySlot.isEmpty()) {
+            logger.info("Best tool not in inventory, requesting");
+            wishList.addRequest(new Wish(character.getData()
+                                                  .getName(), bestToolForSkill.get()
+                                                                              .getCode()
+                    , 1
+            ));
+            return;
+        }
+        equipGearIfNotEquipped(character.getData()
+                                        .getName(), bestToolForSkill.get()
+                                                                    .getCode(), itemSlot
+        );
     }
 
 }

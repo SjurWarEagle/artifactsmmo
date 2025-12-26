@@ -1,5 +1,8 @@
 package de.tkunkel.game.artifactsmmo;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class Config {
     public static String API_TOKEN;
 
