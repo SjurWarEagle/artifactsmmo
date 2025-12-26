@@ -22,10 +22,10 @@ public class Starter {
         context.getBean(AdventureManager.class)
                .addAndStartAdventurer("Sjur", AdventurerClass.FIGHTER);
         context.getBean(AdventureManager.class)
-               .addAndStartAdventurer("Melanie", AdventurerClass.MINER);
-        context.getBean(AdventureManager.class)
                .addAndStartAdventurer("Wolfgang", AdventurerClass.WOODWORKER);
          */
+        context.getBean(AdventureManager.class)
+               .addAndStartAdventurer("Melanie", AdventurerClass.MINER);
         context.getBean(AdventureManager.class)
                .addAndStartAdventurer("Albrecht", AdventurerClass.ALCHEMIST);
         context.getBean(AdventureManager.class)

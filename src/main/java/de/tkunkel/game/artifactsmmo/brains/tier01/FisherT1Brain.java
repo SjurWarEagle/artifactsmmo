@@ -53,7 +53,7 @@ public class FisherT1Brain extends CommonBrain {
             CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
             waitUntilCooldownDone(character);
             depositInBankIfInventoryIsFull(character);
-            updateOrRequestEquipment(character);
+            updateOrRequestEquipment(character, "fishing");
 
             character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
             Optional<String> itemToCraft = findPossibleItemToCraft(character);

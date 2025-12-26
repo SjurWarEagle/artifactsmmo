@@ -6,6 +6,8 @@ import de.tkunkel.game.artifactsmmo.BrainCompletedException;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
+import de.tkunkel.game.artifactsmmo.tasks.CraftItemTask;
+import de.tkunkel.game.artifactsmmo.tasks.FarmHighestResourceTask;
 import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
@@ -19,9 +21,13 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class MinerT1Brain extends CommonBrain {
     private final Logger logger = LoggerFactory.getLogger(MinerT1Brain.class.getName());
+    private FarmHighestResourceTask farmHighestResourceTask;
+    private CraftItemTask craftItemTask;
 
-    public MinerT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder) {
+    public MinerT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, FarmHighestResourceTask farmHighestResourceTask, CraftItemTask craftItemTask) {
         super(caches, wishList, apiHolder);
+        this.farmHighestResourceTask = farmHighestResourceTask;
+        this.craftItemTask = craftItemTask;
     }
 
     public boolean hasMaxCraftableGearEquipped(String characterName) {
@@ -104,74 +110,73 @@ public class MinerT1Brain extends CommonBrain {
     public void runBaseLoop(String characterName) throws BrainCompletedException {
         while (true) {
             logger.info("looping miner brain");
-            CharacterResponseSchema character = null;
-            try {
-                character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-            } catch (ApiException e) {
-                throw new RuntimeException(e);
-            }
 
-            waitUntilCooldownDone(character);
+            // equipGearIfNotEquipped(character.getData()
+            //                                 .getName(), "copper_boots", ItemSlot.BOOTS
+            // );
+            // equipGearIfNotEquipped(character.getData()
+            //                                 .getName(), "copper_helmet", ItemSlot.HELMET
+            // );
+            // equipGearIfNotEquipped(character.getData()
+            //                                 .getName(), "copper_dagger", ItemSlot.WEAPON
+            // );
+            // equipGearIfNotEquipped(character.getData()
+            //                                 .getName(), "copper_ring", ItemSlot.RING1
+            // );
+            //
+            // craftGearIfNotAtCharacter(character.getData()
+            //                                    .getName(), "copper_dagger", "weaponcrafting", ItemSlot.WEAPON
+            // );
+
+//             craftGearIfNotAtCharacter(character.getData()
+//                                                .getName(), "copper_helmet", "gearcrafting", ItemSlot.HELMET
+//             );
+//             craftGearIfNotAtCharacter(character.getData()
+//                                                .getName(), "copper_boots", "gearcrafting", ItemSlot.BOOTS
+//             );
+//             craftGearIfNotAtCharacter(character.getData()
+//                                                .getName(), "copper_dagger", "gearcrafting", ItemSlot.WEAPON
+//             );
+//             craftGearIfNotAtCharacter(character.getData()
+//                                                .getName(), "copper_ring", "jewelrycrafting", ItemSlot.RING1
+//             );
+//             boolean enoughInInventory = mineIfNotEnoughInInventory(character.getData()
+//                                                                             .getName(), "copper_ore", 10
+//             );
+
             try {
+                CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+                waitUntilCooldownDone(character);
+                depositInBankIfInventoryIsFull(character);
+                updateOrRequestEquipment(character, "mining");
+
+                Optional<String> itemToCraft = findPossibleItemToCraft(character);
+                if (itemToCraft.isPresent()) {
+                    craftItemTask.craftItem(this, characterName, itemToCraft.get());
+                } else {
+                    farmHighestResourceTask.farmResource(this, characterName);
+                }
+
                 Thread.sleep(TimeUnit.SECONDS.toMillis(1));
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-
-            updateOrRequestEquipment(character, "mining");
-            depositInBankIfInventoryIsFull(character);
-
-            equipGearIfNotEquipped(character.getData()
-                                            .getName(), "copper_boots", ItemSlot.BOOTS
-            );
-            equipGearIfNotEquipped(character.getData()
-                                            .getName(), "copper_helmet", ItemSlot.HELMET
-            );
-            equipGearIfNotEquipped(character.getData()
-                                            .getName(), "copper_dagger", ItemSlot.WEAPON
-            );
-            equipGearIfNotEquipped(character.getData()
-                                            .getName(), "copper_ring", ItemSlot.RING1
-            );
-
-            craftGearIfNotAtCharacter(character.getData()
-                                               .getName(), "copper_dagger", "weaponcrafting", ItemSlot.WEAPON
-            );
-            // todo chnage material if possible
-//            boolean allCopperEquipped = hasMaxCraftableGearEquipped(character.getData().getName());
-//            if (allCopperEquipped) {
-//                throw new BrainCompletedException("All copper equipped");
-//            }
-            craftGearIfNotAtCharacter(character.getData()
-                                               .getName(), "copper_helmet", "gearcrafting", ItemSlot.HELMET
-            );
-            craftGearIfNotAtCharacter(character.getData()
-                                               .getName(), "copper_boots", "gearcrafting", ItemSlot.BOOTS
-            );
-            craftGearIfNotAtCharacter(character.getData()
-                                               .getName(), "copper_dagger", "gearcrafting", ItemSlot.WEAPON
-            );
-            craftGearIfNotAtCharacter(character.getData()
-                                               .getName(), "copper_ring", "jewelrycrafting", ItemSlot.RING1
-            );
-            boolean enoughInInventory = mineIfNotEnoughInInventory(character.getData()
-                                                                            .getName(), "copper_ore", 10
-            );
-            if (enoughInInventory) {
-                logger.info("Enough in inventory, smelting");
-                smelt(character.getData()
-                               .getName(), "copper_bar"
-                );
-            } else {
-                logger.info("mined, but still not enough in inventory, waiting for next cycle");
-            }
-            try {
-                Thread.sleep(TimeUnit.SECONDS.toMillis(1));
-            } catch (InterruptedException e) {
+            } catch (InterruptedException | ApiException e) {
+                logger.error("Error while mining", e);
                 throw new RuntimeException(e);
             }
         }
 
+    }
+
+    public String decideWhatResourceToFarm(String characterName) {
+        try {
+            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+
+            String resource = caches.findHighestFarmableResourceForSkillLevel(character.getData()
+                                                                                       .getFishingLevel(), GatheringSkill.MINING
+            );
+            return resource;
+        } catch (ApiException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 

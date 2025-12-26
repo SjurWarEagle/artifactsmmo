@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Artifacts MMO</title>
+</head>
+<body>
+
+<style>
+    tr:nth-child(even) {
+        background-color: #f2f2f2;
+    }
+</style>
+<table>
+    <tr>
+        <th>Item</th>
+        <th>Amount</th>
+        <th>Requestor</th>
+        <th>reserved by</th>
+    </tr>
+    <tr th:each="wish : ${wishlist}">
+        <td th:text="${wish.itemCode}"></td>
+        <td th:text="${wish.amount}" style="text-align: right"></td>
+        <td th:text="${wish.characterName}"></td>
+        <td th:text="${wish.reservedBy}"></td>
+    </tr>
+</table>
+<p th:if="${#lists.isEmpty(wishlist)}">No wishes found</p>
+</body>
+</html>
