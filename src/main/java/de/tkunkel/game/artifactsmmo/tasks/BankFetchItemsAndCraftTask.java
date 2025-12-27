@@ -26,14 +26,15 @@ public class BankFetchItemsAndCraftTask extends CommonTask {
         this.bankDepositSingleItemTask = bankDepositSingleItemTask;
     }
 
-    public void craftItem(CommonBrain brain, CharacterResponseSchema character, String itemToCraft) {
+    public void craftItemWithBankItems(CommonBrain brain, CharacterResponseSchema character, String itemToCraft) {
         // get resources needed for item
         Optional<ItemSchema> optionalItemSchema = brain.caches.cachedItems.stream()
-                                                                          .filter(item -> itemToCraft.equals(item))
+                                                                          .filter(item -> item.getCode()
+                                                                                              .equals(itemToCraft))
                                                                           .findFirst()
                 ;
         if (optionalItemSchema.isEmpty()) {
-            logger.warn("No item found for " + itemToCraft);
+            logger.warn("No item found for {}", itemToCraft);
             throw new RuntimeException("No item found for " + itemToCraft);
         }
         try {
@@ -42,7 +43,7 @@ public class BankFetchItemsAndCraftTask extends CommonTask {
             DataPageSimpleItemSchema bankItemsMyBankItemsGet = brain.apiHolder.myAccountApi.getBankItemsMyBankItemsGet(null, 1, 100);
             Optional<SimpleItemSchema> itemInBank = bankItemsMyBankItemsGet.getData()
                                                                            .stream()
-                                                                           .filter(item -> itemToCraft.equals(item))
+                                                                           .filter(item -> itemToCraft.equals(item.getCode()))
                                                                            .filter(item -> item.getQuantity() >= 1)
                                                                            .findFirst()
                     ;
@@ -66,7 +67,9 @@ public class BankFetchItemsAndCraftTask extends CommonTask {
             );
 
             // deposit crafted item into bank
-            bankDepositSingleItemTask.depositInventoryInBank(brain, character, itemToCraft);
+            bankDepositSingleItemTask.depositInventoryInBank(brain, character.getData()
+                                                                             .getName(), itemToCraft
+            );
         } catch (ApiException e) {
             throw new RuntimeException(e);
         }

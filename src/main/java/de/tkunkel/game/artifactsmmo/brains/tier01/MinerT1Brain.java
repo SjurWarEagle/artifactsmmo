@@ -117,34 +117,12 @@ public class MinerT1Brain extends CommonBrain {
         while (true) {
             logger.info("looping miner brain");
 
-            // equipGearIfNotEquipped(character.getData()
-            //                                 .getName(), "copper_boots", ItemSlot.BOOTS
-            // );
-            // equipGearIfNotEquipped(character.getData()
-            //                                 .getName(), "copper_helmet", ItemSlot.HELMET
-            // );
-            // equipGearIfNotEquipped(character.getData()
-            //                                 .getName(), "copper_dagger", ItemSlot.WEAPON
-            // );
-            // equipGearIfNotEquipped(character.getData()
-            //                                 .getName(), "copper_ring", ItemSlot.RING1
-            // );
-            //
-            // craftGearIfNotAtCharacter(character.getData()
-            //                                    .getName(), "copper_dagger", "weaponcrafting", ItemSlot.WEAPON
-            // );
-
-//             craftGearIfNotAtCharacter(character.getData()
-//                                                .getName(), "copper_helmet", "gearcrafting", ItemSlot.HELMET
-//             );
-
             try {
                 CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-                bankFetchItemsAndCraftTask.fetchItemFromBank(this, character, "copper_dagger", 1);
+                bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
                 waitUntilCooldownDone(character);
                 updateOrRequestEquipment(character, "mining");
-                bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
-
+                // TODO bankFetchItemsAndCraftTask.craftItemWithBankItems(this, character, "copper_dagger");
                 Optional<String> itemToCraft = findPossibleItemToCraft(character);
                 if (itemToCraft.isPresent()) {
                     craftItemTask.craftItem(this, characterName, itemToCraft.get());
@@ -158,9 +136,9 @@ public class MinerT1Brain extends CommonBrain {
                 throw new RuntimeException(e);
             }
         }
-
     }
 
+    @Override
     public String decideWhatResourceToFarm(String characterName) {
         try {
             CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);

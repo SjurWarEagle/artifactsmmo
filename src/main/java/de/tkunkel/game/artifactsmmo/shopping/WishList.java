@@ -2,7 +2,9 @@ package de.tkunkel.game.artifactsmmo.shopping;
 
 import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.Caches;
+import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.games.artifactsmmo.ApiException;
+import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.DataPageSimpleItemSchema;
 import de.tkunkel.games.artifactsmmo.model.ItemSchema;
 import org.slf4j.Logger;
@@ -81,5 +83,29 @@ public class WishList {
 
     public Set<Wish> getAllWishes() {
         return Collections.unmodifiableSet(allWishes);
+    }
+
+    public Optional<Object> findWishThatCanBeCrafted(CharacterResponseSchema character) {
+        for (Wish wish : allWishes) {
+            if (!wish.fulfilled) {
+                Optional<ItemSchema> itemDefinition = caches.findItemDefinition(wish.itemCode);
+                if (itemDefinition.isEmpty()) {
+                    continue;
+                }
+                String requiredSkillName = itemDefinition.get()
+                                                         .getCraft()
+                                                         .getSkill()
+                                                         .getValue()
+                        ;
+                int requiredSkillLevel = itemDefinition.get()
+                                                       .getCraft()
+                                                       .getLevel()
+                        ;
+                if (CharHelper.charHasRequiredSkillLevel(character, requiredSkillName, requiredSkillLevel)) {
+                    return Optional.of(wish);
+                }
+            }
+        }
+        return Optional.empty();
     }
 }

@@ -3,11 +3,11 @@ package de.tkunkel.game.artifactsmmo.brains;
 import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.BrainCompletedException;
 import de.tkunkel.game.artifactsmmo.Caches;
+import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.shopping.Wish;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.*;
-import org.jetbrains.annotations.UnknownNullability;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -88,7 +88,7 @@ public abstract class CommonBrain implements Brain {
                                              ;
                                      int requiredSkillLevel = item.getCraft()
                                                                   .getLevel();
-                                     return charHasRequiredSkillLevel(character, requiredSkill, requiredSkillLevel);
+                                     return CharHelper.charHasRequiredSkillLevel(character, requiredSkill, requiredSkillLevel);
                                  })
                                  .sorted(Comparator.comparingInt(o -> o.getCraft()
                                                                        .getLevel()))
@@ -98,30 +98,6 @@ public abstract class CommonBrain implements Brain {
                                  .map(itemSchema -> itemSchema.getCode())
                                  .findFirst()
                 ;
-    }
-
-    private boolean charHasRequiredSkillLevel(CharacterResponseSchema character, @UnknownNullability String requiredSkill, int requiredSkillLevel) {
-        int charSkillLevel = 0;
-        charSkillLevel = switch (requiredSkill) {
-            case "alchemy" -> character.getData()
-                                       .getAlchemyLevel();
-            case "fishing" -> character.getData()
-                                       .getFishingLevel();
-            case "jewelrycrafting" -> character.getData()
-                                               .getJewelrycraftingLevel();
-            case "woodcutting" -> character.getData()
-                                           .getWoodcuttingLevel();
-            case "mining" -> character.getData()
-                                      .getMiningLevel();
-            case "weaponcrafting" -> character.getData()
-                                              .getWeaponcraftingLevel();
-            case "gearcrafting" -> character.getData()
-                                            .getGearcraftingLevel();
-            case "cooking" -> character.getData()
-                                       .getCookingLevel();
-            default -> throw new RuntimeException("unknown skill: " + requiredSkill);
-        };
-        return charSkillLevel >= requiredSkillLevel;
     }
 
     public int cntAllItemsInInventory(CharacterResponseSchema character) {

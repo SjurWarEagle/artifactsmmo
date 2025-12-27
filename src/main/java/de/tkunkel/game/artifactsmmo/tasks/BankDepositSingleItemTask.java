@@ -16,24 +16,25 @@ import java.util.Optional;
 public class BankDepositSingleItemTask {
     private final Logger logger = LoggerFactory.getLogger(BankDepositSingleItemTask.class.getName());
 
-    public void depositInventoryInBank(CommonBrain brain, CharacterResponseSchema character, String itemToDeposit) {
-        Optional<MapSchema> bank = brain.findClosestLocation(character, "bank");
-        if (bank.isEmpty()) {
-            logger.error("Could not find bank for character " + character.getData()
-                                                                         .getName());
-            throw new RuntimeException("Could not find bank for character " + character.getData()
-                                                                                       .getName());
-        }
-        List<SimpleItemSchema> itemsToDeposit = character.getData()
-                                                         .getInventory()
-                                                         .stream()
-                                                         .filter(inventorySlot -> inventorySlot.getCode()
-                                                                                               .equals(itemToDeposit))
-                                                         .map(inventorySlot -> new SimpleItemSchema().code(inventorySlot.getCode())
-                                                                                                     .quantity(inventorySlot.getQuantity()))
-                                                         .toList()
-                ;
+    public void depositInventoryInBank(CommonBrain brain, String characterName, String itemToDeposit) {
         try {
+            CharacterResponseSchema character = brain.apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+            Optional<MapSchema> bank = brain.findClosestLocation(character, "bank");
+            if (bank.isEmpty()) {
+                logger.error("Could not find bank for character %s".formatted(character.getData()
+                                                                                       .getName()));
+                throw new RuntimeException("Could not find bank for character " + character.getData()
+                                                                                           .getName());
+            }
+            List<SimpleItemSchema> itemsToDeposit = character.getData()
+                                                             .getInventory()
+                                                             .stream()
+                                                             .filter(inventorySlot -> inventorySlot.getCode()
+                                                                                                   .equals(itemToDeposit))
+                                                             .map(inventorySlot -> new SimpleItemSchema().code(inventorySlot.getCode())
+                                                                                                         .quantity(inventorySlot.getQuantity()))
+                                                             .toList()
+                    ;
             if (!itemsToDeposit.isEmpty()) {
                 brain.moveToLocation(character, bank.get());
                 brain.waitUntilCooldownDone(character);

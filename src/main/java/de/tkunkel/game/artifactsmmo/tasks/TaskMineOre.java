@@ -15,11 +15,10 @@ public class TaskMineOre extends CommonTask {
     public void perform(String characterName, String itemToGather) {
         try {
             CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-            waitUntilCooldownIsOver(characterName);
+            waitUntilCooldownDone(characterName);
         } catch (ApiException e) {
             throw new RuntimeException(e);
         }
-
     }
 
 }
