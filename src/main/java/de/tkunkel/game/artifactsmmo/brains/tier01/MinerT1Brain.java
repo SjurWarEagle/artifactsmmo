@@ -6,6 +6,8 @@ import de.tkunkel.game.artifactsmmo.BrainCompletedException;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
+import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
+import de.tkunkel.game.artifactsmmo.tasks.BankFetchItemsAndCraftTask;
 import de.tkunkel.game.artifactsmmo.tasks.CraftItemTask;
 import de.tkunkel.game.artifactsmmo.tasks.FarmHighestResourceTask;
 import de.tkunkel.games.artifactsmmo.ApiException;
@@ -23,11 +25,15 @@ public class MinerT1Brain extends CommonBrain {
     private final Logger logger = LoggerFactory.getLogger(MinerT1Brain.class.getName());
     private FarmHighestResourceTask farmHighestResourceTask;
     private CraftItemTask craftItemTask;
+    private BankDepositAllTask bankDepositAllTask;
+    private BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask;
 
-    public MinerT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, FarmHighestResourceTask farmHighestResourceTask, CraftItemTask craftItemTask) {
+    public MinerT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, FarmHighestResourceTask farmHighestResourceTask, CraftItemTask craftItemTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask) {
         super(caches, wishList, apiHolder);
         this.farmHighestResourceTask = farmHighestResourceTask;
         this.craftItemTask = craftItemTask;
+        this.bankDepositAllTask = bankDepositAllTask;
+        this.bankFetchItemsAndCraftTask = bankFetchItemsAndCraftTask;
     }
 
     public boolean hasMaxCraftableGearEquipped(String characterName) {
@@ -131,24 +137,13 @@ public class MinerT1Brain extends CommonBrain {
 //             craftGearIfNotAtCharacter(character.getData()
 //                                                .getName(), "copper_helmet", "gearcrafting", ItemSlot.HELMET
 //             );
-//             craftGearIfNotAtCharacter(character.getData()
-//                                                .getName(), "copper_boots", "gearcrafting", ItemSlot.BOOTS
-//             );
-//             craftGearIfNotAtCharacter(character.getData()
-//                                                .getName(), "copper_dagger", "gearcrafting", ItemSlot.WEAPON
-//             );
-//             craftGearIfNotAtCharacter(character.getData()
-//                                                .getName(), "copper_ring", "jewelrycrafting", ItemSlot.RING1
-//             );
-//             boolean enoughInInventory = mineIfNotEnoughInInventory(character.getData()
-//                                                                             .getName(), "copper_ore", 10
-//             );
 
             try {
                 CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+                bankFetchItemsAndCraftTask.fetchItemFromBank(this, character, "copper_dagger", 1);
                 waitUntilCooldownDone(character);
-                depositInBankIfInventoryIsFull(character);
                 updateOrRequestEquipment(character, "mining");
+                bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
 
                 Optional<String> itemToCraft = findPossibleItemToCraft(character);
                 if (itemToCraft.isPresent()) {
@@ -171,7 +166,7 @@ public class MinerT1Brain extends CommonBrain {
             CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
 
             String resource = caches.findHighestFarmableResourceForSkillLevel(character.getData()
-                                                                                       .getFishingLevel(), GatheringSkill.MINING
+                                                                                       .getMiningLevel(), GatheringSkill.MINING
             );
             return resource;
         } catch (ApiException e) {

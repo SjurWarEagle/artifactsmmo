@@ -1,7 +1,9 @@
 package de.tkunkel.game.artifactsmmo;
 
-import de.tkunkel.game.artifactsmmo.brains.Brain;
+import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.game.artifactsmmo.brains.tier01.*;
+import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
+import de.tkunkel.games.artifactsmmo.ApiException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,20 +13,29 @@ import java.util.concurrent.TimeUnit;
 
 public class Adventurer {
     private final AdventurerClass adventurerClass;
+    private final ApiHolder apiHolder;
+    private final BankDepositAllTask bankDepositAllTask;
     Logger logger = LoggerFactory.getLogger(Adventurer.class.getName());
 
     private final String characterName;
-    private final Set<Brain> brains;
-    private Brain brain;
+    private final Set<CommonBrain> brains;
+    private CommonBrain brain;
 
-    public Adventurer(String characterName, AdventurerClass adventurerClass, Set<Brain> brains) {
+    public Adventurer(String characterName, AdventurerClass adventurerClass, ApiHolder apiHolder, BankDepositAllTask bankDepositAllTask, Set<CommonBrain> brains) {
         this.characterName = characterName;
         this.adventurerClass = adventurerClass;
+        this.apiHolder = apiHolder;
+        this.bankDepositAllTask = bankDepositAllTask;
         this.brains = brains;
         brain = decideNewBrain();
     }
 
     public void startLoop() {
+        try {
+            bankDepositAllTask.depositInventoryInBank(brain, apiHolder.charactersApi.getCharacterCharactersNameGet(characterName));
+        } catch (ApiException e) {
+            throw new RuntimeException(e);
+        }
         while (true) {
             logger.info("Adventurer {} of class {} is running", characterName, adventurerClass.name());
             try {
@@ -41,8 +52,8 @@ public class Adventurer {
         }
     }
 
-    private Brain decideNewBrain() {
-        Optional<Brain> optionalBrain = switch (adventurerClass) {
+    private CommonBrain decideNewBrain() {
+        Optional<CommonBrain> optionalBrain = switch (adventurerClass) {
             case MINER -> brains.stream()
                                 .filter(brain -> brain instanceof MinerT1Brain)
                                 .findFirst()

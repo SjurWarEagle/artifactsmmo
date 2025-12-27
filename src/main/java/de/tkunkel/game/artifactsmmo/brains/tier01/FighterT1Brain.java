@@ -4,6 +4,7 @@ import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
+import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
 import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
@@ -16,14 +17,16 @@ import java.util.Optional;
 @Service
 public class FighterT1Brain extends CommonBrain {
     private final Logger logger = LoggerFactory.getLogger(FighterT1Brain.class.getName());
+    private final BankDepositAllTask bankDepositAllTask;
 
     @Override
     public boolean shouldBeUsed(String characterName) {
         return false;
     }
 
-    public FighterT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder) {
+    public FighterT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, BankDepositAllTask bankDepositAllTask) {
         super(caches, wishList, apiHolder);
+        this.bankDepositAllTask = bankDepositAllTask;
     }
 
     @Override
@@ -36,6 +39,7 @@ public class FighterT1Brain extends CommonBrain {
             eatFoodOrRestIfNeeded(character);
             completeCurrentTaskIfDone(character);
             getNewTaskIfCurrentTaskIsDone(character);
+            bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
 
             waitUntilCooldownDone(character);
 

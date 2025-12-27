@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 public abstract class CommonBrain implements Brain {
-    protected final Caches caches;
+    public final Caches caches;
     protected final WishList wishList;
     public final ApiHolder apiHolder;
 
@@ -154,12 +154,12 @@ public abstract class CommonBrain implements Brain {
             long timeToWait = character.getData()
                                        .getCooldownExpiration()
                                        .toEpochSecond() - serverTime.toEpochSecond();
-            logger.info("Server time: {}", serverTime);
-            logger.info("Character cooldown expiration: {}", character.getData()
-                                                                      .getCooldownExpiration()
-            );
-            logger.info("Waiting for cooldown: {} seconds", timeToWait);
             if (timeToWait > 0) {
+                logger.info("Server time: {}", serverTime);
+                logger.info("Character cooldown expiration: {}", character.getData()
+                                                                          .getCooldownExpiration()
+                );
+                logger.info("Waiting for cooldown: {} seconds", timeToWait);
                 Thread.sleep(timeToWait + 1);
             }
         } catch (ApiException e) {
@@ -425,47 +425,6 @@ public abstract class CommonBrain implements Brain {
         }
     }
 
-    public void depositInBankIfInventoryIsFull(CharacterResponseSchema character) {
-        int inventoryUsed = cntAllItemsInInventory(character);
-        // store if more than 75% are used
-        if (inventoryUsed < character.getData()
-                                     .getInventoryMaxItems() * 0.75) {
-            return;
-        }
-        Optional<MapSchema> bank = findClosestLocation(character, "bank");
-        if (bank.isEmpty()) {
-            throw new RuntimeException("Could not find bank for character " + character.getData()
-                                                                                       .getName());
-        }
-        moveToLocation(character, bank.get());
-        waitUntilCooldownDone(character);
-        List<SimpleItemSchema> itemsToDeposit = character.getData()
-                                                         .getInventory()
-                                                         .stream()
-                                                         .filter(inventorySlot -> {
-                                                             List<ItemSchema> item = caches.cachedItems.stream()
-                                                                                                       .filter(itemSchema -> itemSchema.getCode()
-                                                                                                                                       .equals(inventorySlot.getCode()))
-//                                                                                                          .filter(itemSchema -> !itemSchema.getSubtype()
-//                                                                                                                                           .equals("bar"))
-                                                                                                       .toList()
-                                                                     ;
-                                                             return !item.isEmpty();
-                                                         })
-                                                         .map(inventorySlot -> new SimpleItemSchema().code(inventorySlot.getCode())
-                                                                                                     .quantity(inventorySlot.getQuantity()))
-                                                         .toList()
-                ;
-        try {
-            apiHolder.myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
-                                                                                                    .getName(), itemsToDeposit
-            );
-            waitUntilCooldownDone(character);
-        } catch (ApiException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
 
     public boolean moveToLocation(String characterName, MapSchema destination) {
         try {
@@ -559,7 +518,8 @@ public abstract class CommonBrain implements Brain {
                                                          .findFirst()
                 ;
         if (inventorySlot.isEmpty()) {
-            logger.info("Best tool not in inventory, requesting");
+            logger.info("Best tool (" + bestToolForSkill.get()
+                                                        .getCode() + ") not in inventory, requesting");
             wishList.addRequest(new Wish(character.getData()
                                                   .getName(), bestToolForSkill.get()
                                                                               .getCode()

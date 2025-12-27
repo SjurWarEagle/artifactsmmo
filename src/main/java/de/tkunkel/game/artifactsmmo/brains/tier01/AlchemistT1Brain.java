@@ -5,6 +5,7 @@ import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
+import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
 import de.tkunkel.game.artifactsmmo.tasks.CraftItemTask;
 import de.tkunkel.game.artifactsmmo.tasks.FarmHighestResourceTask;
 import de.tkunkel.games.artifactsmmo.ApiException;
@@ -21,11 +22,13 @@ public class AlchemistT1Brain extends CommonBrain {
     private final Logger logger = LoggerFactory.getLogger(AlchemistT1Brain.class.getName());
     private final CraftItemTask craftItemTask;
     private final FarmHighestResourceTask farmHighestResourceTask;
+    private final BankDepositAllTask bankDepositAllTask;
 
-    public AlchemistT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, CraftItemTask craftItemTask, FarmHighestResourceTask farmHighestResourceTask) {
+    public AlchemistT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, CraftItemTask craftItemTask, FarmHighestResourceTask farmHighestResourceTask, BankDepositAllTask bankDepositAllTask) {
         super(caches, wishList, apiHolder);
         this.craftItemTask = craftItemTask;
         this.farmHighestResourceTask = farmHighestResourceTask;
+        this.bankDepositAllTask = bankDepositAllTask;
     }
 
     @Override
@@ -52,8 +55,8 @@ public class AlchemistT1Brain extends CommonBrain {
         try {
             CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
             waitUntilCooldownDone(character);
-            depositInBankIfInventoryIsFull(character);
             updateOrRequestEquipment(character, "alchemy");
+            bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
 
             character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
             Optional<String> itemToCraft = findPossibleItemToCraft(character);
