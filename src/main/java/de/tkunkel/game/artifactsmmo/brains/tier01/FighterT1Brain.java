@@ -3,6 +3,8 @@ package de.tkunkel.game.artifactsmmo.brains.tier01;
 import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
+import de.tkunkel.game.artifactsmmo.combat.CombatSimulator;
+import de.tkunkel.game.artifactsmmo.combat.CombatStats;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
 import de.tkunkel.game.artifactsmmo.tasks.BankFetchItemsAndCraftTask;
@@ -19,15 +21,18 @@ import java.util.Optional;
 public class FighterT1Brain extends CommonBrain {
     private final Logger logger = LoggerFactory.getLogger(FighterT1Brain.class.getName());
     private final BankDepositAllTask bankDepositAllTask;
+    private final CombatSimulator combatSimulator;
+
 
     @Override
     public boolean shouldBeUsed(String characterName) {
         return false;
     }
 
-    public FighterT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask) {
+    public FighterT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, CombatSimulator combatSimulator) {
         super(caches, wishList, apiHolder, bankFetchItemsAndCraftTask);
         this.bankDepositAllTask = bankDepositAllTask;
+        this.combatSimulator = combatSimulator;
     }
 
     @Override
@@ -45,7 +50,7 @@ public class FighterT1Brain extends CommonBrain {
             waitUntilCooldownDone(character);
 
             String enemyToHunt = decideWhatEnemyToHunt(character);
-            Optional<MapSchema> locationOfClosestMonster = findLocationOfClosestMonster(enemyToHunt);
+            Optional<MapSchema> locationOfClosestMonster = findLocationOfClosestMonster(character, enemyToHunt);
             if (locationOfClosestMonster.isEmpty()) {
                 logger.error("Could not find location of closest monster ({})", enemyToHunt);
                 return;
@@ -230,30 +235,28 @@ public class FighterT1Brain extends CommonBrain {
         }
 
         String finalMonsterToHunt = monsterToHunt;
-        Optional<MonsterSchema> monster = caches.cachedMonsters.stream()
-                                                               .filter(monsterSchema -> monsterSchema.getCode()
-                                                                                                     .equals(finalMonsterToHunt))
-                                                               .findAny()
+        ;
+        var monster = caches.cachedMonsters.stream()
+                                           .filter(monsterSchema -> monsterSchema.getCode()
+                                                                                 .equals(finalMonsterToHunt))
+                                           .findFirst()
+                                           .get()
                 ;
-        int monsterAttack = monster.get()
-                                   .getAttackAir() + monster.get()
-                                                            .getAttackEarth() + monster.get()
-                                                                                       .getAttackFire() + monster.get()
-                                                                                                                 .getAttackWater();
-        int monsterStrength = monsterAttack * monster.get()
-                                                     .getHp();
-        int characterAttack = character.getData()
-                                       .getAttackAir() + character.getData()
-                                                                  .getAttackEarth() + character.getData()
-                                                                                               .getAttackFire() + character.getData()
-                                                                                                                           .getAttackWater();
-        int characterStrength = characterAttack * character.getData()
-                                                           .getHp();
-        if (monsterStrength > characterStrength) {
+        boolean canBeat = combatSimulator.winMoreThanXPercentAgainst(CombatStats.fromCharacter(character.getData()), CombatStats.fromMonster(monster), 80);
+        if (!canBeat) {
             logger.warn("Monster {} is too strong for character {}, using fallback.", monsterToHunt, character.getData()
                                                                                                               .getName()
             );
 
+            CombatStats attacker = CombatStats.fromCharacter(character.getData());
+            List<MonsterSchema> monsters = caches.cachedMonsters.stream()
+                                                                .filter(monsterSchema -> {
+                                                                    CombatStats defender = CombatStats.fromMonster(monsterSchema);
+                                                                    return combatSimulator.winMoreThanXPercentAgainst(attacker, defender, 80);
+                                                                })
+                                                                .toList()
+                    ;
+            logger.info("Monsters that can be hunted: {}", monsters);
             monsterToHunt = switch (character.getData()
                                              .getLevel()) {
                 case 0, 1, 2 -> "chicken";

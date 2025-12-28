@@ -217,11 +217,14 @@ public abstract class CommonBrain implements Brain {
         return false;
     }
 
-    public Optional<MapSchema> findLocationOfClosestMonster(String monster) {
+    public Optional<MapSchema> findLocationOfClosestMonster(CharacterResponseSchema character, String monster) {
         logger.info("Starting findClosestMonster");
         AtomicReference<Optional<MapSchema>> rc = new AtomicReference<>(Optional.empty());
 
-        // TODO sort by distance to character
+        int charX = character.getData()
+                             .getX();
+        int charY = character.getData()
+                             .getY();
         caches.cachedMap.stream()
                         .filter(mapSchema -> mapSchema.getInteractions()
                                                       .getContent() != null)
@@ -230,8 +233,12 @@ public abstract class CommonBrain implements Brain {
                                                       .getContent()
                                                       .getCode()
                                                       .equals(monster))
+                        .sorted((mapSchema1, mapSchema2) -> {
+                            int distance1 = Math.abs(mapSchema1.getX() - charX) + Math.abs(mapSchema1.getY() - charY);
+                            int distance2 = Math.abs(mapSchema2.getX() - charX) + Math.abs(mapSchema2.getY() - charY);
+                            return distance2 - distance1;
+                        })
                         .forEach(mapSchema -> {
-                            IO.println(mapSchema);
                             rc.set(Optional.of(mapSchema));
                         })
         ;
@@ -241,7 +248,6 @@ public abstract class CommonBrain implements Brain {
     public Optional<MapSchema> findClosestLocation(CharacterResponseSchema character, String activity) {
         AtomicReference<Optional<MapSchema>> rc = new AtomicReference<>(Optional.empty());
 
-        // TODO sort by distance to character
         int charX = character.getData()
                              .getX();
         int charY = character.getData()
@@ -259,7 +265,6 @@ public abstract class CommonBrain implements Brain {
                             return distance2 - distance1;
                         })
                         .forEach(mapSchema -> {
-                            IO.println(mapSchema);
                             rc.set(Optional.of(mapSchema));
                         })
         ;
@@ -299,7 +304,7 @@ public abstract class CommonBrain implements Brain {
     }
 
     public boolean checkIfEquipped(String gear, ItemSlot itemSlot, CharacterResponseSchema character) {
-        boolean alreadyEquiped = switch (itemSlot) {
+        return switch (itemSlot) {
             case BOOTS -> character.getData()
                                    .getBootsSlot()
                                    .equalsIgnoreCase(gear)
@@ -364,8 +369,8 @@ public abstract class CommonBrain implements Brain {
                                   .getRuneSlot()
                                   .equalsIgnoreCase(gear)
             ;
+            default -> throw new RuntimeException("unknown slot " + itemSlot);
         };
-        return alreadyEquiped;
     }
 
     public void craftGearIfNotAtCharacter(String characterName, String gear, String craftingStation, ItemSlot slot) {
@@ -505,6 +510,7 @@ public abstract class CommonBrain implements Brain {
                                                      .getData()
                                                      .size() > 0;
         } catch (ApiException e) {
+            logger.warn("Error getting bank items for skill " + bestToolForSkill.get());
             throw new RuntimeException(e);
         }
         boolean itemExistsInInventory = inventorySlot.isPresent();
