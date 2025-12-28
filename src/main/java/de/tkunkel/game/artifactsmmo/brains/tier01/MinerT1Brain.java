@@ -29,7 +29,7 @@ public class MinerT1Brain extends CommonBrain {
     private BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask;
 
     public MinerT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, FarmHighestResourceTask farmHighestResourceTask, CraftItemTask craftItemTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask) {
-        super(caches, wishList, apiHolder);
+        super(caches, wishList, apiHolder, bankFetchItemsAndCraftTask);
         this.farmHighestResourceTask = farmHighestResourceTask;
         this.craftItemTask = craftItemTask;
         this.bankDepositAllTask = bankDepositAllTask;
@@ -121,7 +121,7 @@ public class MinerT1Brain extends CommonBrain {
                 CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
                 bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
                 waitUntilCooldownDone(character);
-                updateOrRequestEquipment(character, "mining");
+                equipOrRequestEquipment(character, "mining");
                 // TODO bankFetchItemsAndCraftTask.craftItemWithBankItems(this, character, "copper_dagger");
                 Optional<String> itemToCraft = findPossibleItemToCraft(character);
                 if (itemToCraft.isPresent()) {

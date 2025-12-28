@@ -7,6 +7,7 @@ import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
+import de.tkunkel.game.artifactsmmo.tasks.BankFetchItemsAndCraftTask;
 import de.tkunkel.game.artifactsmmo.tasks.CraftItemTask;
 import de.tkunkel.game.artifactsmmo.tasks.FarmHighestResourceTask;
 import de.tkunkel.games.artifactsmmo.ApiException;
@@ -25,8 +26,8 @@ public class WoodworkerT1Brain extends CommonBrain {
     private CraftItemTask craftItemTask;
     private BankDepositAllTask bankDepositAllTask;
 
-    public WoodworkerT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, FarmHighestResourceTask farmHighestResourceTask, CraftItemTask craftItemTask, BankDepositAllTask bankDepositAllTask) {
-        super(caches, wishList, apiHolder);
+    public WoodworkerT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, FarmHighestResourceTask farmHighestResourceTask, CraftItemTask craftItemTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask) {
+        super(caches, wishList, apiHolder, bankFetchItemsAndCraftTask);
         this.farmHighestResourceTask = farmHighestResourceTask;
         this.craftItemTask = craftItemTask;
         this.bankDepositAllTask = bankDepositAllTask;
@@ -55,7 +56,7 @@ public class WoodworkerT1Brain extends CommonBrain {
         try {
             CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
             waitUntilCooldownDone(character);
-            updateOrRequestEquipment(character, "woodcutting");
+            equipOrRequestEquipment(character, "woodcutting");
             bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
 
             character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);

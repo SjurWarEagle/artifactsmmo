@@ -6,6 +6,7 @@ import de.tkunkel.game.artifactsmmo.BrainCompletedException;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
+import de.tkunkel.game.artifactsmmo.tasks.BankFetchItemsAndCraftTask;
 import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
@@ -63,8 +64,8 @@ public class MinerT2Brain extends CommonBrain {
         return hasItemsToCraftInInventory;
     }
 
-    public MinerT2Brain(Caches caches, WishList wishList, ApiHolder apiHolder) {
-        super(caches, wishList, apiHolder);
+    public MinerT2Brain(Caches caches, WishList wishList, ApiHolder apiHolder, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask) {
+        super(caches, wishList, apiHolder, bankFetchItemsAndCraftTask);
     }
 
     public boolean mineIfNotEnoughInInventory(String characterName, String oreName, int amount) {

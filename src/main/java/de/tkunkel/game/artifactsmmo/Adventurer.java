@@ -2,8 +2,11 @@ package de.tkunkel.game.artifactsmmo;
 
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.game.artifactsmmo.brains.tier01.*;
+import de.tkunkel.game.artifactsmmo.shopping.Wish;
+import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
 import de.tkunkel.games.artifactsmmo.ApiException;
+import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,13 +23,15 @@ public class Adventurer {
     private final String characterName;
     private final Set<CommonBrain> brains;
     private CommonBrain brain;
+    private final WishList wishList;
 
-    public Adventurer(String characterName, AdventurerClass adventurerClass, ApiHolder apiHolder, BankDepositAllTask bankDepositAllTask, Set<CommonBrain> brains) {
+    public Adventurer(String characterName, AdventurerClass adventurerClass, ApiHolder apiHolder, BankDepositAllTask bankDepositAllTask, Set<CommonBrain> brains, WishList wishList) {
         this.characterName = characterName;
         this.adventurerClass = adventurerClass;
         this.apiHolder = apiHolder;
         this.bankDepositAllTask = bankDepositAllTask;
         this.brains = brains;
+        this.wishList = wishList;
         brain = decideNewBrain();
     }
 
@@ -39,7 +44,22 @@ public class Adventurer {
         while (true) {
             logger.info("Adventurer {} of class {} is running", characterName, adventurerClass.name());
             try {
-                brain.runBaseLoop(characterName);
+                CharacterResponseSchema character = null;
+                try {
+                    character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+                } catch (ApiException e) {
+                    throw new RuntimeException(e);
+                }
+                Optional<Object> wishThatCanBeCraftedByMe = wishList.reserveWishThatCanBeCraftedByMe(character);
+
+                if (wishThatCanBeCraftedByMe.isPresent()) {
+                    Wish wish = (Wish) wishThatCanBeCraftedByMe.get();
+                    brain.bankFetchItemsAndCraftTask.craftItemWithBankItems(brain, character, wish.itemCode);
+                    wish.fulfilled = true;
+                } else {
+                    // nothing to craft, so use default
+                    brain.runBaseLoop(characterName);
+                }
             } catch (BrainCompletedException e) {
                 logger.info("Adventurer {} of class {} needs new brain", characterName, adventurerClass.name());
                 brain = decideNewBrain();

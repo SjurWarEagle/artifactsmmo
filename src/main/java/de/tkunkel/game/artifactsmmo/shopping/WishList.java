@@ -12,9 +12,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
@@ -22,7 +22,7 @@ public class WishList {
     private final Logger logger = LoggerFactory.getLogger(WishList.class.getName());
     private final Caches caches;
     private final ApiHolder apiHolder;
-    private final Set<Wish> allWishes = new HashSet<>();
+    private final Set<Wish> allWishes = new CopyOnWriteArraySet<>();
 
     public WishList(Caches caches, ApiHolder apiHolder) {
         this.caches = caches;
@@ -45,12 +45,13 @@ public class WishList {
     private boolean hasAlreadyInBank(Wish wish) {
         try {
             AtomicInteger totals = new AtomicInteger();
-            DataPageSimpleItemSchema bankItemsMyBankItemsGet = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(wish.itemCode, 1, 100);
+            // TODO add paging
+            DataPageSimpleItemSchema bankItemsMyBankItemsGet = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(null, 1, 100);
             bankItemsMyBankItemsGet.getData()
                                    .stream()
-                                   .forEach(bankItem -> {
-                                       totals.addAndGet(bankItem.getQuantity());
-                                   })
+                                   .filter(simpleItemSchema -> simpleItemSchema.getCode()
+                                                                               .equals(wish.itemCode))
+                                   .forEach(bankItem -> totals.addAndGet(bankItem.getQuantity()))
             ;
             if (totals.get() >= wish.amount) {
                 return true;
@@ -85,11 +86,16 @@ public class WishList {
         return Collections.unmodifiableSet(allWishes);
     }
 
-    public Optional<Object> findWishThatCanBeCrafted(CharacterResponseSchema character) {
+    public synchronized Optional<Object> reserveWishThatCanBeCraftedByMe(CharacterResponseSchema character) {
         for (Wish wish : allWishes) {
             if (!wish.fulfilled) {
                 Optional<ItemSchema> itemDefinition = caches.findItemDefinition(wish.itemCode);
                 if (itemDefinition.isEmpty()) {
+                    continue;
+                }
+                if (itemDefinition.get()
+                                  .getCraft() == null) {
+                    // nothing to craft, this one needs to be gathered
                     continue;
                 }
                 String requiredSkillName = itemDefinition.get()
@@ -101,7 +107,9 @@ public class WishList {
                                                        .getCraft()
                                                        .getLevel()
                         ;
-                if (CharHelper.charHasRequiredSkillLevel(character, requiredSkillName, requiredSkillLevel)) {
+                if (CharHelper.charHasRequiredSkillLevel(character.getData(), requiredSkillName, requiredSkillLevel)) {
+                    wish.reservedBy = character.getData()
+                                               .getName();
                     return Optional.of(wish);
                 }
             }

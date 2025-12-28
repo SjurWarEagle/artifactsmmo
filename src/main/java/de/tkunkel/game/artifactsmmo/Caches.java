@@ -2,10 +2,7 @@ package de.tkunkel.game.artifactsmmo;
 
 import de.tkunkel.games.artifactsmmo.ApiClient;
 import de.tkunkel.games.artifactsmmo.ApiException;
-import de.tkunkel.games.artifactsmmo.api.ItemsApi;
-import de.tkunkel.games.artifactsmmo.api.MapsApi;
-import de.tkunkel.games.artifactsmmo.api.MonstersApi;
-import de.tkunkel.games.artifactsmmo.api.ResourcesApi;
+import de.tkunkel.games.artifactsmmo.api.*;
 import de.tkunkel.games.artifactsmmo.model.*;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -28,6 +25,7 @@ public class Caches {
     private ItemsApi itemsApi;
     private MonstersApi monstersApi;
     private ResourcesApi resourcesApi;
+    private AccountsApi accountsApi;
 
     private final ExecutorService executorService = Executors.newFixedThreadPool(4);
     public final List<MapSchema> cachedMap = new ArrayList<>();
@@ -46,6 +44,7 @@ public class Caches {
         itemsApi = new ItemsApi(createApiClient());
         monstersApi = new MonstersApi(createApiClient());
         resourcesApi = new ResourcesApi(createApiClient());
+        accountsApi = new AccountsApi(createApiClient());
         fillCache();
     }
 
@@ -140,16 +139,51 @@ public class Caches {
                           .findFirst();
     }
 
-    public Optional<ItemSchema> findBestToolForSkill(String skill, Integer level) {
-        Optional<ItemSchema> bestTool = cachedItems.stream()
-                                                   .filter(itemSchema -> itemSchema.getEffects()
-                                                                                   .stream()
-                                                                                   .anyMatch(effectSchema -> effectSchema.getCode()
-                                                                                                                         .equals(skill)))
-                                                   .filter(itemSchema -> itemSchema.getLevel() <= level)
-                                                   .max((o1, o2) -> o1.getLevel() - o2.getLevel())
+    public Optional<ItemSchema> findBestToolForSkillThatCanBeCraftedByAccount(String skill, Integer level) {
+
+        return cachedItems.stream()
+                          .filter(itemSchema -> itemSchema.getEffects() != null)
+                          .filter(itemSchema -> itemSchema.getEffects()
+                                                          .stream()
+                                                          .anyMatch(effectSchema -> effectSchema.getCode()
+                                                                                                .equals(skill)))
+                          .filter(itemSchema -> {
+                              if (itemSchema.getCraft() == null) {
+                                  return true;
+                              } else {
+                                  if (itemSchema.getCraft()
+                                                .getSkill() == null) {
+                                      // can be crated without any skill, so everyone can do it
+                                      return true;
+                                  }
+                                  String requiredSkill = itemSchema.getCraft()
+                                                                   .getSkill()
+                                                                   .getValue()
+                                          ;
+                                  Integer requiredSkillLevel = itemSchema.getCraft()
+                                                                         .getLevel();
+                                  return aCharCanCraftThis(requiredSkill, requiredSkillLevel);
+                              }
+                          })
+                          .filter(itemSchema -> itemSchema.getLevel() <= level)
+                          .max((o1, o2) -> o1.getLevel() - o2.getLevel())
                 ;
-        return bestTool;
+    }
+
+    private boolean aCharCanCraftThis(String requiredSkill, Integer requiredSkillLevel) {
+
+        try {
+            CharactersListSchema characters = accountsApi.getAccountCharactersAccountsAccountCharactersGet(Config.ACCOUNT_NAME);
+            for (CharacterSchema characterDatum : characters.getData()) {
+                if (CharHelper.charHasRequiredSkillLevel(characterDatum, requiredSkill, requiredSkillLevel)) {
+                    return true;
+                }
+            }
+        } catch (ApiException e) {
+            logger.warn("Failed to get characters", e);
+            throw new RuntimeException(e);
+        }
+        return false;
     }
 
     public String findHighestFarmableResourceForSkillLevel(Integer skillLevel, GatheringSkill skill) {

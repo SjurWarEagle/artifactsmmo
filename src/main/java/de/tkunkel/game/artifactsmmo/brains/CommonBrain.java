@@ -6,6 +6,7 @@ import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.shopping.Wish;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
+import de.tkunkel.game.artifactsmmo.tasks.BankFetchItemsAndCraftTask;
 import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
@@ -13,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -24,13 +26,15 @@ public abstract class CommonBrain implements Brain {
     public final Caches caches;
     protected final WishList wishList;
     public final ApiHolder apiHolder;
+    public final BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask;
 
     private final Logger logger = LoggerFactory.getLogger(CommonBrain.class.getName());
 
-    protected CommonBrain(Caches caches, WishList wishList, ApiHolder apiHolder) {
+    protected CommonBrain(Caches caches, WishList wishList, ApiHolder apiHolder, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask) {
         this.caches = caches;
         this.wishList = wishList;
         this.apiHolder = apiHolder;
+        this.bankFetchItemsAndCraftTask = bankFetchItemsAndCraftTask;
     }
 
     public boolean hasAllItemsInInventory(CharacterResponseSchema character, List<SimpleItemSchema> items) {
@@ -88,7 +92,7 @@ public abstract class CommonBrain implements Brain {
                                              ;
                                      int requiredSkillLevel = item.getCraft()
                                                                   .getLevel();
-                                     return CharHelper.charHasRequiredSkillLevel(character, requiredSkill, requiredSkillLevel);
+                                     return CharHelper.charHasRequiredSkillLevel(character.getData(), requiredSkill, requiredSkillLevel);
                                  })
                                  .sorted(Comparator.comparingInt(o -> o.getCraft()
                                                                        .getLevel()))
@@ -467,9 +471,9 @@ public abstract class CommonBrain implements Brain {
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    public void updateOrRequestEquipment(CharacterResponseSchema character, String skillName) {
-        Optional<ItemSchema> bestToolForSkill = caches.findBestToolForSkill(skillName, character.getData()
-                                                                                                .getMiningLevel()
+    public void equipOrRequestEquipment(CharacterResponseSchema character, String skillName) {
+        Optional<ItemSchema> bestToolForSkill = caches.findBestToolForSkillThatCanBeCraftedByAccount(skillName, character.getData()
+                                                                                                                         .getMiningLevel()
         );
         if (bestToolForSkill.isEmpty()) {
             return;
@@ -493,9 +497,24 @@ public abstract class CommonBrain implements Brain {
                                                                                                                                  .getCode()))
                                                          .findFirst()
                 ;
-        if (inventorySlot.isEmpty()) {
+        boolean itemExistsInBank = false;
+        try {
+            itemExistsInBank = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(bestToolForSkill.get()
+                                                                                                 .getCode(), 1, 100
+                                        )
+                                                     .getData()
+                                                     .size() > 0;
+        } catch (ApiException e) {
+            throw new RuntimeException(e);
+        }
+        boolean itemExistsInInventory = inventorySlot.isPresent();
+
+        boolean alreadyEquipped = checkIfEquipped(bestToolForSkill.get()
+                                                                  .getCode(), itemSlot, character
+        );
+        if (!itemExistsInInventory && !itemExistsInBank && !alreadyEquipped) {
             logger.info("Best tool (" + bestToolForSkill.get()
-                                                        .getCode() + ") not in inventory, requesting");
+                                                        .getCode() + ") not in inventory nor bank nor equipped, requesting");
             wishList.addRequest(new Wish(character.getData()
                                                   .getName(), bestToolForSkill.get()
                                                                               .getCode()
@@ -503,10 +522,42 @@ public abstract class CommonBrain implements Brain {
             ));
             return;
         }
-        equipGearIfNotEquipped(character.getData()
-                                        .getName(), bestToolForSkill.get()
-                                                                    .getCode(), itemSlot
-        );
+        if (!alreadyEquipped && itemExistsInBank) {
+            fetchItemFromBank(character, bestToolForSkill.get()
+                                                         .getCode()
+            );
+        }
+        if (!alreadyEquipped) {
+            equipGearIfNotEquipped(character.getData()
+                                            .getName(), bestToolForSkill.get()
+                                                                        .getCode(), itemSlot
+            );
+        }
+    }
+
+    private void fetchItemFromBank(CharacterResponseSchema character, String itemCode) {
+        Optional<MapSchema> bank = findClosestLocation(character, "bank");
+        if (bank.isEmpty()) {
+            logger.error("Could not find bank for character %s".formatted(character.getData()
+                                                                                   .getName()));
+            throw new RuntimeException("Could not find bank for character " + character.getData()
+                                                                                       .getName());
+        }
+        moveToLocation(character, bank.get());
+        waitUntilCooldownDone(character);
+
+        SimpleItemSchema simpleItemSchema = new SimpleItemSchema().code(itemCode)
+                                                                  .quantity(1);
+
+        try {
+            apiHolder.myCharactersApi.actionWithdrawBankItemMyNameActionBankWithdrawItemPost(character.getData()
+                                                                                                      .getName(), Collections.singletonList(simpleItemSchema)
+            );
+        } catch (ApiException e) {
+            logger.error("Error fetching item from bank", e);
+            throw new RuntimeException(e);
+        }
+        waitUntilCooldownDone(character);
     }
 
 }

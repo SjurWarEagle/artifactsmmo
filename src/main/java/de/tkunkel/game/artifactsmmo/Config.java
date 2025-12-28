@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class Config {
+    public static final String ACCOUNT_NAME = "wareagle";
     public static String API_TOKEN;
 
     public Config() {
