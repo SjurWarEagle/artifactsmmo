@@ -1,7 +1,6 @@
 package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
-import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.MapSchema;
 import org.slf4j.Logger;
@@ -12,7 +11,7 @@ import org.springframework.stereotype.Service;
 public class FarmHighestResourceTask {
     private final Logger logger = LoggerFactory.getLogger(FarmHighestResourceTask.class.getName());
 
-    public void farmResource(CommonBrain brain, String characterName) throws ApiException {
+    public void farmResource(CommonBrain brain, String characterName) {
         String resourceToFarm = brain.decideWhatResourceToFarm(characterName);
 
         MapSchema whereToGather = brain.findLocationWhereToFarm(resourceToFarm);

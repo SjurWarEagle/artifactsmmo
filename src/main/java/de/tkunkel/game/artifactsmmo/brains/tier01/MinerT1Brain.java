@@ -11,7 +11,6 @@ import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
 import de.tkunkel.game.artifactsmmo.tasks.BankFetchItemsAndCraftTask;
 import de.tkunkel.game.artifactsmmo.tasks.CraftItemTask;
 import de.tkunkel.game.artifactsmmo.tasks.FarmHighestResourceTask;
-import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,7 +104,7 @@ public class MinerT1Brain extends CommonBrain {
             }
 
             Thread.sleep(TimeUnit.SECONDS.toMillis(1));
-        } catch (InterruptedException | ApiException e) {
+        } catch (InterruptedException e) {
             logger.error("Error while mining", e);
             throw new RuntimeException(e);
         }

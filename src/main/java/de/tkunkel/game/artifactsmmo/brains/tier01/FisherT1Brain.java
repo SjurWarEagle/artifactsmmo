@@ -10,7 +10,6 @@ import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
 import de.tkunkel.game.artifactsmmo.tasks.BankFetchItemsAndCraftTask;
 import de.tkunkel.game.artifactsmmo.tasks.CraftItemTask;
 import de.tkunkel.game.artifactsmmo.tasks.FarmHighestResourceTask;
-import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.GatheringSkill;
 import org.slf4j.Logger;
@@ -45,22 +44,17 @@ public class FisherT1Brain extends CommonBrain {
 
     @Override
     public void runBaseLoop(String characterName) throws BrainCompletedException {
-        try {
-            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-            waitUntilCooldownDone(character);
-            equipOrRequestBestToolForSkill(character, "fishing");
-            bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
+        CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+        waitUntilCooldownDone(character);
+        equipOrRequestBestToolForSkill(character, "fishing");
+        bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
 
-            character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-            Optional<String> itemToCraft = findPossibleItemToCraft(character);
-            if (itemToCraft.isPresent()) {
-                craftItemTask.craftItem(this, characterName, itemToCraft.get());
-            } else {
-                farmHighestResourceTask.farmResource(this, characterName);
-            }
-        } catch (ApiException e) {
-            logger.error("Error while farming", e);
-            throw new RuntimeException(e);
+        character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+        Optional<String> itemToCraft = findPossibleItemToCraft(character);
+        if (itemToCraft.isPresent()) {
+            craftItemTask.craftItem(this, characterName, itemToCraft.get());
+        } else {
+            farmHighestResourceTask.farmResource(this, characterName);
         }
     }
 }
