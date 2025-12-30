@@ -2,7 +2,6 @@ package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
-import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.SimpleItemSchema;
 import org.slf4j.Logger;
@@ -22,35 +21,25 @@ public class CommonTask {
     }
 
     public void waitUntilCooldownDone(String characterName) {
-        try {
-            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-            waitUntilCooldownDone(character);
-        } catch (ApiException e) {
-            logger.error("Error waiting for cooldown", e);
-            throw new RuntimeException(e);
-        }
+        CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+        waitUntilCooldownDone(character);
     }
 
     public void fetchItemFromBank(CommonBrain brain, CharacterResponseSchema character, String neededItemCode, int quantity) {
-        try {
-            waitUntilCooldownDone(character.getData()
-                                           .getName());
-            SimpleItemSchema simpleItemSchema = new SimpleItemSchema().code(neededItemCode)
-                                                                      .quantity(quantity);
-            brain.moveToLocation(character, brain.findClosestLocation(character, "bank")
-                                                 .get()
-            );
-            waitUntilCooldownDone(character.getData()
-                                           .getName());
-            brain.apiHolder.myCharactersApi.actionWithdrawBankItemMyNameActionBankWithdrawItemPost(character.getData()
-                                                                                                            .getName(), Collections.singletonList(simpleItemSchema)
-            );
-            waitUntilCooldownDone(character.getData()
-                                           .getName());
-        } catch (ApiException e) {
-            logger.error("Error while withdrawing item " + neededItemCode + " from bank", e);
-            throw new RuntimeException(e);
-        }
+        waitUntilCooldownDone(character.getData()
+                                       .getName());
+        SimpleItemSchema simpleItemSchema = new SimpleItemSchema().code(neededItemCode)
+                                                                  .quantity(quantity);
+        brain.moveToLocation(character, brain.findClosestLocation(character, "bank")
+                                             .get()
+        );
+        waitUntilCooldownDone(character.getData()
+                                       .getName());
+        brain.apiHolder.myCharactersApi.actionWithdrawBankItemMyNameActionBankWithdrawItemPost(character.getData()
+                                                                                                        .getName(), Collections.singletonList(simpleItemSchema)
+        );
+        waitUntilCooldownDone(character.getData()
+                                       .getName());
     }
 
     public void waitUntilCooldownDone(CharacterResponseSchema character) {
@@ -72,9 +61,6 @@ public class CommonTask {
                 logger.info("Waiting for cooldown: {} seconds", timeToWait);
                 Thread.sleep(timeToWait + 1);
             }
-        } catch (ApiException e) {
-            logger.error("Error waiting for cooldown", e);
-            throw new RuntimeException(e);
         } catch (InterruptedException e) {
             logger.error("Error waiting for cooldown", e);
             throw new RuntimeException(e);

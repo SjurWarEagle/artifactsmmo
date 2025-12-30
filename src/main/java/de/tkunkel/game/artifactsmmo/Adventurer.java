@@ -5,7 +5,6 @@ import de.tkunkel.game.artifactsmmo.brains.tier01.*;
 import de.tkunkel.game.artifactsmmo.shopping.Wish;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
-import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import org.jetbrains.annotations.UnknownNullability;
 import org.slf4j.Logger;
@@ -37,11 +36,7 @@ public class Adventurer {
     }
 
     public void startLoop() {
-        try {
-            bankDepositAllTask.depositInventoryInBank(brain, apiHolder.charactersApi.getCharacterCharactersNameGet(characterName));
-        } catch (ApiException e) {
-            throw new RuntimeException(e);
-        }
+        bankDepositAllTask.depositInventoryInBank(brain, apiHolder.charactersApi.getCharacterCharactersNameGet(characterName));
         while (true) {
             logger.info("Adventurer {} of class {} is running", characterName, adventurerClass.name());
             brain.equipOrRequestBestWeapon(characterName);
@@ -53,11 +48,7 @@ public class Adventurer {
 
             try {
                 CharacterResponseSchema character = null;
-                try {
-                    character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-                } catch (ApiException e) {
-                    throw new RuntimeException(e);
-                }
+                character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
                 Optional<Wish> wishThatCanBeCraftedByMe = wishList.reserveWishThatCanBeCraftedByMe(character);
                 boolean allResourcesAvailable = checkIfAllResourcesAreAvailable(character, wishThatCanBeCraftedByMe);
                 if (allResourcesAvailable && wishThatCanBeCraftedByMe.isPresent()) {
@@ -93,15 +84,10 @@ public class Adventurer {
                                        .findAny()
                                        .isPresent()
                 ;
-        // TODO paging!
-        try {
-            boolean inBank = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(wish.itemCode, 1, 100)
-                                                   .getData()
-                                                   .size() > 0;
-            return inInventory || inBank;
-        } catch (ApiException e) {
-            throw new RuntimeException(e);
-        }
+        boolean inBank = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(wish.itemCode, 1, 100)
+                                               .getData()
+                                               .size() > 0;
+        return inInventory || inBank;
     }
 
     private CommonBrain decideNewBrain() {

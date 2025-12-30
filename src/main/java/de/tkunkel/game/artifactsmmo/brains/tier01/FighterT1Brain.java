@@ -10,7 +10,6 @@ import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
 import de.tkunkel.game.artifactsmmo.tasks.BankDepositGoldIfRichTask;
 import de.tkunkel.game.artifactsmmo.tasks.BankFetchItemsAndCraftTask;
 import de.tkunkel.game.artifactsmmo.tasks.BankUpgradeIfPossibleTask;
-import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,37 +43,33 @@ public class FighterT1Brain extends CommonBrain {
 
     @Override
     public void runBaseLoop(String characterName) {
-        try {
-            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-            waitUntilCooldownDone(character);
-            bankDepositGoldIfRichTask.depositInventoryInBankIfInventoryIsFull(this, character);
-            bankUpgradeIfPossibleTask.perform(this, character);
-            depositNonFoodAtBankIfInventoryIsFull(character);
-            cookFoodIfHaveSome(character);
-            eatFoodOrRestIfNeeded(character);
+        CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+        waitUntilCooldownDone(character);
+        bankDepositGoldIfRichTask.depositInventoryInBankIfInventoryIsFull(this, character);
+        bankUpgradeIfPossibleTask.perform(this, character);
+        depositNonFoodAtBankIfInventoryIsFull(character);
+        cookFoodIfHaveSome(character);
+        eatFoodOrRestIfNeeded(character);
 
-            completeCurrentTaskIfDone(character);
-            getNewTaskIfCurrentTaskIsDone(character);
-            bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
+        completeCurrentTaskIfDone(character);
+        getNewTaskIfCurrentTaskIsDone(character);
+        bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
 
-            waitUntilCooldownDone(character);
+        waitUntilCooldownDone(character);
 
-            String enemyToHunt = decideWhatEnemyToHunt(character);
-            Optional<MapSchema> locationOfClosestMonster = findLocationOfClosestMonster(character, enemyToHunt);
-            if (locationOfClosestMonster.isEmpty()) {
-                logger.error("Could not find location of closest monster ({})", enemyToHunt);
-                return;
-            }
-            moveToLocation(character, locationOfClosestMonster.get());
-
-            waitUntilCooldownDone(character);
-            FightRequestSchema fightRequest = new FightRequestSchema();
-            apiHolder.myCharactersApi.actionFightMyNameActionFightPost(character.getData()
-                                                                                .getName(), fightRequest
-            );
-        } catch (ApiException e) {
-            throw new RuntimeException(e);
+        String enemyToHunt = decideWhatEnemyToHunt(character);
+        Optional<MapSchema> locationOfClosestMonster = findLocationOfClosestMonster(character, enemyToHunt);
+        if (locationOfClosestMonster.isEmpty()) {
+            logger.error("Could not find location of closest monster ({})", enemyToHunt);
+            return;
         }
+        moveToLocation(character, locationOfClosestMonster.get());
+
+        waitUntilCooldownDone(character);
+        FightRequestSchema fightRequest = new FightRequestSchema();
+        apiHolder.myCharactersApi.actionFightMyNameActionFightPost(character.getData()
+                                                                            .getName(), fightRequest
+        );
     }
 
     private void depositNonFoodAtBankIfInventoryIsFull(CharacterResponseSchema character) {
@@ -108,13 +103,9 @@ public class FighterT1Brain extends CommonBrain {
                                                                                                         .quantity(inventorySlot.getQuantity()))
                                                             .toList()
                 ;
-        try {
-            apiHolder.myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
-                                                                                                    .getName(), bankRequestSchema
-            );
-        } catch (ApiException e) {
-            throw new RuntimeException(e);
-        }
+        apiHolder.myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
+                                                                                                .getName(), bankRequestSchema
+        );
     }
 
     private void getNewTaskIfCurrentTaskIsDone(CharacterResponseSchema character) {
@@ -123,20 +114,16 @@ public class FighterT1Brain extends CommonBrain {
             // still has task
             return;
         }
-        try {
-            Optional<MapSchema> closestLocation = findClosestLocation(character, "monsters");
-            if (closestLocation.isEmpty()) {
-                return;
-            }
-            boolean moved = moveToLocation(character, closestLocation.get());
-            if (moved) {
-                return;
-            }
-            apiHolder.myCharactersApi.actionAcceptNewTaskMyNameActionTaskNewPost(character.getData()
-                                                                                          .getName());
-        } catch (ApiException e) {
-            throw new RuntimeException(e);
+        Optional<MapSchema> closestLocation = findClosestLocation(character, "monsters");
+        if (closestLocation.isEmpty()) {
+            return;
         }
+        boolean moved = moveToLocation(character, closestLocation.get());
+        if (moved) {
+            return;
+        }
+        apiHolder.myCharactersApi.actionAcceptNewTaskMyNameActionTaskNewPost(character.getData()
+                                                                                      .getName());
     }
 
     private void completeCurrentTaskIfDone(CharacterResponseSchema character) {
@@ -148,20 +135,16 @@ public class FighterT1Brain extends CommonBrain {
                                                                                                                                         .getTaskTotal()) {
             return;
         }
-        try {
-            Optional<MapSchema> closestLocation = findClosestLocation(character, "monsters");
-            if (closestLocation.isEmpty()) {
-                return;
-            }
-            boolean moved = moveToLocation(character, closestLocation.get());
-            if (moved) {
-                return;
-            }
-            apiHolder.myCharactersApi.actionCompleteTaskMyNameActionTaskCompletePost(character.getData()
-                                                                                              .getName());
-        } catch (ApiException e) {
-            throw new RuntimeException(e);
+        Optional<MapSchema> closestLocation = findClosestLocation(character, "monsters");
+        if (closestLocation.isEmpty()) {
+            return;
         }
+        boolean moved = moveToLocation(character, closestLocation.get());
+        if (moved) {
+            return;
+        }
+        apiHolder.myCharactersApi.actionCompleteTaskMyNameActionTaskCompletePost(character.getData()
+                                                                                          .getName());
     }
 
     private void cookFoodIfHaveSome(CharacterResponseSchema character) {
@@ -191,15 +174,9 @@ public class FighterT1Brain extends CommonBrain {
                 CraftingSchema craftingSchema = new CraftingSchema().code(targetCode)
                                                                     .quantity(foodItem.get()
                                                                                       .getQuantity());
-                try {
-                    apiHolder.myCharactersApi.actionCraftingMyNameActionCraftingPost(character.getData()
-                                                                                              .getName(), craftingSchema
-                    );
-                } catch (ApiException e) {
-                    throw new RuntimeException(e);
-                }
-
-
+                apiHolder.myCharactersApi.actionCraftingMyNameActionCraftingPost(character.getData()
+                                                                                          .getName(), craftingSchema
+                );
             }
         }
 

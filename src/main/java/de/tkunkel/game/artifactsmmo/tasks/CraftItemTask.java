@@ -1,7 +1,6 @@
 package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
-import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.CraftingSchema;
 import de.tkunkel.games.artifactsmmo.model.MapSchema;
 import org.slf4j.Logger;
@@ -16,15 +15,10 @@ public class CraftItemTask {
         MapSchema map = brain.findLocationToCraftItem(characterName, itemToCraft);
         brain.moveToLocation(characterName, map);
         brain.waitUntilCooldownDone(characterName);
-        try {
-            brain.apiHolder.myCharactersApi.actionCraftingMyNameActionCraftingPost(characterName, new CraftingSchema().code(itemToCraft)
-                                                                                                                      .quantity(1)
-            );
-            brain.waitUntilCooldownDone(characterName);
-        } catch (ApiException e) {
-            logger.error("Error crafting item", e);
-            // throw new RuntimeException(e);
-        }
+        brain.apiHolder.myCharactersApi.actionCraftingMyNameActionCraftingPost(characterName, new CraftingSchema().code(itemToCraft)
+                                                                                                                  .quantity(1)
+        );
+        brain.waitUntilCooldownDone(characterName);
     }
 
 }

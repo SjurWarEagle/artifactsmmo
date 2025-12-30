@@ -1,7 +1,6 @@
 package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
-import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,16 +27,12 @@ public class BankDepositGoldIfRichTask {
         brain.moveToLocation(character, bank.get());
         brain.waitUntilCooldownDone(character);
 
-        try {
-            DepositWithdrawGoldSchema goldDeposit = new DepositWithdrawGoldSchema().quantity(character.getData()
-                                                                                                      .getGold());
-            brain.apiHolder.myCharactersApi.actionDepositBankGoldMyNameActionBankDepositGoldPost(character.getData()
-                                                                                                          .getName(), goldDeposit
-            );
-            brain.waitUntilCooldownDone(character);
-        } catch (ApiException e) {
-            throw new RuntimeException(e);
-        }
+        DepositWithdrawGoldSchema goldDeposit = new DepositWithdrawGoldSchema().quantity(character.getData()
+                                                                                                  .getGold());
+        brain.apiHolder.myCharactersApi.actionDepositBankGoldMyNameActionBankDepositGoldPost(character.getData()
+                                                                                                      .getName(), goldDeposit
+        );
+        brain.waitUntilCooldownDone(character);
     }
 
     public void depositInventoryInBank(CommonBrain brain, CharacterResponseSchema character) {
@@ -63,18 +58,14 @@ public class BankDepositGoldIfRichTask {
                                                                                                      .quantity(inventorySlot.getQuantity()))
                                                          .toList()
                 ;
-        try {
-            if (!itemsToDeposit.isEmpty()) {
-                brain.moveToLocation(character, bank.get());
-                brain.waitUntilCooldownDone(character);
-                brain.apiHolder.myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
-                                                                                                              .getName(), itemsToDeposit
-                );
-            }
+        if (!itemsToDeposit.isEmpty()) {
+            brain.moveToLocation(character, bank.get());
             brain.waitUntilCooldownDone(character);
-        } catch (ApiException e) {
-            throw new RuntimeException(e);
+            brain.apiHolder.myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
+                                                                                                          .getName(), itemsToDeposit
+            );
         }
+        brain.waitUntilCooldownDone(character);
     }
 
 }

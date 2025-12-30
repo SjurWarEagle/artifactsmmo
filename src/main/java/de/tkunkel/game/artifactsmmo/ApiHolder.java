@@ -1,18 +1,17 @@
 package de.tkunkel.game.artifactsmmo;
 
+import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
+import de.tkunkel.game.artifactsmmo.api.MyAccountApiWrapper;
+import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.games.artifactsmmo.ApiClient;
-import de.tkunkel.games.artifactsmmo.api.CharactersApi;
-import de.tkunkel.games.artifactsmmo.api.MyAccountApi;
-import de.tkunkel.games.artifactsmmo.api.MyCharactersApi;
-import de.tkunkel.games.artifactsmmo.api.ServerDetailsApi;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ApiHolder {
-    public final MyCharactersApi myCharactersApi;
-    public final CharactersApi charactersApi;
-    public final ServerDetailsApi serverDetailsApi;
-    public final MyAccountApi myAccountApi;
+    public final MyCharactersApiWrapper myCharactersApi;
+    public final CharactersApiWrapper charactersApi;
+    public final ServerDetailsApiWrapper serverDetailsApi;
+    public final MyAccountApiWrapper myAccountApi;
 
     private ApiClient createApiClient() {
         ApiClient rc = new ApiClient();
@@ -22,9 +21,9 @@ public class ApiHolder {
     }
 
     public ApiHolder() {
-        myCharactersApi = new MyCharactersApi(createApiClient());
-        charactersApi = new CharactersApi(createApiClient());
-        serverDetailsApi = new ServerDetailsApi(createApiClient());
-        myAccountApi = new MyAccountApi(createApiClient());
+        myCharactersApi = new MyCharactersApiWrapper(createApiClient());
+        charactersApi = new CharactersApiWrapper(createApiClient());
+        serverDetailsApi = new ServerDetailsApiWrapper(createApiClient());
+        myAccountApi = new MyAccountApiWrapper(createApiClient());
     }
 }

@@ -3,7 +3,6 @@ package de.tkunkel.game.artifactsmmo.shopping;
 import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.CharHelper;
-import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.DataPageSimpleItemSchema;
 import de.tkunkel.games.artifactsmmo.model.ItemSchema;
@@ -44,23 +43,19 @@ public class WishList {
     }
 
     private boolean hasAlreadyInBank(Wish wish) {
-        try {
-            AtomicInteger totals = new AtomicInteger();
-            // TODO add paging
-            DataPageSimpleItemSchema bankItemsMyBankItemsGet = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(null, 1, 100);
-            bankItemsMyBankItemsGet.getData()
-                                   .stream()
-                                   .filter(simpleItemSchema -> simpleItemSchema.getCode()
-                                                                               .equals(wish.itemCode))
-                                   .forEach(bankItem -> totals.addAndGet(bankItem.getQuantity()))
-            ;
-            if (totals.get() >= wish.amount) {
-                return true;
-            }
-            return false;
-        } catch (ApiException e) {
-            throw new RuntimeException(e);
+        AtomicInteger totals = new AtomicInteger();
+        // TODO add paging
+        DataPageSimpleItemSchema bankItemsMyBankItemsGet = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(null, 1, 100);
+        bankItemsMyBankItemsGet.getData()
+                               .stream()
+                               .filter(simpleItemSchema -> simpleItemSchema.getCode()
+                                                                           .equals(wish.itemCode))
+                               .forEach(bankItem -> totals.addAndGet(bankItem.getQuantity()))
+        ;
+        if (totals.get() >= wish.amount) {
+            return true;
         }
+        return false;
     }
 
     private void addWishesForComponents(Wish wish) {

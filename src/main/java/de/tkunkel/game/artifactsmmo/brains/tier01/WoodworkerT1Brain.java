@@ -39,16 +39,12 @@ public class WoodworkerT1Brain extends CommonBrain {
     }
 
     public String decideWhatResourceToFarm(String characterName) {
-        try {
-            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+        CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
 
-            String resource = caches.findHighestFarmableResourceForSkillLevel(character.getData()
-                                                                                       .getWoodcuttingLevel(), GatheringSkill.WOODCUTTING
-            );
-            return resource;
-        } catch (ApiException e) {
-            throw new RuntimeException(e);
-        }
+        String resource = caches.findHighestFarmableResourceForSkillLevel(character.getData()
+                                                                                   .getWoodcuttingLevel(), GatheringSkill.WOODCUTTING
+        );
+        return resource;
     }
 
     @Override

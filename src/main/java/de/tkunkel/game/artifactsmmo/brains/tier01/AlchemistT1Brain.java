@@ -38,17 +38,11 @@ public class AlchemistT1Brain extends CommonBrain {
     }
 
     public String decideWhatResourceToFarm(String characterName) {
-        try {
-            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-            String ressource = caches.findHighestFarmableResourceForSkillLevel(character.getData()
-                                                                                        .getAlchemyLevel(), GatheringSkill.ALCHEMY
-            );
-            return ressource;
-        } catch (ApiException e) {
-            logger.error("Error while deciding what resource to farm", e);
-            throw new RuntimeException(e);
-        }
-
+        CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+        String ressource = caches.findHighestFarmableResourceForSkillLevel(character.getData()
+                                                                                    .getAlchemyLevel(), GatheringSkill.ALCHEMY
+        );
+        return ressource;
     }
 
     @Override

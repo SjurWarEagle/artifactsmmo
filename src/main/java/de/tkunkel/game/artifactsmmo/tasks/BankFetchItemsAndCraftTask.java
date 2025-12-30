@@ -2,7 +2,6 @@ package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
-import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.DataPageSimpleItemSchema;
 import de.tkunkel.games.artifactsmmo.model.ItemSchema;
@@ -37,50 +36,46 @@ public class BankFetchItemsAndCraftTask extends CommonTask {
             logger.warn("No item found for {}", itemToCraft);
             throw new RuntimeException("No item found for " + itemToCraft);
         }
-        try {
-            // is item already in the bank?
-            // TODO paging
-            DataPageSimpleItemSchema bankItemsMyBankItemsGet = brain.apiHolder.myAccountApi.getBankItemsMyBankItemsGet(null, 1, 100);
-            Optional<SimpleItemSchema> itemInBank = bankItemsMyBankItemsGet.getData()
-                                                                           .stream()
-                                                                           .filter(item -> itemToCraft.equals(item.getCode()))
-                                                                           .filter(item -> item.getQuantity() >= 1)
-                                                                           .findFirst()
-                    ;
-            if (itemInBank.isPresent()) {
-                // item already exists, no need to build it again
+        // is item already in the bank?
+        // TODO paging
+        DataPageSimpleItemSchema bankItemsMyBankItemsGet = brain.apiHolder.myAccountApi.getBankItemsMyBankItemsGet(null, 1, 100);
+        Optional<SimpleItemSchema> itemInBank = bankItemsMyBankItemsGet.getData()
+                                                                       .stream()
+                                                                       .filter(item -> itemToCraft.equals(item.getCode()))
+                                                                       .filter(item -> item.getQuantity() >= 1)
+                                                                       .findFirst()
+                ;
+        if (itemInBank.isPresent()) {
+            // item already exists, no need to build it again
+            return;
+        }
+        List<SimpleItemSchema> neededItems = optionalItemSchema.get()
+                                                               .getCraft()
+                                                               .getItems()
+                ;
+        // fetch resources from bank that are missing from inventory
+        // TODO only fetch what is missing in inventory
+        for (SimpleItemSchema neededItem : neededItems) {
+            if (bankItemsMyBankItemsGet.getData()
+                                       .stream()
+                                       .noneMatch(simpleItemSchema -> simpleItemSchema.getCode()
+                                                                                      .equalsIgnoreCase(neededItem.getCode()))) {
                 return;
             }
-            List<SimpleItemSchema> neededItems = optionalItemSchema.get()
-                                                                   .getCraft()
-                                                                   .getItems()
-                    ;
-            // fetch resources from bank that are missing from inventory
-            // TODO only fetch what is missing in inventory
-            for (SimpleItemSchema neededItem : neededItems) {
-                if (!bankItemsMyBankItemsGet.getData()
-                                            .stream()
-                                            .anyMatch(simpleItemSchema -> simpleItemSchema.getCode()
-                                                                                          .equalsIgnoreCase(neededItem.getCode()))) {
-                    return;
-                }
-                fetchItemFromBank(brain, character, neededItem.getCode(), neededItem.getQuantity());
-            }
-
-            // todo after fetching check again if item can be crafted
-
-            // craft item
-            craftItemTask.craftItem(brain, character.getData()
-                                                    .getName(), itemToCraft
-            );
-
-            // deposit crafted item into bank
-            bankDepositSingleItemTask.depositInventoryInBank(brain, character.getData()
-                                                                             .getName(), itemToCraft
-            );
-        } catch (ApiException e) {
-            throw new RuntimeException(e);
+            fetchItemFromBank(brain, character, neededItem.getCode(), neededItem.getQuantity());
         }
+
+        // todo after fetching check again if item can be crafted
+
+        // craft item
+        craftItemTask.craftItem(brain, character.getData()
+                                                .getName(), itemToCraft
+        );
+
+        // deposit crafted item into bank
+        bankDepositSingleItemTask.depositInventoryInBank(brain, character.getData()
+                                                                         .getName(), itemToCraft
+        );
     }
 
 }

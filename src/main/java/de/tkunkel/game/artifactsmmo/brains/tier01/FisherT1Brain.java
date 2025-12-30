@@ -38,17 +38,14 @@ public class FisherT1Brain extends CommonBrain {
         return false;
     }
 
+    @Override
     public String decideWhatResourceToFarm(String characterName) {
-        try {
-            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+        CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
 
-            String resource = caches.findHighestFarmableResourceForSkillLevel(character.getData()
-                                                                                       .getFishingLevel(), GatheringSkill.FISHING
-            );
-            return resource;
-        } catch (ApiException e) {
-            throw new RuntimeException(e);
-        }
+        String resource = caches.findHighestFarmableResourceForSkillLevel(character.getData()
+                                                                                   .getFishingLevel(), GatheringSkill.FISHING
+        );
+        return resource;
     }
 
     @Override

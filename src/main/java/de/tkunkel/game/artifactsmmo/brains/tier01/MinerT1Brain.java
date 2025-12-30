@@ -27,14 +27,12 @@ public class MinerT1Brain extends CommonBrain {
     private FarmHighestResourceTask farmHighestResourceTask;
     private CraftItemTask craftItemTask;
     private BankDepositAllTask bankDepositAllTask;
-    private BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask;
 
     public MinerT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, FarmHighestResourceTask farmHighestResourceTask, CraftItemTask craftItemTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask) {
         super(caches, wishList, apiHolder, bankFetchItemsAndCraftTask);
         this.farmHighestResourceTask = farmHighestResourceTask;
         this.craftItemTask = craftItemTask;
         this.bankDepositAllTask = bankDepositAllTask;
-        this.bankFetchItemsAndCraftTask = bankFetchItemsAndCraftTask;
     }
 
     public boolean hasMaxCraftableGearEquipped(String characterName) {
@@ -51,65 +49,53 @@ public class MinerT1Brain extends CommonBrain {
     }
 
     public boolean mineIfNotEnoughInInventory(String characterName, String oreName, int amount) {
-        try {
-            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-            waitUntilCooldownDone(character);
-            List<InventorySlot> inventory = character.getData()
-                                                     .getInventory();
+        CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+        waitUntilCooldownDone(character);
+        List<InventorySlot> inventory = character.getData()
+                                                 .getInventory();
 
-            int amountInInventory = inventory.stream()
-                                             .filter(inventorySlot -> inventorySlot.getCode()
-                                                                                   .equals(oreName))
-                                             .mapToInt(InventorySlot::getQuantity)
-                                             .sum()
-                    ;
-            if (amountInInventory >= amount) {
-                return true;
-            }
-            Optional<MapSchema> mine = findClosestLocation(character, "copper_rocks");
-            if (mine.isEmpty()) {
-                logger.error("No mine found");
-                return false;
-            }
-            moveToLocation(character, mine.get());
-            gather(character);
-        } catch (ApiException e) {
-            throw new RuntimeException(e);
+        int amountInInventory = inventory.stream()
+                                         .filter(inventorySlot -> inventorySlot.getCode()
+                                                                               .equals(oreName))
+                                         .mapToInt(InventorySlot::getQuantity)
+                                         .sum()
+                ;
+        if (amountInInventory >= amount) {
+            return true;
         }
+        Optional<MapSchema> mine = findClosestLocation(character, "copper_rocks");
+        if (mine.isEmpty()) {
+            logger.error("No mine found");
+            return false;
+        }
+        moveToLocation(character, mine.get());
+        gather(character);
         logger.info("Starting mineUntilReached");
         return true;
     }
 
     private void gather(CharacterResponseSchema character) {
         waitUntilCooldownDone(character);
-        try {
-            apiHolder.myCharactersApi.actionGatheringMyNameActionGatheringPost(character.getData()
-                                                                                        .getName());
-        } catch (ApiException e) {
-            throw new RuntimeException(e);
-        }
+        apiHolder.myCharactersApi.actionGatheringMyNameActionGatheringPost(character.getData()
+                                                                                    .getName());
 
     }
 
     public void smelt(String characterName, String toCraft) {
-        try {
-            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-            Optional<MapSchema> smelter = findClosestLocation(character, "mining");
-            if (smelter.isEmpty()) {
-                logger.error("No smelter found.");
-                throw new RuntimeException("no smelter found");
-            }
-            waitUntilCooldownDone(character);
-            moveToLocation(character, smelter.get());
-            waitUntilCooldownDone(character);
-            CraftingSchema craftingSchema = new CraftingSchema().code(toCraft)
-                                                                .quantity(1);
-            apiHolder.myCharactersApi.actionCraftingMyNameActionCraftingPost(character.getData()
-                                                                                      .getName(), craftingSchema
-            );
-        } catch (ApiException e) {
-            throw new RuntimeException(e);
+        CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+        Optional<MapSchema> smelter = findClosestLocation(character, "mining");
+        if (smelter.isEmpty()) {
+            logger.error("No smelter found.");
+            throw new RuntimeException("no smelter found");
         }
+        waitUntilCooldownDone(character);
+        moveToLocation(character, smelter.get());
+        waitUntilCooldownDone(character);
+        CraftingSchema craftingSchema = new CraftingSchema().code(toCraft)
+                                                            .quantity(1);
+        apiHolder.myCharactersApi.actionCraftingMyNameActionCraftingPost(character.getData()
+                                                                                  .getName(), craftingSchema
+        );
     }
 
 
@@ -145,16 +131,12 @@ public class MinerT1Brain extends CommonBrain {
 
     @Override
     public String decideWhatResourceToFarm(String characterName) {
-        try {
-            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+        CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
 
-            String resource = caches.findHighestFarmableResourceForSkillLevel(character.getData()
-                                                                                       .getMiningLevel(), GatheringSkill.MINING
-            );
-            return resource;
-        } catch (ApiException e) {
-            throw new RuntimeException(e);
-        }
+        String resource = caches.findHighestFarmableResourceForSkillLevel(character.getData()
+                                                                                   .getMiningLevel(), GatheringSkill.MINING
+        );
+        return resource;
     }
 
 
