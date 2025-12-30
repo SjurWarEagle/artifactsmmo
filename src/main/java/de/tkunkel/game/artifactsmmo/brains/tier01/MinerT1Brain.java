@@ -35,19 +35,6 @@ public class MinerT1Brain extends CommonBrain {
         this.bankDepositAllTask = bankDepositAllTask;
     }
 
-    public boolean hasMaxCraftableGearEquipped(String characterName) {
-        return checkIfEquipped(characterName, "copper_dagger", ItemSlot.WEAPON)
-                && checkIfEquipped(characterName, "copper_helmet", ItemSlot.HELMET)
-                && checkIfEquipped(characterName, "copper_boots", ItemSlot.BOOTS)
-                && checkIfEquipped(characterName, "copper_ring", ItemSlot.RING1);
-    }
-
-    @Override
-    public boolean shouldBeUsed(String characterName) {
-        boolean isMissingGear = !hasMaxCraftableGearEquipped(characterName);
-        return isMissingGear;
-    }
-
     public boolean mineIfNotEnoughInInventory(String characterName, String oreName, int amount) {
         CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
         waitUntilCooldownDone(character);

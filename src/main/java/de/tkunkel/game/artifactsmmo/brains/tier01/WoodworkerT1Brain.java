@@ -34,10 +34,6 @@ public class WoodworkerT1Brain extends CommonBrain {
     }
 
     @Override
-    public boolean shouldBeUsed(String characterName) {
-        return false;
-    }
-
     public String decideWhatResourceToFarm(String characterName) {
         CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
 

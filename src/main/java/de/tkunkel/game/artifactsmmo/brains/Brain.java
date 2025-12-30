@@ -8,7 +8,5 @@ public interface Brain {
 
     void runBaseLoop(String characterName) throws BrainCompletedException;
 
-    boolean shouldBeUsed(String characterName);
-
     String decideWhatResourceToFarm(String characterName);
 }

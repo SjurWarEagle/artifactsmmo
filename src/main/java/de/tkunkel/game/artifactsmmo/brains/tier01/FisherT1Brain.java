@@ -34,11 +34,6 @@ public class FisherT1Brain extends CommonBrain {
     }
 
     @Override
-    public boolean shouldBeUsed(String characterName) {
-        return false;
-    }
-
-    @Override
     public String decideWhatResourceToFarm(String characterName) {
         CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
 

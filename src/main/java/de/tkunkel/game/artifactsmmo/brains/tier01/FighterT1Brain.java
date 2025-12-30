@@ -27,12 +27,6 @@ public class FighterT1Brain extends CommonBrain {
     private final BankDepositAllTask bankDepositAllTask;
     private final CombatSimulator combatSimulator;
 
-
-    @Override
-    public boolean shouldBeUsed(String characterName) {
-        return false;
-    }
-
     public FighterT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, BankUpgradeIfPossibleTask bankUpgradeIfPossibleTask, BankDepositGoldIfRichTask bankDepositGoldIfRichTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, CombatSimulator combatSimulator) {
         super(caches, wishList, apiHolder, bankFetchItemsAndCraftTask);
         this.bankUpgradeIfPossibleTask = bankUpgradeIfPossibleTask;
