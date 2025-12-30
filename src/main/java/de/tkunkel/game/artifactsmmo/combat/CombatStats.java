@@ -52,4 +52,21 @@ public class CombatStats {
         rc.resFire = monster.getResFire();
         return rc;
     }
+
+    @Override
+    public String toString() {
+        return "CombatStats{" +
+                "hp=" + hp +
+                ", criticalStrike=" + criticalStrike +
+                ", initiative=" + initiative +
+                ", attackEarth=" + attackEarth +
+                ", resEarth=" + resEarth +
+                ", attackFire=" + attackFire +
+                ", resFire=" + resFire +
+                ", attackAir=" + attackAir +
+                ", resAir=" + resAir +
+                ", attackWater=" + attackWater +
+                ", resWater=" + resWater +
+                '}';
+    }
 }

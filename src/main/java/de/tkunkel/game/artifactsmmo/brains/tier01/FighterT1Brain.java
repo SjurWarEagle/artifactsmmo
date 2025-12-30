@@ -52,12 +52,6 @@ public class FighterT1Brain extends CommonBrain {
             depositNonFoodAtBankIfInventoryIsFull(character);
             cookFoodIfHaveSome(character);
             eatFoodOrRestIfNeeded(character);
-            equipOrRequestBestWeapon(character);
-            equipOrRequestBestArmorForSlot(character, "body_armor");
-            equipOrRequestBestArmorForSlot(character, "helmet");
-            equipOrRequestBestArmorForSlot(character, "shield");
-            equipOrRequestBestArmorForSlot(character, "boots");
-            equipOrRequestBestArmorForSlot(character, "leg_armor");
 
             completeCurrentTaskIfDone(character);
             getNewTaskIfCurrentTaskIsDone(character);
@@ -248,12 +242,19 @@ public class FighterT1Brain extends CommonBrain {
                                                                    .map(MonsterSchema::getName)
                                                                    .toList()
             );
-            monsterToHunt = monsters.stream()
-                                    .sorted(Comparator.comparingInt(MonsterSchema::getLevel))
-                                    // use last of streams
-                                    .reduce((o1, o2) -> o2)
-                                    .get()
-                                    .getCode();
+            if (monsters.size() == 0) {
+                logger.warn("No monsters that can be hunted found for character {}", character.getData()
+                                                                                              .getName()
+                );
+                monsterToHunt = "chicken";
+            } else {
+                monsterToHunt = monsters.stream()
+                                        .sorted(Comparator.comparingInt(MonsterSchema::getLevel))
+                                        // use last of streams
+                                        .reduce((o1, o2) -> o2)
+                                        .get()
+                                        .getCode();
+            }
         }
 
         return monsterToHunt;

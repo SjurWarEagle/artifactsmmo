@@ -2,26 +2,40 @@ package de.tkunkel.game.artifactsmmo.combat;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class CombatSimulator {
+
     int maxRounds = 100;
     private final Logger logger = LoggerFactory.getLogger(CombatSimulator.class.getName());
 
-    @Cacheable(cacheNames = "combatSimulatorWinPercentage")
+    //    @Cacheable(cacheNames = "combatSimulatorWinPercentage")
     public boolean winMoreThanXPercentAgainst(CombatStats attacker, CombatStats defender, int percent) {
         int wins = 0;
         for (int i = 0; i < 100; i++) {
             boolean result = attackerWinsSimulatedCombat(attacker, defender);
             if (result) {
                 wins++;
-                wins++;
             }
         }
 
         return wins >= percent;
+    }
+
+    public int simulateHowManyMonstersCanBeBeaten(CombatStats attacker, List<CombatStats> defenders) {
+        AtomicInteger rc = new AtomicInteger(0);
+        defenders.parallelStream()
+                 .forEach(defender -> {
+                     if (winMoreThanXPercentAgainst(attacker, defender, 90)) {
+                         rc.incrementAndGet();
+                     }
+                 });
+        return rc.get();
+
     }
 
     public boolean attackerWinsSimulatedCombat(CombatStats attacker, CombatStats defender) {

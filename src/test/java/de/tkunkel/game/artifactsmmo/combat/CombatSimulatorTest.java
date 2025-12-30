@@ -3,6 +3,9 @@ package de.tkunkel.game.artifactsmmo.combat;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+
 class CombatSimulatorTest {
     private final CombatSimulator combatSimulator = new CombatSimulator();
 
@@ -40,7 +43,7 @@ class CombatSimulatorTest {
         defender.resWater = 30;
 
 
-        Assertions.assertTrue(combatSimulator.winMoreThanXPercentAgainst(attacker, defender, 50));
+        Assertions.assertFalse(combatSimulator.winMoreThanXPercentAgainst(attacker, defender, 50));
     }
 
     @Test
@@ -58,7 +61,7 @@ class CombatSimulatorTest {
         defender.resWater = 30;
 
 
-        Assertions.assertTrue(combatSimulator.winMoreThanXPercentAgainst(attacker, defender, 50));
+        Assertions.assertFalse(combatSimulator.winMoreThanXPercentAgainst(attacker, defender, 50));
     }
 
     @Test
@@ -83,6 +86,38 @@ class CombatSimulatorTest {
             }
         }
         Assertions.assertFalse(wins > 50);
+    }
+
+    @Test
+    void simulateHowManyMonstersCanBeBeaten_NoEnemy() {
+        CombatStats attacker = new CombatStats();
+        attacker.hp = 215;
+        attacker.initiative = 100;
+        attacker.attackAir = 6;
+        attacker.criticalStrike = 35;
+
+        List<CombatStats> defenders = new ArrayList<>();
+        int result = combatSimulator.simulateHowManyMonstersCanBeBeaten(attacker, defenders);
+        Assertions.assertEquals(0, result);
+    }
+
+    @Test
+    void simulateHowManyMonstersCanBeBeaten_EasyEnemies() {
+        CombatStats attacker = new CombatStats();
+        attacker.hp = 215;
+        attacker.initiative = 100;
+        attacker.attackAir = 6;
+        attacker.criticalStrike = 35;
+
+        List<CombatStats> defenders = new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
+            CombatStats defender = new CombatStats();
+            defender.hp = i;
+            defender.attackWater = 10;
+            defenders.add(defender);
+        }
+        int result = combatSimulator.simulateHowManyMonstersCanBeBeaten(attacker, defenders);
+        Assertions.assertEquals(100, result);
     }
 
 }

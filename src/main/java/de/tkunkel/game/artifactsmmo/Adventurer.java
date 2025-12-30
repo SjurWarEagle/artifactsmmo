@@ -7,6 +7,7 @@ import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
 import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
+import org.jetbrains.annotations.UnknownNullability;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +44,13 @@ public class Adventurer {
         }
         while (true) {
             logger.info("Adventurer {} of class {} is running", characterName, adventurerClass.name());
+            brain.equipOrRequestBestWeapon(characterName);
+            brain.equipOrRequestBestArmorForSlot(characterName, "body_armor");
+            brain.equipOrRequestBestArmorForSlot(characterName, "helmet");
+            brain.equipOrRequestBestArmorForSlot(characterName, "shield");
+            brain.equipOrRequestBestArmorForSlot(characterName, "boots");
+            brain.equipOrRequestBestArmorForSlot(characterName, "leg_armor");
+
             try {
                 CharacterResponseSchema character = null;
                 try {
@@ -51,8 +59,8 @@ public class Adventurer {
                     throw new RuntimeException(e);
                 }
                 Optional<Wish> wishThatCanBeCraftedByMe = wishList.reserveWishThatCanBeCraftedByMe(character);
-
-                if (wishThatCanBeCraftedByMe.isPresent()) {
+                boolean allResourcesAvailable = checkIfAllResourcesAreAvailable(character, wishThatCanBeCraftedByMe);
+                if (allResourcesAvailable && wishThatCanBeCraftedByMe.isPresent()) {
                     Wish wish = wishThatCanBeCraftedByMe.get();
                     brain.bankFetchItemsAndCraftTask.craftItemWithBankItems(brain, character, wish.itemCode);
                     wish.fulfilled = true;
@@ -69,6 +77,30 @@ public class Adventurer {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    private boolean checkIfAllResourcesAreAvailable(CharacterResponseSchema character, @UnknownNullability Optional<Wish> optionalWish) {
+        if (optionalWish.isEmpty()) {
+            return false;
+        }
+        Wish wish = optionalWish.get();
+        boolean inInventory = character.getData()
+                                       .getInventory()
+                                       .stream()
+                                       .filter(inventorySlot -> inventorySlot.getCode()
+                                                                             .equals(wish.itemCode))
+                                       .findAny()
+                                       .isPresent()
+                ;
+        // TODO paging!
+        try {
+            boolean inBank = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(wish.itemCode, 1, 100)
+                                                   .getData()
+                                                   .size() > 0;
+            return inInventory || inBank;
+        } catch (ApiException e) {
+            throw new RuntimeException(e);
         }
     }
 

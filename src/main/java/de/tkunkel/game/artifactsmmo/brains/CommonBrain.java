@@ -484,7 +484,13 @@ public abstract class CommonBrain implements Brain {
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    public void equipOrRequestBestWeapon(CharacterResponseSchema character) {
+    public void equipOrRequestBestWeapon(String characterName) {
+        CharacterResponseSchema character = null;
+        try {
+            character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+        } catch (ApiException e) {
+            throw new RuntimeException(e);
+        }
         Optional<ItemSchema> bestForSlot = caches.findBestItemForSlotThatCanBeCraftedByAccount(ItemSlot.WEAPON.name(), character.getData()
                                                                                                                                 .getLevel()
         );
@@ -551,7 +557,14 @@ public abstract class CommonBrain implements Brain {
         }
     }
 
-    public void equipOrRequestBestArmorForSlot(CharacterResponseSchema character, String slotName) {
+    public void equipOrRequestBestArmorForSlot(String characterName, String slotName) {
+        CharacterResponseSchema character = null;
+        try {
+            character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+        } catch (ApiException e) {
+            throw new RuntimeException(e);
+        }
+
         Optional<ItemSchema> bestArmorForSkill = caches.findBestItemForSlotThatCanBeCraftedByAccount(slotName, character.getData()
                                                                                                                         .getLevel()
         );
@@ -700,8 +713,8 @@ public abstract class CommonBrain implements Brain {
                                                                                                       .getName(), Collections.singletonList(simpleItemSchema)
             );
         } catch (ApiException e) {
-            logger.error("Error fetching item from bank", e);
-            throw new RuntimeException(e);
+            // for now this is igored, assuming another char fetched the same item, so this one could not get it
+            logger.error("Error fetching " + simpleItemSchema.getCode() + " from bank", e);
         }
         waitUntilCooldownDone(character);
     }

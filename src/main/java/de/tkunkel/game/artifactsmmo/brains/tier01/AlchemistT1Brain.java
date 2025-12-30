@@ -57,7 +57,7 @@ public class AlchemistT1Brain extends CommonBrain {
             CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
             waitUntilCooldownDone(character);
             equipOrRequestBestToolForSkill(character, "alchemy");
-            equipOrRequestBestArmorForSlot(character, "body_armor");
+            equipOrRequestBestArmorForSlot(characterName, "body_armor");
             bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
 
             character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
