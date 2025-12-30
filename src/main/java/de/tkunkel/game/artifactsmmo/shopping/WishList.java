@@ -86,7 +86,7 @@ public class WishList {
         return Collections.unmodifiableSet(allWishes);
     }
 
-    public synchronized Optional<Object> reserveWishThatCanBeCraftedByMe(CharacterResponseSchema character) {
+    public synchronized Optional<Wish> reserveWishThatCanBeCraftedByMe(CharacterResponseSchema character) {
         for (Wish wish : allWishes) {
             if (!wish.fulfilled) {
                 Optional<ItemSchema> itemDefinition = caches.findItemDefinition(wish.itemCode);

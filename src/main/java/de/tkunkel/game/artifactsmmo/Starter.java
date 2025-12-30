@@ -20,14 +20,15 @@ public class Starter {
 
     private void start(ApplicationContext context) {
         logger.info("Starting");
+        AdventureManager adventureManager = context.getBean(AdventureManager.class);
+
         /*
-        adventureManager.addAndStartAdventurer("Melanie", AdventurerClass.MINER);
         adventureManager.addAndStartAdventurer("Albrecht", AdventurerClass.ALCHEMIST);
         adventureManager.addAndStartAdventurer("Fin", AdventurerClass.FISHER);
 
         adventureManager.addAndStartAdventurer("Wolfgang", AdventurerClass.WOODWORKER);
          */
-        AdventureManager adventureManager = context.getBean(AdventureManager.class);
         adventureManager.addAndStartAdventurer("Sjur", AdventurerClass.FIGHTER);
+        adventureManager.addAndStartAdventurer("Melanie", AdventurerClass.MINER);
     }
 }

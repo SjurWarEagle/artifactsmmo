@@ -22,6 +22,28 @@ class CombatSimulatorTest {
     }
 
     @Test
+    void redSlimeFight() {
+        CombatStats attacker = new CombatStats();
+        attacker.hp = 215;
+        attacker.initiative = 100;
+        attacker.attackAir = 6;
+        attacker.criticalStrike = 35;
+        attacker.resWater = 2;
+        attacker.resFire = 2;
+        attacker.resAir = 2;
+        attacker.resEarth = 2;
+        CombatStats defender = new CombatStats();
+        defender.hp = 280;
+        defender.initiative = 100;
+        defender.attackAir = 21;
+        defender.resEarth = -30;
+        defender.resWater = 30;
+
+
+        Assertions.assertTrue(combatSimulator.winMoreThanXPercentAgainst(attacker, defender, 50));
+    }
+
+    @Test
     void cowFight() {
         CombatStats attacker = new CombatStats();
         attacker.hp = 215;

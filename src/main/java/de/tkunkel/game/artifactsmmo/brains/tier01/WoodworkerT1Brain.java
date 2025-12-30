@@ -56,7 +56,7 @@ public class WoodworkerT1Brain extends CommonBrain {
         try {
             CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
             waitUntilCooldownDone(character);
-            equipOrRequestEquipment(character, "woodcutting");
+            equipOrRequestBestToolForSkill(character, "woodcutting");
             bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
 
             character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);

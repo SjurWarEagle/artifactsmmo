@@ -5,6 +5,7 @@ import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.BrainCompletedException;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
+import de.tkunkel.game.artifactsmmo.shopping.Wish;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
 import de.tkunkel.game.artifactsmmo.tasks.BankFetchItemsAndCraftTask;
@@ -114,28 +115,32 @@ public class MinerT1Brain extends CommonBrain {
 
     @Override
     public void runBaseLoop(String characterName) throws BrainCompletedException {
-        while (true) {
-            logger.info("looping miner brain");
-
-            try {
-                CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-                bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
-                waitUntilCooldownDone(character);
-                equipOrRequestEquipment(character, "mining");
-                // TODO bankFetchItemsAndCraftTask.craftItemWithBankItems(this, character, "copper_dagger");
-                Optional<String> itemToCraft = findPossibleItemToCraft(character);
-                if (itemToCraft.isPresent()) {
-                    craftItemTask.craftItem(this, characterName, itemToCraft.get());
-                } else {
-                    farmHighestResourceTask.farmResource(this, characterName);
-                }
-
-                Thread.sleep(TimeUnit.SECONDS.toMillis(1));
-            } catch (InterruptedException | ApiException e) {
-                logger.error("Error while mining", e);
-                throw new RuntimeException(e);
+        try {
+            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+            bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
+            waitUntilCooldownDone(character);
+            equipOrRequestBestToolForSkill(character, "mining");
+            // TODO bankFetchItemsAndCraftTask.craftItemWithBankItems(this, character, "copper_dagger");
+            Optional<String> itemToCraft = findPossibleItemToCraftFromWishlist(character);
+            if (itemToCraft.isEmpty()) {
+                itemToCraft = findPossibleItemToCraft(character);
             }
+            if (itemToCraft.isPresent()) {
+                craftItemTask.craftItem(this, characterName, itemToCraft.get());
+            } else {
+                farmHighestResourceTask.farmResource(this, characterName);
+            }
+
+            Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+        } catch (InterruptedException | ApiException e) {
+            logger.error("Error while mining", e);
+            throw new RuntimeException(e);
         }
+    }
+
+    private Optional<String> findPossibleItemToCraftFromWishlist(CharacterResponseSchema character) {
+        Optional<Wish> wish = wishList.reserveWishThatCanBeCraftedByMe(character);
+        return wish.map(value -> value.itemCode);
     }
 
     @Override

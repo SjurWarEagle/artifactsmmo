@@ -75,6 +75,13 @@ public abstract class CommonBrain implements Brain {
         return map.get();
     }
 
+    /**
+     * find an item that can be crafted with the items in inventory and skill of the char.
+     * Use  higest level
+     *
+     * @param character
+     * @return
+     */
     public Optional<String> findPossibleItemToCraft(CharacterResponseSchema character) {
         return caches.cachedItems.stream()
                                  .filter(
@@ -424,9 +431,10 @@ public abstract class CommonBrain implements Brain {
         try {
             boolean alreadyReached = destination.getX()
                                                 .equals(character.getData()
-                                                                 .getX()) && destination.getY()
-                                                                                        .equals(character.getData()
-                                                                                                         .getY());
+                                                                 .getX())
+                    && destination.getY()
+                                  .equals(character.getData()
+                                                   .getY());
             if (alreadyReached) {
                 return false;
             }
@@ -476,7 +484,137 @@ public abstract class CommonBrain implements Brain {
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    public void equipOrRequestEquipment(CharacterResponseSchema character, String skillName) {
+    public void equipOrRequestBestWeapon(CharacterResponseSchema character) {
+        Optional<ItemSchema> bestForSlot = caches.findBestItemForSlotThatCanBeCraftedByAccount(ItemSlot.WEAPON.name(), character.getData()
+                                                                                                                                .getLevel()
+        );
+        if (bestForSlot.isEmpty()) {
+            return;
+        }
+        ItemSlot itemSlot = ItemSlot.fromValue(bestForSlot.get()
+                                                          .getType());
+        if (checkIfEquipped(character.getData()
+                                     .getName(), bestForSlot.get()
+                                                            .getCode(), itemSlot
+        )) {
+            return;
+        }
+        //        logger.info("Equipping {}", bestForSlot.get()
+        //                                                  .getCode()
+        //       );
+        Optional<InventorySlot> inventorySlot = character.getData()
+                                                         .getInventory()
+                                                         .stream()
+                                                         .filter(innerInventorySlot -> innerInventorySlot.getCode()
+                                                                                                         .equals(bestForSlot.get()
+                                                                                                                            .getCode()))
+                                                         .findFirst()
+                ;
+        boolean itemExistsInBank;
+        try {
+            itemExistsInBank = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(bestForSlot.get()
+                                                                                            .getCode(), 1, 100
+                                        )
+                                                     .getData()
+                                                     .size() > 0;
+        } catch (ApiException e) {
+            logger.warn("Error getting bank items for skill " + bestForSlot.get());
+            throw new RuntimeException(e);
+        }
+        boolean itemExistsInInventory = inventorySlot.isPresent();
+
+        boolean alreadyEquipped = checkIfEquipped(bestForSlot.get()
+                                                             .getCode(), itemSlot, character
+        );
+        if (!itemExistsInInventory && !itemExistsInBank && !alreadyEquipped) {
+            logger.info("Best tool (" + bestForSlot.get()
+                                                   .getCode() + ") not in inventory nor bank nor equipped, requesting");
+            wishList.addRequest(new Wish(character.getData()
+                                                  .getName(), bestForSlot.get()
+                                                                         .getCode()
+                    , 1
+            ));
+            return;
+        }
+        if (!alreadyEquipped && itemExistsInBank) {
+            fetchItemFromBank(character, bestForSlot.get()
+                                                    .getCode()
+            );
+        }
+        if (!alreadyEquipped) {
+            equipGearIfNotEquipped(character.getData()
+                                            .getName(), bestForSlot.get()
+                                                                   .getCode(), itemSlot
+            );
+        }
+    }
+
+    public void equipOrRequestBestArmorForSlot(CharacterResponseSchema character, String slotName) {
+        Optional<ItemSchema> bestArmorForSkill = caches.findBestItemForSlotThatCanBeCraftedByAccount(slotName, character.getData()
+                                                                                                                        .getLevel()
+        );
+        if (bestArmorForSkill.isEmpty()) {
+            return;
+        }
+        ItemSlot itemSlot = ItemSlot.fromValue(bestArmorForSkill.get()
+                                                                .getType());
+        if (checkIfEquipped(character.getData()
+                                     .getName(), bestArmorForSkill.get()
+                                                                  .getCode(), itemSlot
+        )) {
+            return;
+        }
+        //        logger.info("Equipping {}", bestArmorForSkill.get()
+        //                                                  .getCode()
+        //       );
+        Optional<InventorySlot> inventorySlot = character.getData()
+                                                         .getInventory()
+                                                         .stream()
+                                                         .filter(innerInventorySlot -> innerInventorySlot.getCode()
+                                                                                                         .equals(bestArmorForSkill.get()
+                                                                                                                                  .getCode()))
+                                                         .findFirst()
+                ;
+        boolean itemExistsInBank;
+        try {
+            itemExistsInBank = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(bestArmorForSkill.get()
+                                                                                                  .getCode(), 1, 100
+                                        )
+                                                     .getData()
+                                                     .size() > 0;
+        } catch (ApiException e) {
+            logger.warn("Error getting bank items for skill " + bestArmorForSkill.get());
+            throw new RuntimeException(e);
+        }
+        boolean itemExistsInInventory = inventorySlot.isPresent();
+
+        boolean alreadyEquipped = checkIfEquipped(bestArmorForSkill.get()
+                                                                   .getCode(), itemSlot, character
+        );
+        if (!itemExistsInInventory && !itemExistsInBank && !alreadyEquipped) {
+            logger.info("Best tool (" + bestArmorForSkill.get()
+                                                         .getCode() + ") not in inventory nor bank nor equipped, requesting");
+            wishList.addRequest(new Wish(character.getData()
+                                                  .getName(), bestArmorForSkill.get()
+                                                                               .getCode()
+                    , 1
+            ));
+            return;
+        }
+        if (!alreadyEquipped && itemExistsInBank) {
+            fetchItemFromBank(character, bestArmorForSkill.get()
+                                                          .getCode()
+            );
+        }
+        if (!alreadyEquipped) {
+            equipGearIfNotEquipped(character.getData()
+                                            .getName(), bestArmorForSkill.get()
+                                                                         .getCode(), itemSlot
+            );
+        }
+    }
+
+    public void equipOrRequestBestToolForSkill(CharacterResponseSchema character, String skillName) {
         Optional<ItemSchema> bestToolForSkill = caches.findBestToolForSkillThatCanBeCraftedByAccount(skillName, character.getData()
                                                                                                                          .getMiningLevel()
         );
@@ -502,7 +640,7 @@ public abstract class CommonBrain implements Brain {
                                                                                                                                  .getCode()))
                                                          .findFirst()
                 ;
-        boolean itemExistsInBank = false;
+        boolean itemExistsInBank;
         try {
             itemExistsInBank = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(bestToolForSkill.get()
                                                                                                  .getCode(), 1, 100

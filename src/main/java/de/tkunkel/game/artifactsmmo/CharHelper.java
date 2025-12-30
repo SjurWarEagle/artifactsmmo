@@ -6,7 +6,7 @@ import org.jetbrains.annotations.UnknownNullability;
 public class CharHelper {
     public static boolean charHasRequiredSkillLevel(CharacterSchema character, @UnknownNullability String requiredSkill, int requiredSkillLevel) {
         int charSkillLevel = 0;
-        charSkillLevel = switch (requiredSkill) {
+        charSkillLevel = switch (requiredSkill.toLowerCase()) {
             case "alchemy" -> character.getAlchemyLevel();
             case "fishing" -> character.getFishingLevel();
             case "jewelrycrafting" -> character.getJewelrycraftingLevel();

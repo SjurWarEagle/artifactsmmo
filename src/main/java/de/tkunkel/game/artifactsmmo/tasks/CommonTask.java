@@ -48,7 +48,7 @@ public class CommonTask {
             waitUntilCooldownDone(character.getData()
                                            .getName());
         } catch (ApiException e) {
-            logger.error("Error while withdrawing item from bank", e);
+            logger.error("Error while withdrawing item " + neededItemCode + " from bank", e);
             throw new RuntimeException(e);
         }
     }

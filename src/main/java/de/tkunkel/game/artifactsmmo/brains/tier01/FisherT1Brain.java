@@ -56,7 +56,7 @@ public class FisherT1Brain extends CommonBrain {
         try {
             CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
             waitUntilCooldownDone(character);
-            equipOrRequestEquipment(character, "fishing");
+            equipOrRequestBestToolForSkill(character, "fishing");
             bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
 
             character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);

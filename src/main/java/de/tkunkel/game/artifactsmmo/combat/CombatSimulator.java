@@ -34,23 +34,23 @@ public class CombatSimulator {
 
             if (attackerActsFirst) {
                 defenderHp -= attackerDamage;
-                logger.info("turn {}: attacker hit for {}, Defender: {}/{}", round, attackerDamage, defenderHp, defender.hp);
+                // logger.info("turn {}: attacker hit for {}, Defender: {}/{}", round, attackerDamage, defenderHp, defender.hp);
                 if (defenderHp <= 0) {
                     return true;
                 }
                 attackerHp -= defenderDamage;
-                logger.info("turn {}: defender hit for {}, Attacker: {}/{}", round, defenderDamage, attackerHp, attacker.hp);
+                // logger.info("turn {}: defender hit for {}, Attacker: {}/{}", round, defenderDamage, attackerHp, attacker.hp);
                 if (attackerHp <= 0) {
                     return false;
                 }
             } else {
                 attackerHp -= defenderDamage;
-                logger.info("turn {}: defender hit for {}, Attacker: {}/{}", round, defenderDamage, attackerHp, attacker.hp);
+                // logger.info("turn {}: defender hit for {}, Attacker: {}/{}", round, defenderDamage, attackerHp, attacker.hp);
                 if (attackerHp <= 0) {
                     return false;
                 }
                 defenderHp -= attackerDamage;
-                logger.info("turn {}: attacker hit for {}, Defender: {}/{}", round, attackerDamage, defenderHp, defender.hp);
+                // logger.info("turn {}: attacker hit for {}, Defender: {}/{}", round, attackerDamage, defenderHp, defender.hp);
                 if (defenderHp <= 0) {
                     return true;
                 }

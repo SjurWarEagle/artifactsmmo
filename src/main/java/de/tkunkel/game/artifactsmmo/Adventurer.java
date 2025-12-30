@@ -50,10 +50,10 @@ public class Adventurer {
                 } catch (ApiException e) {
                     throw new RuntimeException(e);
                 }
-                Optional<Object> wishThatCanBeCraftedByMe = wishList.reserveWishThatCanBeCraftedByMe(character);
+                Optional<Wish> wishThatCanBeCraftedByMe = wishList.reserveWishThatCanBeCraftedByMe(character);
 
                 if (wishThatCanBeCraftedByMe.isPresent()) {
-                    Wish wish = (Wish) wishThatCanBeCraftedByMe.get();
+                    Wish wish = wishThatCanBeCraftedByMe.get();
                     brain.bankFetchItemsAndCraftTask.craftItemWithBankItems(brain, character, wish.itemCode);
                     wish.fulfilled = true;
                 } else {
