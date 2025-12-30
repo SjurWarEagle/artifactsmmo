@@ -58,8 +58,16 @@ public class BankFetchItemsAndCraftTask extends CommonTask {
             // fetch resources from bank that are missing from inventory
             // TODO only fetch what is missing in inventory
             for (SimpleItemSchema neededItem : neededItems) {
+                if (!bankItemsMyBankItemsGet.getData()
+                                            .stream()
+                                            .anyMatch(simpleItemSchema -> simpleItemSchema.getCode()
+                                                                                          .equalsIgnoreCase(neededItem.getCode()))) {
+                    return;
+                }
                 fetchItemFromBank(brain, character, neededItem.getCode(), neededItem.getQuantity());
             }
+
+            // todo after fetching check again if item can be crafted
 
             // craft item
             craftItemTask.craftItem(brain, character.getData()

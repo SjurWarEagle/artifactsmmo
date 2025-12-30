@@ -527,8 +527,10 @@ public abstract class CommonBrain implements Brain {
                                                              .getCode(), itemSlot, character
         );
         if (!itemExistsInInventory && !itemExistsInBank && !alreadyEquipped) {
-            logger.info("Best tool (" + bestForSlot.get()
-                                                   .getCode() + ") not in inventory nor bank nor equipped, requesting");
+            logger.info("Best item (%s) for %s not in inventory nor bank nor equipped, requesting"
+                                .formatted(bestForSlot.get()
+                                                      .getCode(), itemSlot.getValue()
+                                ));
             wishList.addRequest(new Wish(character.getData()
                                                   .getName(), bestForSlot.get()
                                                                          .getCode()

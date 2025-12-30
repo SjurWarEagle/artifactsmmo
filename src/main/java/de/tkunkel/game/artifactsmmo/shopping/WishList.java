@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -63,6 +64,13 @@ public class WishList {
     }
 
     private void addWishesForComponents(Wish wish) {
+        if (allWishes.stream()
+                     .anyMatch(existingWish -> Objects.equals(existingWish.itemCode, wish.itemCode)
+                             && existingWish.characterName.equalsIgnoreCase(wish.characterName))
+        ) {
+            // already exists
+            return;
+        }
         Optional<ItemSchema> itemDefinition = caches.findItemDefinition(wish.itemCode);
         if (itemDefinition.isEmpty()) {
             logger.error("Item {} not found", wish.itemCode);
@@ -87,6 +95,16 @@ public class WishList {
     }
 
     public synchronized Optional<Wish> reserveWishThatCanBeCraftedByMe(CharacterResponseSchema character) {
+        Optional<Wish> existingReservedWish = allWishes.stream()
+                                                       .filter(wish -> character.getData()
+                                                                                .getName()
+                                                                                .equalsIgnoreCase(wish.reservedBy))
+                                                       .findFirst()
+                ;
+        if (existingReservedWish.isPresent()) {
+            return existingReservedWish;
+        }
+
         for (Wish wish : allWishes) {
             if (!wish.fulfilled) {
                 Optional<ItemSchema> itemDefinition = caches.findItemDefinition(wish.itemCode);

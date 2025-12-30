@@ -222,7 +222,7 @@ public class Caches {
                                    .anyMatch(monsterSchema -> {
                                        CombatStats combatStatsMonster = CombatStats.fromMonster(monsterSchema);
                                        for (CombatStats character : characters) {
-                                           if (combatSimulator.winMoreThanXPercentAgainst(character, combatStatsMonster, 80)) {
+                                           if (combatSimulator.winMoreThanXPercentAgainst(character, combatStatsMonster, 95)) {
                                                return true;
                                            }
                                        }

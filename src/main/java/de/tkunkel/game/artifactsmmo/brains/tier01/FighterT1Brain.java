@@ -9,6 +9,7 @@ import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
 import de.tkunkel.game.artifactsmmo.tasks.BankDepositGoldIfRichTask;
 import de.tkunkel.game.artifactsmmo.tasks.BankFetchItemsAndCraftTask;
+import de.tkunkel.game.artifactsmmo.tasks.BankUpgradeIfPossibleTask;
 import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
@@ -22,6 +23,7 @@ import java.util.Optional;
 @Service
 public class FighterT1Brain extends CommonBrain {
     private final Logger logger = LoggerFactory.getLogger(FighterT1Brain.class.getName());
+    private final BankUpgradeIfPossibleTask bankUpgradeIfPossibleTask;
     private final BankDepositGoldIfRichTask bankDepositGoldIfRichTask;
     private final BankDepositAllTask bankDepositAllTask;
     private final CombatSimulator combatSimulator;
@@ -32,8 +34,9 @@ public class FighterT1Brain extends CommonBrain {
         return false;
     }
 
-    public FighterT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, BankDepositGoldIfRichTask bankDepositGoldIfRichTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, CombatSimulator combatSimulator) {
+    public FighterT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, BankUpgradeIfPossibleTask bankUpgradeIfPossibleTask, BankDepositGoldIfRichTask bankDepositGoldIfRichTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, CombatSimulator combatSimulator) {
         super(caches, wishList, apiHolder, bankFetchItemsAndCraftTask);
+        this.bankUpgradeIfPossibleTask = bankUpgradeIfPossibleTask;
         this.bankDepositGoldIfRichTask = bankDepositGoldIfRichTask;
         this.bankDepositAllTask = bankDepositAllTask;
         this.combatSimulator = combatSimulator;
@@ -45,6 +48,7 @@ public class FighterT1Brain extends CommonBrain {
             CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
             waitUntilCooldownDone(character);
             bankDepositGoldIfRichTask.depositInventoryInBankIfInventoryIsFull(this, character);
+            bankUpgradeIfPossibleTask.perform(this, character);
             depositNonFoodAtBankIfInventoryIsFull(character);
             cookFoodIfHaveSome(character);
             eatFoodOrRestIfNeeded(character);
@@ -67,32 +71,7 @@ public class FighterT1Brain extends CommonBrain {
                 logger.error("Could not find location of closest monster ({})", enemyToHunt);
                 return;
             }
-            boolean charAtDestination = false;
-
-            charAtDestination = (locationOfClosestMonster.get()
-                                                         .getX()
-                                                         .equals(character.getData()
-                                                                          .getX()) && locationOfClosestMonster.get()
-                                                                                                              .getY()
-                                                                                                              .equals(character.getData()
-                                                                                                                               .getY()));
-
-            if (!charAtDestination) {
-                DestinationSchema destinationSchema = new DestinationSchema();
-                destinationSchema.setX(locationOfClosestMonster.get()
-                                                               .getX());
-                destinationSchema.setY(locationOfClosestMonster.get()
-                                                               .getY());
-                apiHolder.myCharactersApi.actionMoveMyNameActionMovePost(character.getData()
-                                                                                  .getName(), destinationSchema
-                );
-                logger.info("Moving to location of closest monster");
-                return;
-            } else {
-                logger.info("Character {} is at location of closest monster", character.getData()
-                                                                                       .getName()
-                );
-            }
+            moveToLocation(character, locationOfClosestMonster.get());
 
             waitUntilCooldownDone(character);
             FightRequestSchema fightRequest = new FightRequestSchema();
@@ -251,7 +230,7 @@ public class FighterT1Brain extends CommonBrain {
                                            .findFirst()
                                            .get()
                 ;
-        boolean canBeat = combatSimulator.winMoreThanXPercentAgainst(CombatStats.fromCharacter(character.getData()), CombatStats.fromMonster(monster), 80);
+        boolean canBeat = combatSimulator.winMoreThanXPercentAgainst(CombatStats.fromCharacter(character.getData()), CombatStats.fromMonster(monster), 95);
         if (!canBeat) {
             logger.warn("Monster {} is too strong for character {}, using fallback.", monsterToHunt, character.getData()
                                                                                                               .getName()
@@ -261,7 +240,7 @@ public class FighterT1Brain extends CommonBrain {
             List<MonsterSchema> monsters = caches.cachedMonsters.stream()
                                                                 .filter(monsterSchema -> {
                                                                     CombatStats defender = CombatStats.fromMonster(monsterSchema);
-                                                                    return combatSimulator.winMoreThanXPercentAgainst(attacker, defender, 80);
+                                                                    return combatSimulator.winMoreThanXPercentAgainst(attacker, defender, 95);
                                                                 })
                                                                 .toList()
                     ;
