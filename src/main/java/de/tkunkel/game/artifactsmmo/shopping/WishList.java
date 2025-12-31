@@ -6,14 +6,12 @@ import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.DataPageSimpleItemSchema;
 import de.tkunkel.games.artifactsmmo.model.ItemSchema;
+import de.tkunkel.games.artifactsmmo.model.SimpleItemSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -30,7 +28,9 @@ public class WishList {
     }
 
     public void addRequest(Wish wish) {
-        if (allWishes.contains(wish)) {
+        if (allWishes.stream()
+                     .anyMatch(existingWish -> existingWish.itemCode.equals(wish.itemCode)
+                             && existingWish.characterName.equalsIgnoreCase(wish.characterName))) {
             return;
         }
         if (hasAlreadyInBank(wish)) {
@@ -101,7 +101,8 @@ public class WishList {
         }
 
         for (Wish wish : allWishes) {
-            if (!wish.fulfilled) {
+            if (!wish.fulfilled
+                    && wish.reservedBy == null) {
                 Optional<ItemSchema> itemDefinition = caches.findItemDefinition(wish.itemCode);
                 if (itemDefinition.isEmpty()) {
                     continue;
@@ -120,7 +121,12 @@ public class WishList {
                                                        .getCraft()
                                                        .getLevel()
                         ;
-                if (CharHelper.charHasRequiredSkillLevel(character.getData(), requiredSkillName, requiredSkillLevel)) {
+                boolean charHasSkill = CharHelper.charHasRequiredSkillLevel(character.getData(), requiredSkillName, requiredSkillLevel);
+
+                boolean isResourcesAtBank = areAllItemsInBank(itemDefinition.get()
+                                                                            .getCraft()
+                                                                            .getItems());
+                if (charHasSkill && isResourcesAtBank) {
                     wish.reservedBy = character.getData()
                                                .getName();
                     return Optional.of(wish);
@@ -128,5 +134,16 @@ public class WishList {
             }
         }
         return Optional.empty();
+    }
+
+    private boolean areAllItemsInBank(List<SimpleItemSchema> items) {
+        DataPageSimpleItemSchema bankItemsMyBankItemsGet = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(null, 1, 100);
+        return items.stream()
+                    .allMatch(simpleItemSchema -> {
+                        return bankItemsMyBankItemsGet.getData()
+                                                      .stream()
+                                                      .anyMatch(bankItem -> bankItem.getCode()
+                                                                                    .equalsIgnoreCase(simpleItemSchema.getCode()));
+                    });
     }
 }

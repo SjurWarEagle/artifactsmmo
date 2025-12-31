@@ -7,6 +7,8 @@ import de.tkunkel.games.artifactsmmo.model.BankResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.DataPageSimpleItemSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -30,6 +32,12 @@ public class MyAccountApiWrapper {
         }
     }
 
+    @Retryable(
+            retryFor = Exception.class,
+            exceptionExpression = "#root.message.contains('retry this')",
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000)
+    )
     public BankResponseSchema getBankDetailsMyBankGet() {
         try {
             return myAccountApi.getBankDetailsMyBankGet();

@@ -23,15 +23,17 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class MinerT1Brain extends CommonBrain {
     private final Logger logger = LoggerFactory.getLogger(MinerT1Brain.class.getName());
-    private FarmHighestResourceTask farmHighestResourceTask;
-    private CraftItemTask craftItemTask;
-    private BankDepositAllTask bankDepositAllTask;
+    private final FarmHighestResourceTask farmHighestResourceTask;
+    private final CraftItemTask craftItemTask;
+    private final BankDepositAllTask bankDepositAllTask;
+    private final BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask;
 
-    public MinerT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, FarmHighestResourceTask farmHighestResourceTask, CraftItemTask craftItemTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask) {
+    public MinerT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, FarmHighestResourceTask farmHighestResourceTask, CraftItemTask craftItemTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask1) {
         super(caches, wishList, apiHolder, bankFetchItemsAndCraftTask);
         this.farmHighestResourceTask = farmHighestResourceTask;
         this.craftItemTask = craftItemTask;
         this.bankDepositAllTask = bankDepositAllTask;
+        this.bankFetchItemsAndCraftTask = bankFetchItemsAndCraftTask1;
     }
 
     public boolean mineIfNotEnoughInInventory(String characterName, String oreName, int amount) {
@@ -93,14 +95,19 @@ public class MinerT1Brain extends CommonBrain {
             waitUntilCooldownDone(character);
             equipOrRequestBestToolForSkill(character, "mining");
             // TODO bankFetchItemsAndCraftTask.craftItemWithBankItems(this, character, "copper_dagger");
-            Optional<String> itemToCraft = findPossibleItemToCraftFromWishlist(character);
-            if (itemToCraft.isEmpty()) {
-                itemToCraft = findPossibleItemToCraft(character);
-            }
-            if (itemToCraft.isPresent()) {
-                craftItemTask.craftItem(this, characterName, itemToCraft.get());
+            Optional<Wish> wish = findPossibleItemToCraftFromWishlist(character);
+
+            if (wish.isPresent()) {
+                bankFetchItemsAndCraftTask.craftItemWithBankItems(this, character, wish.get().itemCode);
+                wish.get().reservedBy = null;
+                wish.get().fulfilled = true;
             } else {
-                farmHighestResourceTask.farmResource(this, characterName);
+                var itemToCraft = findPossibleItemToCraft(character);
+                if (itemToCraft.isPresent()) {
+                    craftItemTask.craftItem(this, characterName, itemToCraft.get());
+                } else {
+                    farmHighestResourceTask.farmResource(this, characterName);
+                }
             }
 
             Thread.sleep(TimeUnit.SECONDS.toMillis(1));
@@ -110,9 +117,9 @@ public class MinerT1Brain extends CommonBrain {
         }
     }
 
-    private Optional<String> findPossibleItemToCraftFromWishlist(CharacterResponseSchema character) {
+    private Optional<Wish> findPossibleItemToCraftFromWishlist(CharacterResponseSchema character) {
         Optional<Wish> wish = wishList.reserveWishThatCanBeCraftedByMe(character);
-        return wish.map(value -> value.itemCode);
+        return wish;
     }
 
     @Override

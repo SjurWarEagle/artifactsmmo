@@ -4,11 +4,16 @@ import de.tkunkel.games.artifactsmmo.ApiClient;
 import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.api.MyCharactersApi;
 import de.tkunkel.games.artifactsmmo.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Service
 public class MyCharactersApiWrapper {
     private final MyCharactersApi charactersApi;
+    private final Logger logger = LoggerFactory.getLogger(MyCharactersApiWrapper.class.getName());
 
     public MyCharactersApiWrapper(ApiClient apiClient) {
         charactersApi = new MyCharactersApi(apiClient);
@@ -58,8 +63,9 @@ public class MyCharactersApiWrapper {
         try {
             return charactersApi.actionWithdrawBankItemMyNameActionBankWithdrawItemPost(name, simpleItemSchemas);
         } catch (ApiException e) {
-            throw new RuntimeException(e);
+            logger.warn("actionWithdrawBankItemMyNameActionBankWithdrawItemPost, ignoring with the assumption another char was faster", e);
         }
+        return null;
     }
 
     public CharacterFightResponseSchema actionFightMyNameActionFightPost(String name, FightRequestSchema fightRequest) {
@@ -121,6 +127,14 @@ public class MyCharactersApiWrapper {
     public BankGoldTransactionResponseSchema actionDepositBankGoldMyNameActionBankDepositGoldPost(String name, DepositWithdrawGoldSchema depositWithdrawGoldSchema) {
         try {
             return charactersApi.actionDepositBankGoldMyNameActionBankDepositGoldPost(name, depositWithdrawGoldSchema);
+        } catch (ApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public TaskCancelledResponseSchema actionTaskCancelMyNameActionTaskCancelPost(String name) {
+        try {
+            return charactersApi.actionTaskCancelMyNameActionTaskCancelPost(name);
         } catch (ApiException e) {
             throw new RuntimeException(e);
         }

@@ -28,13 +28,14 @@ public class CommonTask {
     public void fetchItemFromBank(CommonBrain brain, CharacterResponseSchema character, String neededItemCode, int quantity) {
         waitUntilCooldownDone(character.getData()
                                        .getName());
-        SimpleItemSchema simpleItemSchema = new SimpleItemSchema().code(neededItemCode)
-                                                                  .quantity(quantity);
         brain.moveToLocation(character, brain.findClosestLocation(character, "bank")
                                              .get()
         );
         waitUntilCooldownDone(character.getData()
                                        .getName());
+        
+        SimpleItemSchema simpleItemSchema = new SimpleItemSchema().code(neededItemCode)
+                                                                  .quantity(quantity);
         brain.apiHolder.myCharactersApi.actionWithdrawBankItemMyNameActionBankWithdrawItemPost(character.getData()
                                                                                                         .getName(), Collections.singletonList(simpleItemSchema)
         );

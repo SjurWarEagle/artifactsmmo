@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Service
 public class CombatSimulator {
 
-    int maxRounds = 100;
+    private final int maxRounds = 100;
     private final Logger logger = LoggerFactory.getLogger(CombatSimulator.class.getName());
 
     //    @Cacheable(cacheNames = "combatSimulatorWinPercentage")

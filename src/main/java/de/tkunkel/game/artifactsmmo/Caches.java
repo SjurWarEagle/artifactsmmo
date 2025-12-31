@@ -1,10 +1,14 @@
 package de.tkunkel.game.artifactsmmo;
 
+import de.tkunkel.game.artifactsmmo.api.AccountsApiWrapper;
 import de.tkunkel.game.artifactsmmo.combat.CombatSimulator;
 import de.tkunkel.game.artifactsmmo.combat.CombatStats;
 import de.tkunkel.games.artifactsmmo.ApiClient;
 import de.tkunkel.games.artifactsmmo.ApiException;
-import de.tkunkel.games.artifactsmmo.api.*;
+import de.tkunkel.games.artifactsmmo.api.ItemsApi;
+import de.tkunkel.games.artifactsmmo.api.MapsApi;
+import de.tkunkel.games.artifactsmmo.api.MonstersApi;
+import de.tkunkel.games.artifactsmmo.api.ResourcesApi;
 import de.tkunkel.games.artifactsmmo.model.*;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -28,7 +32,7 @@ public class Caches {
     private ItemsApi itemsApi;
     private MonstersApi monstersApi;
     private ResourcesApi resourcesApi;
-    private AccountsApi accountsApi;
+    private final AccountsApiWrapper accountsApi;
     private CombatSimulator combatSimulator;
 
     private final ExecutorService executorService = Executors.newFixedThreadPool(4);
@@ -37,8 +41,9 @@ public class Caches {
     public final List<ItemSchema> cachedItems = new ArrayList<>();
     public final List<ResourceSchema> cachedResources = new ArrayList<>();
 
-    public Caches(Config config, CombatSimulator combatSimulator) {
+    public Caches(Config config, AccountsApiWrapper accountsApi, CombatSimulator combatSimulator) {
         this.config = config;
+        this.accountsApi = accountsApi;
         this.combatSimulator = combatSimulator;
     }
 
@@ -49,7 +54,6 @@ public class Caches {
         itemsApi = new ItemsApi(createApiClient());
         monstersApi = new MonstersApi(createApiClient());
         resourcesApi = new ResourcesApi(createApiClient());
-        accountsApi = new AccountsApi(createApiClient());
         fillCache();
     }
 
@@ -154,10 +158,27 @@ public class Caches {
                                                                             .name(), itemSchema.getCraft()
                                                                                                .getLevel()
                           ))
+                          .filter(itemSchema -> canCharEquipItem(itemSchema, charLevel))
                           .filter(itemSchema -> canAnyCharFarmResourcesForItem(itemSchema.getCode()))
                           // TODO sort the items by benefit (how ever) instead of level
                           .max(Comparator.comparingInt(ItemSchema::getLevel))
                 ;
+    }
+
+    private boolean canCharEquipItem(ItemSchema itemSchema, Integer charLevel) {
+        if (itemSchema.getConditions() == null) {
+            return true;
+        }
+        var rc = itemSchema.getConditions()
+                           .stream()
+                           .allMatch(conditionSchema -> (conditionSchema.getOperator()
+                                                                        .equals(ConditionOperator.GT)
+                                   && conditionSchema.getCode()
+                                                     .equalsIgnoreCase("level")
+                                   && charLevel >= conditionSchema.getValue()
+                           ))
+                ;
+        return rc;
     }
 
     private boolean canAnyCharFarmResourcesForItem(String itemCode) {
@@ -194,29 +215,21 @@ public class Caches {
     }
 
     private boolean anyCharHasEnoughSkill(CraftSkill skill, Integer level) {
-        try {
-            return accountsApi.getAccountCharactersAccountsAccountCharactersGet(Config.ACCOUNT_NAME)
-                              .getData()
-                              .stream()
-                              .anyMatch(characterSchema -> CharHelper.charHasRequiredSkillLevel(characterSchema, skill.name(), level));
-        } catch (ApiException e) {
-            throw new RuntimeException(e);
-        }
+        return accountsApi.getAccountCharactersAccountsAccountCharactersGet(Config.ACCOUNT_NAME)
+                          .getData()
+                          .stream()
+                          .anyMatch(characterSchema -> CharHelper.charHasRequiredSkillLevel(characterSchema, skill.name(), level));
     }
 
     private boolean canACharHuntMonsterThatDropsThis(ItemSchema itemSchema) {
         List<MonsterSchema> monstersThatDropThis = findMonstersThatDropThis(itemSchema.getCode());
         final List<CombatStats> characters = new ArrayList<>();
-        try {
-            characters.addAll(accountsApi.getAccountCharactersAccountsAccountCharactersGet(Config.ACCOUNT_NAME)
-                                         .getData()
-                                         .stream()
-                                         .map(CombatStats::fromCharacter)
-                                         .toList()
-            );
-        } catch (ApiException e) {
-            throw new RuntimeException(e);
-        }
+        characters.addAll(accountsApi.getAccountCharactersAccountsAccountCharactersGet(Config.ACCOUNT_NAME)
+                                     .getData()
+                                     .stream()
+                                     .map(CombatStats::fromCharacter)
+                                     .toList()
+        );
 
         return monstersThatDropThis.stream()
                                    .anyMatch(monsterSchema -> {
@@ -272,17 +285,11 @@ public class Caches {
     }
 
     private boolean aCharCanCraftThis(String requiredSkill, Integer requiredSkillLevel) {
-
-        try {
-            CharactersListSchema characters = accountsApi.getAccountCharactersAccountsAccountCharactersGet(Config.ACCOUNT_NAME);
-            for (CharacterSchema characterDatum : characters.getData()) {
-                if (CharHelper.charHasRequiredSkillLevel(characterDatum, requiredSkill, requiredSkillLevel)) {
-                    return true;
-                }
+        CharactersListSchema characters = accountsApi.getAccountCharactersAccountsAccountCharactersGet(Config.ACCOUNT_NAME);
+        for (CharacterSchema characterDatum : characters.getData()) {
+            if (CharHelper.charHasRequiredSkillLevel(characterDatum, requiredSkill, requiredSkillLevel)) {
+                return true;
             }
-        } catch (ApiException e) {
-            logger.warn("Failed to get characters", e);
-            throw new RuntimeException(e);
         }
         return false;
     }

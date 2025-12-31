@@ -240,6 +240,40 @@ public abstract class CommonBrain implements Brain {
         return rc.get();
     }
 
+    public Optional<MapSchema> findClosesTaskMaster(CharacterResponseSchema character, String taskMasterType) {
+        AtomicReference<Optional<MapSchema>> rc = new AtomicReference<>(Optional.empty());
+
+        int charX = character.getData()
+                             .getX();
+        int charY = character.getData()
+                             .getY();
+        caches.cachedMap.stream()
+                        .filter(mapSchema -> mapSchema.getInteractions()
+                                                      .getContent() != null)
+                        .filter(mapSchema -> mapSchema.getInteractions()
+                                                      .getContent()
+                                                      .getType() != null)
+                        .filter(mapSchema -> mapSchema.getInteractions()
+                                                      .getContent()
+                                                      .getType()
+                                                      .getValue()
+                                                      .equals("tasks_master"))
+                        .filter(mapSchema -> mapSchema.getInteractions()
+                                                      .getContent()
+                                                      .getCode()
+                                                      .equals(taskMasterType))
+                        .sorted((mapSchema1, mapSchema2) -> {
+                            int distance1 = Math.abs(mapSchema1.getX() - charX) + Math.abs(mapSchema1.getY() - charY);
+                            int distance2 = Math.abs(mapSchema2.getX() - charX) + Math.abs(mapSchema2.getY() - charY);
+                            return distance2 - distance1;
+                        })
+                        .forEach(mapSchema -> {
+                            rc.set(Optional.of(mapSchema));
+                        })
+        ;
+        return rc.get();
+    }
+
     public Optional<MapSchema> findClosestLocation(CharacterResponseSchema character, String activity) {
         AtomicReference<Optional<MapSchema>> rc = new AtomicReference<>(Optional.empty());
 

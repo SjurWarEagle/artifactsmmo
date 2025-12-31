@@ -39,7 +39,8 @@ public class Adventurer {
         bankDepositAllTask.depositInventoryInBank(brain, apiHolder.charactersApi.getCharacterCharactersNameGet(characterName));
         while (true) {
             logger.info("Adventurer {} of class {} is running", characterName, adventurerClass.name());
-            brain.equipOrRequestBestWeapon(characterName);
+            // disabled becauase a non-fighter switched between tool and weapon in each loop
+            // brain.equipOrRequestBestWeapon(characterName);
             brain.equipOrRequestBestArmorForSlot(characterName, "body_armor");
             brain.equipOrRequestBestArmorForSlot(characterName, "helmet");
             brain.equipOrRequestBestArmorForSlot(characterName, "shield");

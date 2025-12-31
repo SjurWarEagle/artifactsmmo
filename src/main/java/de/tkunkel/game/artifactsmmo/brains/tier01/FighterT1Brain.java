@@ -6,10 +6,7 @@ import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.game.artifactsmmo.combat.CombatSimulator;
 import de.tkunkel.game.artifactsmmo.combat.CombatStats;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
-import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
-import de.tkunkel.game.artifactsmmo.tasks.BankDepositGoldIfRichTask;
-import de.tkunkel.game.artifactsmmo.tasks.BankFetchItemsAndCraftTask;
-import de.tkunkel.game.artifactsmmo.tasks.BankUpgradeIfPossibleTask;
+import de.tkunkel.game.artifactsmmo.tasks.*;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,13 +23,15 @@ public class FighterT1Brain extends CommonBrain {
     private final BankDepositGoldIfRichTask bankDepositGoldIfRichTask;
     private final BankDepositAllTask bankDepositAllTask;
     private final CombatSimulator combatSimulator;
+    private final TaskCancelTask taskCancelTask;
 
-    public FighterT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, BankUpgradeIfPossibleTask bankUpgradeIfPossibleTask, BankDepositGoldIfRichTask bankDepositGoldIfRichTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, CombatSimulator combatSimulator) {
+    public FighterT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, BankUpgradeIfPossibleTask bankUpgradeIfPossibleTask, BankDepositGoldIfRichTask bankDepositGoldIfRichTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, CombatSimulator combatSimulator, TaskCancelTask taskCancelTask) {
         super(caches, wishList, apiHolder, bankFetchItemsAndCraftTask);
         this.bankUpgradeIfPossibleTask = bankUpgradeIfPossibleTask;
         this.bankDepositGoldIfRichTask = bankDepositGoldIfRichTask;
         this.bankDepositAllTask = bankDepositAllTask;
         this.combatSimulator = combatSimulator;
+        this.taskCancelTask = taskCancelTask;
     }
 
     @Override
@@ -44,9 +43,11 @@ public class FighterT1Brain extends CommonBrain {
         depositNonFoodAtBankIfInventoryIsFull(character);
         cookFoodIfHaveSome(character);
         eatFoodOrRestIfNeeded(character);
+        equipOrRequestBestWeapon(characterName);
 
         completeCurrentTaskIfDone(character);
-        getNewTaskIfCurrentTaskIsDone(character);
+        cancelCurrentTaskIfTooHard(character);
+//        getNewTaskIfCurrentTaskIsDone(character);
         bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
 
         waitUntilCooldownDone(character);
@@ -63,6 +64,40 @@ public class FighterT1Brain extends CommonBrain {
         FightRequestSchema fightRequest = new FightRequestSchema();
         apiHolder.myCharactersApi.actionFightMyNameActionFightPost(character.getData()
                                                                             .getName(), fightRequest
+        );
+    }
+
+    private void cancelCurrentTaskIfTooHard(CharacterResponseSchema character) {
+        var task = character.getData()
+                            .getTask();
+        if (task == null) {
+            return;
+        }
+        if (!"monsters".equalsIgnoreCase(character.getData()
+                                                  .getTaskType())) {
+            // not a killing task
+            return;
+        }
+        if (character.getData()
+                     .getTaskTotal() <= character.getData()
+                                                 .getTaskProgress()) {
+            // already done
+        }
+        CombatStats attacker = CombatStats.fromCharacter(character.getData());
+        MonsterSchema monster = caches.cachedMonsters.stream()
+                                                     .filter(monsterSchema -> monsterSchema.getCode()
+                                                                                           .equals(character.getData()
+                                                                                                            .getTask()))
+                                                     .findFirst()
+                                                     .get()
+                ;
+        CombatStats defender = CombatStats.fromMonster(monster);
+        if (combatSimulator.winMoreThanXPercentAgainst(attacker, defender, 95)) {
+            return;
+        }
+        logger.info("Too hard, canceling task");
+        taskCancelTask.perform(this, character.getData()
+                                              .getName()
         );
     }
 
