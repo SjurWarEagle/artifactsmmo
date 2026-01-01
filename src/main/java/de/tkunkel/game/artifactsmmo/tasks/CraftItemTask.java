@@ -30,7 +30,7 @@ public class CraftItemTask {
             logger.warn("Tried to craft {} but did not have all resources.", itemToCraft);
             return;
         }
-        MapSchema map = brain.findLocationToCraftItem(characterName, itemToCraft);
+        MapSchema map = brain.findLocationToCraftItem(itemToCraft);
         brain.moveToLocation(characterName, map);
         brain.waitUntilCooldownDone(characterName);
         brain.apiHolder.myCharactersApi.actionCraftingMyNameActionCraftingPost(characterName, new CraftingSchema().code(itemToCraft)
@@ -41,7 +41,7 @@ public class CraftItemTask {
 
     public void craftItemForWish(CommonBrain brain, String characterName, Wish wish) {
         boolean hasResourcesInInventory = hasResourcesInInventory(characterName, wish.itemCode);
-        boolean hasResourcesInBank = hasResourcesInBank(characterName, wish.itemCode);
+        boolean hasResourcesInBank = hasResourcesInBank(wish.itemCode);
         if (!hasResourcesInInventory
                 && !hasResourcesInBank
         ) {
@@ -49,7 +49,7 @@ public class CraftItemTask {
             wish.reservedBy = null;
             return;
         }
-        MapSchema map = brain.findLocationToCraftItem(characterName, wish.itemCode);
+        MapSchema map = brain.findLocationToCraftItem(wish.itemCode);
         brain.moveToLocation(characterName, map);
         brain.waitUntilCooldownDone(characterName);
         brain.apiHolder.myCharactersApi.actionCraftingMyNameActionCraftingPost(characterName, new CraftingSchema().code(wish.itemCode)
@@ -58,7 +58,7 @@ public class CraftItemTask {
         brain.waitUntilCooldownDone(characterName);
     }
 
-    public boolean hasResourcesInBank(String characterName, String itemToCraft) {
+    public boolean hasResourcesInBank(String itemToCraft) {
         Optional<ItemSchema> itemDefinition = caches.findItemDefinition(itemToCraft);
         if (itemDefinition.isEmpty()
                 || itemDefinition.get()
@@ -92,6 +92,7 @@ public class CraftItemTask {
         ) {
             return true;
         }
+        // noinspection DataFlowIssue
         return itemDefinition.get()
                              .getCraft()
                              .getItems()

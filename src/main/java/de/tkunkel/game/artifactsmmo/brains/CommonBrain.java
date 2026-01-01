@@ -45,7 +45,7 @@ public abstract class CommonBrain implements Brain {
         return true;
     }
 
-    public MapSchema findLocationToCraftItem(String characterName, String itemToCraft) {
+    public MapSchema findLocationToCraftItem(String itemToCraft) {
         Optional<ItemSchema> itemSchemaOptional = caches.cachedItems.stream()
                                                                     .filter(item -> item.getCode()
                                                                                         .equals(itemToCraft))
@@ -54,17 +54,17 @@ public abstract class CommonBrain implements Brain {
         if (itemSchemaOptional.isEmpty()) {
             throw new RuntimeException("Item " + itemToCraft + " not found");
         }
-        Optional<MapSchema> map = caches.cachedMap.stream()
-                                                  .filter(mapSchema -> mapSchema.getInteractions()
-                                                                                .getContent() != null)
-                                                  .filter(mapSchema -> mapSchema.getInteractions()
-                                                                                .getContent()
-                                                                                .getCode()
-                                                                                .equals(itemSchemaOptional.get()
-                                                                                                          .getCraft()
-                                                                                                          .getSkill()
-                                                                                                          .getValue()))
-                                                  .findFirst()
+        @SuppressWarnings("DataFlowIssue") Optional<MapSchema> map = caches.cachedMap.stream()
+                                                                                     .filter(mapSchema -> mapSchema.getInteractions()
+                                                                                                                   .getContent() != null)
+                                                                                     .filter(mapSchema -> mapSchema.getInteractions()
+                                                                                                                   .getContent()
+                                                                                                                   .getCode()
+                                                                                                                   .equals(itemSchemaOptional.get()
+                                                                                                                                             .getCraft()
+                                                                                                                                             .getSkill()
+                                                                                                                                             .getValue()))
+                                                                                     .findFirst()
                 ;
         if (map.isEmpty()) {
             throw new RuntimeException("No map found for skill " + itemSchemaOptional.get()

@@ -24,14 +24,16 @@ public class FighterT1Brain extends CommonBrain {
     private final BankDepositAllTask bankDepositAllTask;
     private final CombatSimulator combatSimulator;
     private final TaskCancelTask taskCancelTask;
+    private final TaskAcceptNewTask taskAcceptNewTask;
 
-    public FighterT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, BankUpgradeIfPossibleTask bankUpgradeIfPossibleTask, BankDepositGoldIfRichTask bankDepositGoldIfRichTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, CombatSimulator combatSimulator, TaskCancelTask taskCancelTask) {
+    public FighterT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, BankUpgradeIfPossibleTask bankUpgradeIfPossibleTask, BankDepositGoldIfRichTask bankDepositGoldIfRichTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, CombatSimulator combatSimulator, TaskCancelTask taskCancelTask, TaskAcceptNewTask taskAcceptNewTask) {
         super(caches, wishList, apiHolder, bankFetchItemsAndCraftTask);
         this.bankUpgradeIfPossibleTask = bankUpgradeIfPossibleTask;
         this.bankDepositGoldIfRichTask = bankDepositGoldIfRichTask;
         this.bankDepositAllTask = bankDepositAllTask;
         this.combatSimulator = combatSimulator;
         this.taskCancelTask = taskCancelTask;
+        this.taskAcceptNewTask = taskAcceptNewTask;
     }
 
     @Override
@@ -47,7 +49,7 @@ public class FighterT1Brain extends CommonBrain {
 
         completeCurrentTaskIfDone(character);
         cancelCurrentTaskIfTooHard(character);
-//        getNewTaskIfCurrentTaskIsDone(character);
+        taskAcceptNewTask.getNewTaskIfCurrentTaskIsDone(this, character);
         bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
 
         waitUntilCooldownDone(character);
@@ -136,24 +138,6 @@ public class FighterT1Brain extends CommonBrain {
         apiHolder.myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
                                                                                                 .getName(), bankRequestSchema
         );
-    }
-
-    private void getNewTaskIfCurrentTaskIsDone(CharacterResponseSchema character) {
-        if (!"".equalsIgnoreCase(character.getData()
-                                          .getTask())) {
-            // still has task
-            return;
-        }
-        Optional<MapSchema> closestLocation = findClosestLocation(character, "monsters");
-        if (closestLocation.isEmpty()) {
-            return;
-        }
-        boolean moved = moveToLocation(character, closestLocation.get());
-        if (moved) {
-            return;
-        }
-        apiHolder.myCharactersApi.actionAcceptNewTaskMyNameActionTaskNewPost(character.getData()
-                                                                                      .getName());
     }
 
     private void completeCurrentTaskIfDone(CharacterResponseSchema character) {
