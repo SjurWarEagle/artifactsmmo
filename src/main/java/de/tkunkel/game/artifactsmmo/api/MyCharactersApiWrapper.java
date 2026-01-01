@@ -72,6 +72,7 @@ public class MyCharactersApiWrapper {
         try {
             return charactersApi.actionFightMyNameActionFightPost(name, fightRequest);
         } catch (ApiException e) {
+            logger.warn("Problems with actionFightMyNameActionFightPost(" + fightRequest.toJson() + ")", e);
             throw new RuntimeException(e);
         }
     }

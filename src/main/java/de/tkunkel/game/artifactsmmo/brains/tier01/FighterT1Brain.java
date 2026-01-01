@@ -52,6 +52,7 @@ public class FighterT1Brain extends CommonBrain {
 
         waitUntilCooldownDone(character);
 
+        character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
         String enemyToHunt = decideWhatEnemyToHunt(character);
         Optional<MapSchema> locationOfClosestMonster = findLocationOfClosestMonster(character, enemyToHunt);
         if (locationOfClosestMonster.isEmpty()) {
@@ -212,7 +213,7 @@ public class FighterT1Brain extends CommonBrain {
     }
 
     private String decideWhatEnemyToHunt(CharacterResponseSchema character) {
-        String monsterToHunt = "chicken";
+        String monsterToHunt = null;
         if (character.getData()
                      .getTask() != null && TaskType.MONSTERS.getValue()
                                                             .equals(character.getData()
@@ -221,6 +222,9 @@ public class FighterT1Brain extends CommonBrain {
                                                                                                                                        .getTaskTotal()) {
             monsterToHunt = character.getData()
                                      .getTask();
+        }
+        if (monsterToHunt == null) {
+            monsterToHunt = findHighestMonsterToHunt(character);
         }
 
         String finalMonsterToHunt = monsterToHunt;
@@ -264,6 +268,12 @@ public class FighterT1Brain extends CommonBrain {
         }
 
         return monsterToHunt;
+    }
+
+    private String findHighestMonsterToHunt(CharacterResponseSchema character) {
+        CombatStats charCombatStats = CombatStats.fromCharacter(character.getData());
+        String rc = "chicken";
+        return rc;
     }
 
 }

@@ -16,12 +16,14 @@
         <th>Amount</th>
         <th>Requestor</th>
         <th>reserved by</th>
+        <th>fulfilled</th>
     </tr>
     <tr th:each="wish : ${wishlist}">
         <td th:text="${wish.itemCode}"></td>
         <td th:text="${wish.amount}" style="text-align: right"></td>
         <td th:text="${wish.characterName}"></td>
         <td th:text="${wish.reservedBy}"></td>
+        <td th:text="${wish.fulfilled}"></td>
     </tr>
 </table>
 <p th:if="${#lists.isEmpty(wishlist)}">No wishes found</p>
