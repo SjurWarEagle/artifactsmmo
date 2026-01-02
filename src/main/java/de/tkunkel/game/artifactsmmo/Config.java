@@ -1,16 +1,10 @@
 package de.tkunkel.game.artifactsmmo;
 
-import org.springframework.stereotype.Component;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
-@Component
-public class Config {
-    public static final String ACCOUNT_NAME = "wareagle";
-    public static String API_TOKEN;
-
-    public Config() {
-        if (System.getenv("API_TOKEN") == null) {
-            throw new RuntimeException("API_TOKEN not set");
-        }
-        Config.API_TOKEN = System.getenv("API_TOKEN");
-    }
+@ConfigurationProperties(prefix = "artifactsmmo.api")
+@Validated
+public record Config(@NotNull String accountName, @NotNull String token) {
 }

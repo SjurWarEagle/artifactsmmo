@@ -89,6 +89,7 @@ public class MyCharactersApiWrapper {
         try {
             return charactersApi.actionGatheringMyNameActionGatheringPost(name);
         } catch (ApiException e) {
+            logger.error("could not gather resources", e);
             throw new RuntimeException(e);
         }
     }

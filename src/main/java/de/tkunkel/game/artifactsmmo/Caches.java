@@ -60,7 +60,7 @@ public class Caches {
 
     private ApiClient createApiClient() {
         ApiClient rc = new ApiClient();
-        rc.setBearerToken(config.API_TOKEN);
+        rc.setBearerToken(config.token());
         rc.setBasePath("https://api.artifactsmmo.com");
         return rc;
     }
@@ -72,7 +72,7 @@ public class Caches {
             executorService.submit(this::cacheItems);
             executorService.submit(this::cacheMonsters);
             executorService.submit(this::cacheResources);
-            
+
             executorService.shutdown();
             executorService.awaitTermination(1, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
@@ -251,7 +251,7 @@ public class Caches {
     }
 
     private boolean anyCharHasEnoughSkill(CraftSkill skill, Integer level) {
-        return accountsApi.getAccountCharactersAccountsAccountCharactersGet(Config.ACCOUNT_NAME)
+        return accountsApi.getAccountCharactersAccountsAccountCharactersGet()
                           .getData()
                           .stream()
                           .anyMatch(characterSchema -> CharHelper.charHasRequiredSkillLevel(characterSchema, skill.name(), level));
@@ -260,7 +260,7 @@ public class Caches {
     private boolean canACharHuntMonsterThatDropsThis(ItemSchema itemSchema) {
         List<MonsterSchema> monstersThatDropThis = findMonstersThatDropThis(itemSchema.getCode());
         final List<CombatStats> characters = new ArrayList<>();
-        characters.addAll(accountsApi.getAccountCharactersAccountsAccountCharactersGet(Config.ACCOUNT_NAME)
+        characters.addAll(accountsApi.getAccountCharactersAccountsAccountCharactersGet()
                                      .getData()
                                      .stream()
                                      .map(CombatStats::fromCharacter)
@@ -321,7 +321,7 @@ public class Caches {
     }
 
     private boolean aCharCanCraftThis(String requiredSkill, Integer requiredSkillLevel) {
-        CharactersListSchema characters = accountsApi.getAccountCharactersAccountsAccountCharactersGet(Config.ACCOUNT_NAME);
+        CharactersListSchema characters = accountsApi.getAccountCharactersAccountsAccountCharactersGet();
         for (CharacterSchema characterDatum : characters.getData()) {
             if (CharHelper.charHasRequiredSkillLevel(characterDatum, requiredSkill, requiredSkillLevel)) {
                 return true;

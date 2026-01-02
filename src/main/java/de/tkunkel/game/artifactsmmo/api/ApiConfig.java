@@ -8,10 +8,16 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class ApiConfig {
+    private final Config config;
+
+    public ApiConfig(Config config) {
+        this.config = config;
+    }
+
     @Bean
     public ApiClient createApiClient() {
         ApiClient apiClient = new ApiClient();
-        apiClient.setBearerToken(Config.API_TOKEN);
+        apiClient.setBearerToken(config.token());
         apiClient.setBasePath("https://api.artifactsmmo.com");
         return apiClient;
     }

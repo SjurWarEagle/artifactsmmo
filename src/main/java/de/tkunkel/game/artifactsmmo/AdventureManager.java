@@ -41,7 +41,7 @@ public class AdventureManager {
                 adventurer.startLoop();
             } catch (Exception e) {
                 logger.error("Error starting adventurer", e);
-                throw new RuntimeException(e);
+//                throw new RuntimeException(e);
             }
         });
     }
