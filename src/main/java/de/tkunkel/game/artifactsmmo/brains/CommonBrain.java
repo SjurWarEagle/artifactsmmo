@@ -479,9 +479,7 @@ public abstract class CommonBrain implements Brain {
     public void equipOrRequestBestWeapon(String characterName) {
         CharacterResponseSchema character = null;
         character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-        Optional<ItemSchema> bestForSlot = caches.findBestItemForSlotThatCanBeCraftedByAccount(ItemSlot.WEAPON.name(), character.getData()
-                                                                                                                                .getLevel()
-        );
+        Optional<ItemSchema> bestForSlot = caches.findBestItemForSlotThatCanBeCraftedByAccount(ItemSlot.WEAPON.name(), character);
         if (bestForSlot.isEmpty()) {
             return;
         }
@@ -493,9 +491,6 @@ public abstract class CommonBrain implements Brain {
         )) {
             return;
         }
-        //        logger.info("Equipping {}", bestForSlot.get()
-        //                                                  .getCode()
-        //       );
         Optional<InventorySlot> inventorySlot = character.getData()
                                                          .getInventory()
                                                          .stream()
@@ -544,9 +539,7 @@ public abstract class CommonBrain implements Brain {
         CharacterResponseSchema character = null;
         character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
 
-        Optional<ItemSchema> bestArmorForSkill = caches.findBestItemForSlotThatCanBeCraftedByAccount(slotName, character.getData()
-                                                                                                                        .getLevel()
-        );
+        Optional<ItemSchema> bestArmorForSkill = caches.findBestItemForSlotThatCanBeCraftedByAccount(slotName, character);
         if (bestArmorForSkill.isEmpty()) {
             return;
         }

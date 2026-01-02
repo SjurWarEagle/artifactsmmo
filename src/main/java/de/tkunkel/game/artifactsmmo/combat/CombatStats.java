@@ -3,8 +3,9 @@ package de.tkunkel.game.artifactsmmo.combat;
 import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
 import de.tkunkel.games.artifactsmmo.model.MonsterSchema;
 
-public class CombatStats {
+public class CombatStats implements Cloneable {
     public int hp;
+    public int dmg;
     public int criticalStrike;
     public int initiative;
     public int attackEarth;
@@ -68,5 +69,11 @@ public class CombatStats {
                 ", attackWater=" + attackWater +
                 ", resWater=" + resWater +
                 '}';
+    }
+
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();  // Native shallow copy
     }
 }

@@ -49,7 +49,7 @@ public class FighterT1Brain extends CommonBrain {
 
         completeCurrentTaskIfDone(character);
         cancelCurrentTaskIfTooHard(character);
-        taskAcceptNewTask.getNewTaskIfCurrentTaskIsDone(this, character);
+        // taskAcceptNewTask.getNewTaskIfCurrentTaskIsDone(this, character);
         bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
 
         waitUntilCooldownDone(character);

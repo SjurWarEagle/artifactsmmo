@@ -11,7 +11,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -30,7 +33,9 @@ public class WishList {
     public void addRequest(Wish wish) {
         if (allWishes.stream()
                      .anyMatch(existingWish -> existingWish.itemCode.equals(wish.itemCode)
-                             && existingWish.characterName.equalsIgnoreCase(wish.characterName))) {
+                             && existingWish.characterName.equalsIgnoreCase(wish.characterName)
+                             && !existingWish.fulfilled
+                     )) {
             return;
         }
         if (hasAlreadyInBank(wish)) {
@@ -59,13 +64,6 @@ public class WishList {
     }
 
     private void addWishesForComponents(Wish wish) {
-        if (allWishes.stream()
-                     .anyMatch(existingWish -> Objects.equals(existingWish.itemCode, wish.itemCode)
-                             && existingWish.characterName.equalsIgnoreCase(wish.characterName))
-        ) {
-            // already exists
-            return;
-        }
         Optional<ItemSchema> itemDefinition = caches.findItemDefinition(wish.itemCode);
         if (itemDefinition.isEmpty()) {
             logger.error("Item {} not found", wish.itemCode);

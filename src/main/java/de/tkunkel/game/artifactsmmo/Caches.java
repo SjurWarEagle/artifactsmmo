@@ -3,6 +3,7 @@ package de.tkunkel.game.artifactsmmo;
 import de.tkunkel.game.artifactsmmo.api.AccountsApiWrapper;
 import de.tkunkel.game.artifactsmmo.combat.CombatSimulator;
 import de.tkunkel.game.artifactsmmo.combat.CombatStats;
+import de.tkunkel.game.artifactsmmo.combat.CombatStatsEditor;
 import de.tkunkel.games.artifactsmmo.ApiClient;
 import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.api.ItemsApi;
@@ -16,7 +17,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -33,17 +33,18 @@ public class Caches {
     private MonstersApi monstersApi;
     private ResourcesApi resourcesApi;
     private final AccountsApiWrapper accountsApi;
+    private final CombatStatsEditor combatStatsEditor;
     private CombatSimulator combatSimulator;
 
-    private final ExecutorService executorService = Executors.newFixedThreadPool(4);
     public final List<MapSchema> cachedMap = new ArrayList<>();
     public final List<MonsterSchema> cachedMonsters = new ArrayList<>();
     public final List<ItemSchema> cachedItems = new ArrayList<>();
     public final List<ResourceSchema> cachedResources = new ArrayList<>();
 
-    public Caches(Config config, AccountsApiWrapper accountsApi, CombatSimulator combatSimulator) {
+    public Caches(Config config, AccountsApiWrapper accountsApi, CombatStatsEditor combatStatsEditor, CombatSimulator combatSimulator) {
         this.config = config;
         this.accountsApi = accountsApi;
+        this.combatStatsEditor = combatStatsEditor;
         this.combatSimulator = combatSimulator;
     }
 
@@ -65,28 +66,34 @@ public class Caches {
     }
 
     public void fillCache() {
-        executorService.submit(this::cacheMap);
-        executorService.submit(this::cacheItems);
-        executorService.submit(this::cacheMonsters);
-        executorService.submit(this::cacheResources);
-        executorService.shutdown();
-        try {
+        try (ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime()
+                                                                                   .availableProcessors() * 2)) {
+            executorService.submit(this::cacheMap);
+            executorService.submit(this::cacheItems);
+            executorService.submit(this::cacheMonsters);
+            executorService.submit(this::cacheResources);
+            
+            executorService.shutdown();
             executorService.awaitTermination(1, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+
     }
 
     private void cacheResources() {
         logger.info("Starting cache of resources");
         try {
-            DataPageResourceSchema allResourcesResourcesGet = resourcesApi.getAllResourcesResourcesGet(null, null, null, null, 1, 100);
-            int cntPages = allResourcesResourcesGet.getPages();
+            DataPageResourceSchema all = resourcesApi.getAllResourcesResourcesGet(null, null, null, null, 1, 100);
+            if (all == null) {
+                throw new RuntimeException("No resources found");
+            }
+            int cntPages = all.getPages();
             logger.info("Caching resources page count {}", cntPages);
             for (Integer pageNr = 1; pageNr < cntPages + 1; pageNr++) {
                 logger.info("Caching resources page {}", pageNr);
-                allResourcesResourcesGet = resourcesApi.getAllResourcesResourcesGet(null, null, null, null, pageNr, 100);
-                cachedResources.addAll(allResourcesResourcesGet.getData());
+                all = resourcesApi.getAllResourcesResourcesGet(null, null, null, null, pageNr, 100);
+                cachedResources.addAll(all.getData());
             }
         } catch (ApiException e) {
             throw new RuntimeException(e);
@@ -148,7 +155,13 @@ public class Caches {
                           .findFirst();
     }
 
-    public Optional<ItemSchema> findBestItemForSlotThatCanBeCraftedByAccount(String slotName, Integer charLevel) {
+    public Optional<ItemSchema> findBestItemForSlotThatCanBeCraftedByAccount(String slotName, CharacterResponseSchema character) {
+        final CombatStats characterCombatStats = CombatStats.fromCharacter(character.getData());
+
+        final List<CombatStats> monsterCombatStats = cachedMonsters.stream()
+                                                                   .map(monsterSchema -> CombatStats.fromMonster(monsterSchema))
+                                                                   .toList()
+                ;
         return cachedItems.stream()
                           .filter(itemSchema -> itemSchema.getType()
                                                           .equalsIgnoreCase(slotName))
@@ -158,11 +171,34 @@ public class Caches {
                                                                             .name(), itemSchema.getCraft()
                                                                                                .getLevel()
                           ))
-                          .filter(itemSchema -> canCharEquipItem(itemSchema, charLevel))
+                          .filter(itemSchema -> canCharEquipItem(itemSchema, character.getData()
+                                                                                      .getLevel()
+                          ))
                           .filter(itemSchema -> canAnyCharFarmResourcesForItem(itemSchema.getCode()))
-                          // TODO sort the items by benefit (how ever) instead of level
-                          .max(Comparator.comparingInt(ItemSchema::getLevel))
+                          .sorted((item1, item2) -> compareByKillableMonsters(item1, item2, character, characterCombatStats, monsterCombatStats))
+                          // use last of streams
+                          .reduce((o1, o2) -> o2)
                 ;
+    }
+
+    private int compareByKillableMonsters(ItemSchema item1, ItemSchema item2, CharacterResponseSchema character, CombatStats characterCombatStats, List<CombatStats> defenders) {
+        ItemSlot itemSlot = ItemSlot.fromValue(item1.getType());
+        Optional<ItemSchema> oldItem = CharHelper.getEquippedItemOfSlot(cachedItems, character, itemSlot);
+        if (oldItem.isEmpty()) {
+            return -1;
+        }
+        CombatStats manipulatedStats = combatStatsEditor.createManipulatedStats(characterCombatStats, oldItem.get(), item1);
+        int cntMonsters1 = combatSimulator.simulateHowManyMonstersCanBeBeaten(manipulatedStats, defenders);
+
+        itemSlot = ItemSlot.fromValue(item2.getType());
+        oldItem = CharHelper.getEquippedItemOfSlot(cachedItems, character, itemSlot);
+        if (oldItem.isEmpty()) {
+            return -1;
+        }
+        manipulatedStats = combatStatsEditor.createManipulatedStats(characterCombatStats, oldItem.get(), item2);
+        int cntMonsters2 = combatSimulator.simulateHowManyMonstersCanBeBeaten(manipulatedStats, defenders);
+        return cntMonsters1 - cntMonsters2;
+
     }
 
     private boolean canCharEquipItem(ItemSchema itemSchema, Integer charLevel) {
