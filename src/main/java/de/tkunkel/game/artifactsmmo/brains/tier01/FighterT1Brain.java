@@ -24,15 +24,17 @@ public class FighterT1Brain extends CommonBrain {
     private final BankDepositAllTask bankDepositAllTask;
     private final CombatSimulator combatSimulator;
     private final TaskCancelTask taskCancelTask;
+    private final CookingTask cookingTask;
     private final TaskAcceptNewTask taskAcceptNewTask;
 
-    public FighterT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, BankUpgradeIfPossibleTask bankUpgradeIfPossibleTask, BankDepositGoldIfRichTask bankDepositGoldIfRichTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, CombatSimulator combatSimulator, TaskCancelTask taskCancelTask, TaskAcceptNewTask taskAcceptNewTask) {
+    public FighterT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, BankUpgradeIfPossibleTask bankUpgradeIfPossibleTask, BankDepositGoldIfRichTask bankDepositGoldIfRichTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, CombatSimulator combatSimulator, TaskCancelTask taskCancelTask, CookingTask cookingTask, TaskAcceptNewTask taskAcceptNewTask) {
         super(caches, wishList, apiHolder, bankFetchItemsAndCraftTask);
         this.bankUpgradeIfPossibleTask = bankUpgradeIfPossibleTask;
         this.bankDepositGoldIfRichTask = bankDepositGoldIfRichTask;
         this.bankDepositAllTask = bankDepositAllTask;
         this.combatSimulator = combatSimulator;
         this.taskCancelTask = taskCancelTask;
+        this.cookingTask = cookingTask;
         this.taskAcceptNewTask = taskAcceptNewTask;
     }
 
@@ -43,7 +45,7 @@ public class FighterT1Brain extends CommonBrain {
         bankDepositGoldIfRichTask.depositInventoryInBankIfInventoryIsFull(this, character);
         bankUpgradeIfPossibleTask.perform(this, character);
         depositNonFoodAtBankIfInventoryIsFull(character);
-        cookFoodIfHaveSome(character);
+        cookingTask.cookFoodIfHaveSome(this, character);
         eatFoodOrRestIfNeeded(character);
         equipOrRequestBestWeapon(characterName);
 
@@ -161,40 +163,6 @@ public class FighterT1Brain extends CommonBrain {
                                                                                           .getName());
     }
 
-    private void cookFoodIfHaveSome(CharacterResponseSchema character) {
-        Optional<InventorySlot> foodItem = character.getData()
-                                                    .getInventory()
-                                                    .stream()
-                                                    .filter(inventorySlot -> inventorySlot.getCode()
-                                                                                          .equalsIgnoreCase("raw_chicken"))
-                                                    .filter(inventorySlot -> inventorySlot.getQuantity() >= 5)
-                                                    // TODO check cooking-skill .filter(inventorySlot -> inventorySlot.getCode().equalsIgnoreCase("egg"))
-                                                    .findAny()
-                ;
-        if (foodItem.isPresent()) {
-            Optional<MapSchema> cooking = findClosestLocation(character, "cooking");
-            if (cooking.isPresent()) {
-                boolean moved = moveToLocation(character, cooking.get());
-                if (moved) {
-                    return;
-                }
-                // TODO get targetCode from item-definition
-                String targetCode = switch (foodItem.get()
-                                                    .getCode()) {
-                    case "raw_chicken" -> "cooked_chicken";
-                    default -> throw new IllegalStateException("Unexpected value: " + foodItem.get()
-                                                                                              .getCode());
-                };
-                CraftingSchema craftingSchema = new CraftingSchema().code(targetCode)
-                                                                    .quantity(foodItem.get()
-                                                                                      .getQuantity());
-                apiHolder.myCharactersApi.actionCraftingMyNameActionCraftingPost(character.getData()
-                                                                                          .getName(), craftingSchema
-                );
-            }
-        }
-
-    }
 
     private String decideWhatEnemyToHunt(CharacterResponseSchema character) {
         String monsterToHunt = null;

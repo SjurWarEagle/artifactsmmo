@@ -6,6 +6,7 @@ import de.tkunkel.game.artifactsmmo.shopping.Wish;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
+import de.tkunkel.games.artifactsmmo.model.ItemSchema;
 import org.jetbrains.annotations.UnknownNullability;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +57,7 @@ public class Adventurer {
                     Wish wish = wishThatCanBeCraftedByMe.get();
                     brain.bankFetchItemsAndCraftTask.craftItemWithBankItems(brain, character, wish.itemCode);
                     wish.fulfilled = true;
+                    wish.reservedBy = null;
                 } else {
                     // nothing to craft, so use default
                     brain.runBaseLoop(characterName);
@@ -77,18 +79,32 @@ public class Adventurer {
             return false;
         }
         Wish wish = optionalWish.get();
-        boolean inInventory = character.getData()
-                                       .getInventory()
-                                       .stream()
-                                       .filter(inventorySlot -> inventorySlot.getCode()
-                                                                             .equals(wish.itemCode))
-                                       .findAny()
-                                       .isPresent()
+        Optional<ItemSchema> itemDefinition = brain.caches.findItemDefinition(wish.itemCode);
+        return itemDefinition.get()
+                             .getCraft()
+                             .getItems()
+                             .stream()
+                             .allMatch(resourceItem -> {
+                                 boolean inInventory = character.getData()
+                                                                .getInventory()
+                                                                .stream()
+                                                                .filter(inventorySlot -> inventorySlot.getCode()
+                                                                                                      .equals(resourceItem.getCode()))
+                                                                .findAny()
+                                                                .isPresent()
+                                         ;
+                                 if (inInventory) {
+                                     return true;
+                                 }
+                                 boolean inBank = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(resourceItem.getCode(), 1, 100
+                                                           )
+                                                                        .getData()
+                                                                        .size() > 0;
+                                 return inBank;
+                             })
                 ;
-        boolean inBank = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(wish.itemCode, 1, 100)
-                                               .getData()
-                                               .size() > 0;
-        return inInventory || inBank;
+
+
     }
 
     private CommonBrain decideNewBrain() {
