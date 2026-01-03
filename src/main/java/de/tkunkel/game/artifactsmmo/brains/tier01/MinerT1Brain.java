@@ -2,7 +2,6 @@ package de.tkunkel.game.artifactsmmo.brains.tier01;
 
 
 import de.tkunkel.game.artifactsmmo.ApiHolder;
-import de.tkunkel.game.artifactsmmo.BrainCompletedException;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.game.artifactsmmo.shopping.Wish;
@@ -24,7 +23,6 @@ public class MinerT1Brain extends CommonBrain {
     private final CraftItemTask craftItemTask;
     private final TrainingSkillTask trainingSkillTask;
     private final BankDepositAllTask bankDepositAllTask;
-    private final BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask;
 
     public MinerT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, FarmHighestResourceTask farmHighestResourceTask, CraftItemTask craftItemTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, TrainingSkillTask trainingSkillTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask1) {
         super(caches, wishList, apiHolder, bankFetchItemsAndCraftTask);
@@ -32,14 +30,11 @@ public class MinerT1Brain extends CommonBrain {
         this.craftItemTask = craftItemTask;
         this.bankDepositAllTask = bankDepositAllTask;
         this.trainingSkillTask = trainingSkillTask;
-        this.bankFetchItemsAndCraftTask = bankFetchItemsAndCraftTask1;
     }
 
     public boolean mineIfNotEnoughInInventory(String characterName, String oreName, int amount) {
         CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
         waitUntilCooldownDone(character);
-
-        Optional<ItemSchema> itemToTrain = trainingSkillTask.findBestItemToHarvestAndCraft(this, character, Skill.MINING, Skill.GEARCRAFTING);
 
         List<InventorySlot> inventory = character.getData()
                                                  .getInventory();
@@ -90,13 +85,12 @@ public class MinerT1Brain extends CommonBrain {
 
 
     @Override
-    public void runBaseLoop(String characterName) throws BrainCompletedException {
+    public void runBaseLoop(String characterName) {
         try {
             CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
             bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
             waitUntilCooldownDone(character);
             equipOrRequestBestToolForSkill(character, "mining");
-
 
             Optional<Wish> wish = findPossibleItemToCraftFromWishlist(character);
 
@@ -105,6 +99,9 @@ public class MinerT1Brain extends CommonBrain {
                 wish.get().reservedBy = null;
                 wish.get().fulfilled = true;
             } else {
+                Optional<ItemSchema> itemToTrain = trainingSkillTask
+                        .findHighestItemThatThisCharCanCreateAlone(this, character, Skill.MINING, Skill.GEARCRAFTING, Skill.WEAPONCRAFTING);
+
                 var itemToCraft = findPossibleItemToCraft(character);
                 if (itemToCraft.isPresent()) {
                     craftItemTask.craftItem(this, characterName, itemToCraft.get());

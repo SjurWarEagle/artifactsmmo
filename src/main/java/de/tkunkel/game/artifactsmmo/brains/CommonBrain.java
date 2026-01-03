@@ -25,7 +25,7 @@ public abstract class CommonBrain implements Brain {
     public final Caches caches;
     protected final WishList wishList;
     public final ApiHolder apiHolder;
-    public final BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask;
+    public BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask;
 
     private final Logger logger = LoggerFactory.getLogger(CommonBrain.class.getName());
 

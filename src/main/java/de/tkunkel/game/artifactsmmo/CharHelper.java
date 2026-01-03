@@ -1,16 +1,16 @@
 package de.tkunkel.game.artifactsmmo;
 
-import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
-import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
-import de.tkunkel.games.artifactsmmo.model.ItemSchema;
-import de.tkunkel.games.artifactsmmo.model.ItemSlot;
-import org.jetbrains.annotations.UnknownNullability;
+import de.tkunkel.games.artifactsmmo.model.*;
 
 import java.util.List;
 import java.util.Optional;
 
 public class CharHelper {
-    public static boolean charHasRequiredSkillLevel(CharacterSchema character, @UnknownNullability String requiredSkill, int requiredSkillLevel) {
+    public static int getSkillLevelForSkill(CharacterSchema character, Skill requiredSkill) {
+        return getSkillLevelForSkill(character, requiredSkill.name());
+    }
+
+    public static int getSkillLevelForSkill(CharacterSchema character, String requiredSkill) {
         int charSkillLevel = 0;
         charSkillLevel = switch (requiredSkill.toLowerCase()) {
             case "alchemy" -> character.getAlchemyLevel();
@@ -23,9 +23,13 @@ public class CharHelper {
             case "cooking" -> character.getCookingLevel();
             default -> throw new RuntimeException("unknown skill: " + requiredSkill);
         };
-        return charSkillLevel >= requiredSkillLevel;
+        return charSkillLevel;
     }
 
+    public static boolean charHasRequiredSkillLevel(CharacterSchema character, String requiredSkill, int requiredSkillLevel) {
+        int charSkillLevel = getSkillLevelForSkill(character, requiredSkill);
+        return charSkillLevel >= requiredSkillLevel;
+    }
 
     public static Optional<ItemSchema> getEquippedItemOfSlot(List<ItemSchema> cachedItems, CharacterResponseSchema character, ItemSlot itemSlot) {
         String itemCodeInSlot = switch (itemSlot) {
