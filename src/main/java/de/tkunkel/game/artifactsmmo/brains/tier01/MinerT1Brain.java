@@ -7,10 +7,7 @@ import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.game.artifactsmmo.shopping.Wish;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
-import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
-import de.tkunkel.game.artifactsmmo.tasks.BankFetchItemsAndCraftTask;
-import de.tkunkel.game.artifactsmmo.tasks.CraftItemTask;
-import de.tkunkel.game.artifactsmmo.tasks.FarmHighestResourceTask;
+import de.tkunkel.game.artifactsmmo.tasks.*;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,20 +22,25 @@ public class MinerT1Brain extends CommonBrain {
     private final Logger logger = LoggerFactory.getLogger(MinerT1Brain.class.getName());
     private final FarmHighestResourceTask farmHighestResourceTask;
     private final CraftItemTask craftItemTask;
+    private final TrainingSkillTask trainingSkillTask;
     private final BankDepositAllTask bankDepositAllTask;
     private final BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask;
 
-    public MinerT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, FarmHighestResourceTask farmHighestResourceTask, CraftItemTask craftItemTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask1) {
+    public MinerT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, FarmHighestResourceTask farmHighestResourceTask, CraftItemTask craftItemTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, TrainingSkillTask trainingSkillTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask1) {
         super(caches, wishList, apiHolder, bankFetchItemsAndCraftTask);
         this.farmHighestResourceTask = farmHighestResourceTask;
         this.craftItemTask = craftItemTask;
         this.bankDepositAllTask = bankDepositAllTask;
+        this.trainingSkillTask = trainingSkillTask;
         this.bankFetchItemsAndCraftTask = bankFetchItemsAndCraftTask1;
     }
 
     public boolean mineIfNotEnoughInInventory(String characterName, String oreName, int amount) {
         CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
         waitUntilCooldownDone(character);
+
+        Optional<ItemSchema> itemToTrain = trainingSkillTask.findBestItemToHarvestAndCraft(this, character, Skill.MINING, Skill.GEARCRAFTING);
+
         List<InventorySlot> inventory = character.getData()
                                                  .getInventory();
 
@@ -94,7 +96,8 @@ public class MinerT1Brain extends CommonBrain {
             bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
             waitUntilCooldownDone(character);
             equipOrRequestBestToolForSkill(character, "mining");
-            // TODO bankFetchItemsAndCraftTask.craftItemWithBankItems(this, character, "copper_dagger");
+
+
             Optional<Wish> wish = findPossibleItemToCraftFromWishlist(character);
 
             if (wish.isPresent()) {

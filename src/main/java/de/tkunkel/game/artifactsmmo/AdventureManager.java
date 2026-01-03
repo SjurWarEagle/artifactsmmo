@@ -15,7 +15,7 @@ import java.util.concurrent.Executors;
 
 @Component
 public class AdventureManager {
-    private final Logger logger = LoggerFactory.getLogger(Starter.class.getName());
+    private final Logger logger = LoggerFactory.getLogger(AdventureManager.class.getName());
 
     private final List<Adventurer> adventurers = new ArrayList<>();
     private final ExecutorService executorService = Executors.newFixedThreadPool(10);

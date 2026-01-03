@@ -429,6 +429,8 @@ public abstract class CommonBrain implements Brain {
     }
 
     public boolean moveToLocation(CharacterResponseSchema character, MapSchema destination) {
+        character = apiHolder.charactersApi.getCharacterCharactersNameGet(character.getData()
+                                                                                   .getName());
         boolean alreadyReached = destination.getX()
                                             .equals(character.getData()
                                                              .getX())
