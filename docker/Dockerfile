@@ -8,7 +8,8 @@ RUN mvn -B -e -U dependency:go-offline -DskipTests
 
 # Now copy the rest of the source and build
 COPY src ./src
-RUN mvn -B -e generate-sources package -DskipTests
+RUN mvn -B -e generate-sources package spring-boot:repackage
+
 
 # ====== Runtime stage ======
 FROM eclipse-temurin:25-jre AS runtime
@@ -17,10 +18,6 @@ WORKDIR /app
 # Copy the fat jar built in the previous stage
 # Adjust the jar file name if yours differs
 COPY --from=build /app/target/*.jar app.jar
-
-# Use a non-root user if desired (UID can differ)
-# RUN adduser --disabled-password --gecos "" appuser && chown appuser:appuser app.jar
-# USER appuser
 
 EXPOSE 8080
 ENV JAVA_OPTS=""
