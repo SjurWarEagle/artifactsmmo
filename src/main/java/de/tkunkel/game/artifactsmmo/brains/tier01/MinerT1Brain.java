@@ -3,8 +3,8 @@ package de.tkunkel.game.artifactsmmo.brains.tier01;
 
 import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.Caches;
+import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
-import de.tkunkel.game.artifactsmmo.helper.ItemHelper;
 import de.tkunkel.game.artifactsmmo.shopping.Wish;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.*;
@@ -26,8 +26,11 @@ public class MinerT1Brain extends CommonBrain {
     private final BankDepositAllTask bankDepositAllTask;
 
 
-    public MinerT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, FarmHighestResourceTask farmHighestResourceTask, CraftItemTask craftItemTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, TrainingSkillTask trainingSkillTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask1, ItemHelper itemHelper) {
-        super(caches, wishList, apiHolder, bankFetchItemsAndCraftTask);
+    public MinerT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, FarmHighestResourceTask farmHighestResourceTask,
+                        CraftItemTask craftItemTask, BankDepositAllTask bankDepositAllTask,
+                        BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, TrainingSkillTask trainingSkillTask,
+                        CharHelper charHelper) {
+        super(caches, wishList, apiHolder, charHelper, bankFetchItemsAndCraftTask);
         this.farmHighestResourceTask = farmHighestResourceTask;
         this.craftItemTask = craftItemTask;
         this.bankDepositAllTask = bankDepositAllTask;
@@ -36,7 +39,7 @@ public class MinerT1Brain extends CommonBrain {
 
     public boolean mineIfNotEnoughInInventory(String characterName, String oreName, int amount) {
         CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-        waitUntilCooldownDone(character);
+        charHelper.waitUntilCooldownDone(character);
 
         List<InventorySlot> inventory = character.getData()
                                                  .getInventory();
@@ -55,14 +58,14 @@ public class MinerT1Brain extends CommonBrain {
             logger.error("No mine found");
             return false;
         }
-        moveToLocation(character, mine.get());
+        charHelper.moveToLocation(character, mine.get());
         gather(character);
         logger.info("Starting mineUntilReached");
         return true;
     }
 
     private void gather(CharacterResponseSchema character) {
-        waitUntilCooldownDone(character);
+        charHelper.waitUntilCooldownDone(character);
         apiHolder.myCharactersApi.actionGatheringMyNameActionGatheringPost(character.getData()
                                                                                     .getName());
 
@@ -75,9 +78,9 @@ public class MinerT1Brain extends CommonBrain {
             logger.error("No smelter found.");
             throw new RuntimeException("no smelter found");
         }
-        waitUntilCooldownDone(character);
-        moveToLocation(character, smelter.get());
-        waitUntilCooldownDone(character);
+        charHelper.waitUntilCooldownDone(character);
+        charHelper.moveToLocation(character, smelter.get());
+        charHelper.waitUntilCooldownDone(character);
         CraftingSchema craftingSchema = new CraftingSchema().code(toCraft)
                                                             .quantity(1);
         apiHolder.myCharactersApi.actionCraftingMyNameActionCraftingPost(character.getData()
@@ -91,7 +94,7 @@ public class MinerT1Brain extends CommonBrain {
         try {
             CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
             bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
-            waitUntilCooldownDone(character);
+            charHelper.waitUntilCooldownDone(character);
             equipOrRequestBestToolForSkill(character, "mining");
 
             Optional<Wish> wish = findPossibleItemToCraftFromWishlist(character);

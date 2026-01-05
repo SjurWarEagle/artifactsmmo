@@ -1,5 +1,6 @@
 package de.tkunkel.game.artifactsmmo.tasks;
 
+import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
@@ -17,9 +18,11 @@ import java.util.Optional;
 public class BankDepositAllTask {
     private final Logger logger = LoggerFactory.getLogger(BankDepositAllTask.class.getName());
     private final CharactersApiWrapper charactersApi;
+    private final CharHelper charHelper;
 
-    public BankDepositAllTask(CharactersApiWrapper charactersApi) {
+    public BankDepositAllTask(CharactersApiWrapper charactersApi, CharHelper charHelper) {
         this.charactersApi = charactersApi;
+        this.charHelper = charHelper;
     }
 
     public void depositInventoryInBankIfInventoryIsFull(CommonBrain brain, CharacterResponseSchema character) {
@@ -37,8 +40,8 @@ public class BankDepositAllTask {
             throw new RuntimeException("Could not find bank for character " + character.getData()
                                                                                        .getName());
         }
-        brain.moveToLocation(character, bank.get());
-        brain.waitUntilCooldownDone(character);
+        charHelper.moveToLocation(character, bank.get());
+        charHelper.waitUntilCooldownDone(character);
         List<SimpleItemSchema> itemsToDeposit = character.getData()
                                                          .getInventory()
                                                          .stream()
@@ -59,7 +62,7 @@ public class BankDepositAllTask {
         brain.apiHolder.myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
                                                                                                       .getName(), itemsToDeposit
         );
-        brain.waitUntilCooldownDone(character);
+        charHelper.waitUntilCooldownDone(character);
     }
 
     public void depositInventoryInBank(CommonBrain brain, CharacterResponseSchema character) {
@@ -86,13 +89,13 @@ public class BankDepositAllTask {
                                                          .toList()
                 ;
         if (!itemsToDeposit.isEmpty()) {
-            brain.moveToLocation(character, bank.get());
-            brain.waitUntilCooldownDone(character);
+            charHelper.moveToLocation(character, bank.get());
+            charHelper.waitUntilCooldownDone(character);
             brain.apiHolder.myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
                                                                                                           .getName(), itemsToDeposit
             );
         }
-        brain.waitUntilCooldownDone(character);
+        charHelper.waitUntilCooldownDone(character);
     }
 
 }

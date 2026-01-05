@@ -1,9 +1,12 @@
 package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.Caches;
+import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyAccountApiWrapper;
+import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
+import de.tkunkel.game.artifactsmmo.helper.ItemHelper;
 import de.tkunkel.game.artifactsmmo.shopping.Wish;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
@@ -18,11 +21,17 @@ public class CraftItemTask {
     private final CharactersApiWrapper charactersApiWrapper;
     private final MyAccountApiWrapper myAccountApiWrapper;
     private final Caches caches;
+    private final ItemHelper itemHelper;
+    private final CharHelper charHelper;
+    private final MyCharactersApiWrapper myCharactersApi;
 
-    public CraftItemTask(CharactersApiWrapper charactersApiWrapper, MyAccountApiWrapper myAccountApiWrapper, Caches caches) {
+    public CraftItemTask(CharactersApiWrapper charactersApiWrapper, MyAccountApiWrapper myAccountApiWrapper, Caches caches, ItemHelper itemHelper, CharHelper charHelper, MyCharactersApiWrapper myCharactersApi) {
         this.charactersApiWrapper = charactersApiWrapper;
         this.myAccountApiWrapper = myAccountApiWrapper;
         this.caches = caches;
+        this.itemHelper = itemHelper;
+        this.charHelper = charHelper;
+        this.myCharactersApi = myCharactersApi;
     }
 
     public void craftItem(CommonBrain brain, String characterName, String itemToCraft) {
@@ -30,16 +39,16 @@ public class CraftItemTask {
             logger.warn("Tried to craft {} but did not have all resources.", itemToCraft);
             return;
         }
-        MapSchema map = brain.findLocationToCraftItem(itemToCraft);
-        brain.moveToLocation(characterName, map);
-        brain.waitUntilCooldownDone(characterName);
-        brain.apiHolder.myCharactersApi.actionCraftingMyNameActionCraftingPost(characterName, new CraftingSchema().code(itemToCraft)
-                                                                                                                  .quantity(1)
+        MapSchema map = itemHelper.findLocationToCraftItem(itemToCraft);
+        charHelper.moveToLocation(characterName, map);
+        charHelper.waitUntilCooldownDone(characterName);
+        myCharactersApi.actionCraftingMyNameActionCraftingPost(characterName, new CraftingSchema().code(itemToCraft)
+                                                                                                  .quantity(1)
         );
-        brain.waitUntilCooldownDone(characterName);
+        charHelper.waitUntilCooldownDone(characterName);
     }
 
-    public void craftItemForWish(CommonBrain brain, String characterName, Wish wish) {
+    public void craftItemForWish(String characterName, Wish wish) {
         boolean hasResourcesInInventory = hasResourcesInInventory(characterName, wish.itemCode);
         boolean hasResourcesInBank = hasResourcesInBank(wish.itemCode);
         if (!hasResourcesInInventory
@@ -49,13 +58,13 @@ public class CraftItemTask {
             wish.reservedBy = null;
             return;
         }
-        MapSchema map = brain.findLocationToCraftItem(wish.itemCode);
-        brain.moveToLocation(characterName, map);
-        brain.waitUntilCooldownDone(characterName);
-        brain.apiHolder.myCharactersApi.actionCraftingMyNameActionCraftingPost(characterName, new CraftingSchema().code(wish.itemCode)
-                                                                                                                  .quantity(1)
+        MapSchema map = itemHelper.findLocationToCraftItem(wish.itemCode);
+        charHelper.moveToLocation(characterName, map);
+        charHelper.waitUntilCooldownDone(characterName);
+        myCharactersApi.actionCraftingMyNameActionCraftingPost(characterName, new CraftingSchema().code(wish.itemCode)
+                                                                                                  .quantity(1)
         );
-        brain.waitUntilCooldownDone(characterName);
+        charHelper.waitUntilCooldownDone(characterName);
     }
 
     public boolean hasResourcesInBank(String itemToCraft) {

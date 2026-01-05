@@ -1,6 +1,7 @@
 package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.ApiHolder;
+import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.SimpleItemSchema;
@@ -15,9 +16,11 @@ public class CommonTask {
     private final Logger logger = LoggerFactory.getLogger(CommonTask.class.getName());
 
     protected final ApiHolder apiHolder;
+    private final CharHelper charHelper;
 
-    public CommonTask(ApiHolder apiHolder) {
+    public CommonTask(ApiHolder apiHolder, CharHelper charHelper) {
         this.apiHolder = apiHolder;
+        this.charHelper = charHelper;
     }
 
     public void waitUntilCooldownDone(String characterName) {
@@ -28,12 +31,12 @@ public class CommonTask {
     public void fetchItemFromBank(CommonBrain brain, CharacterResponseSchema character, String neededItemCode, int quantity) {
         waitUntilCooldownDone(character.getData()
                                        .getName());
-        brain.moveToLocation(character, brain.findClosestLocation(character, "bank")
-                                             .get()
+        charHelper.moveToLocation(character, brain.findClosestLocation(character, "bank")
+                                                  .get()
         );
         waitUntilCooldownDone(character.getData()
                                        .getName());
-        
+
         SimpleItemSchema simpleItemSchema = new SimpleItemSchema().code(neededItemCode)
                                                                   .quantity(quantity);
         brain.apiHolder.myCharactersApi.actionWithdrawBankItemMyNameActionBankWithdrawItemPost(character.getData()

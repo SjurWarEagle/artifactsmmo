@@ -2,6 +2,7 @@ package de.tkunkel.game.artifactsmmo.helper;
 
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.games.artifactsmmo.model.ItemSchema;
+import de.tkunkel.games.artifactsmmo.model.MapSchema;
 import de.tkunkel.games.artifactsmmo.model.SimpleItemSchema;
 import org.springframework.stereotype.Service;
 
@@ -66,6 +67,35 @@ public class ItemHelper {
         }
 
         return rc;
-
     }
+
+    public MapSchema findLocationToCraftItem(String itemToCraft) {
+        Optional<ItemSchema> itemSchemaOptional = caches.cachedItems.stream()
+                                                                    .filter(item -> item.getCode()
+                                                                                        .equals(itemToCraft))
+                                                                    .findFirst()
+                ;
+        if (itemSchemaOptional.isEmpty()) {
+            throw new RuntimeException("Item " + itemToCraft + " not found");
+        }
+        @SuppressWarnings("DataFlowIssue") Optional<MapSchema> map = caches.cachedMap.stream()
+                                                                                     .filter(mapSchema -> mapSchema.getInteractions()
+                                                                                                                   .getContent() != null)
+                                                                                     .filter(mapSchema -> mapSchema.getInteractions()
+                                                                                                                   .getContent()
+                                                                                                                   .getCode()
+                                                                                                                   .equals(itemSchemaOptional.get()
+                                                                                                                                             .getCraft()
+                                                                                                                                             .getSkill()
+                                                                                                                                             .getValue()))
+                                                                                     .findFirst()
+                ;
+        if (map.isEmpty()) {
+            throw new RuntimeException("No map found for skill " + itemSchemaOptional.get()
+                                                                                     .getCraft()
+                                                                                     .getSkill());
+        }
+        return map.get();
+    }
+
 }

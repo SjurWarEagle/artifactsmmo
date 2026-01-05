@@ -1,5 +1,6 @@
 package de.tkunkel.game.artifactsmmo.tasks;
 
+import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.MapSchema;
@@ -10,6 +11,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class FarmHighestResourceTask {
     private final Logger logger = LoggerFactory.getLogger(FarmHighestResourceTask.class.getName());
+    private final CharHelper charHelper;
+
+    public FarmHighestResourceTask(CharHelper charHelper) {
+        this.charHelper = charHelper;
+    }
 
     public void farmResource(CommonBrain brain, String characterName) {
         String resourceToFarm = brain.decideWhatResourceToFarm(characterName);
@@ -18,11 +24,11 @@ public class FarmHighestResourceTask {
         // logger.info("Farming {} at {}", resourceToFarm, whereToGather);
         CharacterResponseSchema character = null;
         character = brain.apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-        brain.waitUntilCooldownDone(character);
-        brain.moveToLocation(character, whereToGather);
-        brain.waitUntilCooldownDone(character);
+        charHelper.waitUntilCooldownDone(character);
+        charHelper.moveToLocation(character, whereToGather);
+        charHelper.waitUntilCooldownDone(character);
         brain.apiHolder.myCharactersApi.actionGatheringMyNameActionGatheringPost(character.getData()
                                                                                           .getName());
-        brain.waitUntilCooldownDone(character);
+        charHelper.waitUntilCooldownDone(character);
     }
 }

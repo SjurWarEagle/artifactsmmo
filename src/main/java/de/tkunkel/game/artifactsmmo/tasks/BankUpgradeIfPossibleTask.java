@@ -1,5 +1,6 @@
 package de.tkunkel.game.artifactsmmo.tasks;
 
+import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.games.artifactsmmo.model.BankResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
@@ -14,9 +15,14 @@ import java.util.Optional;
 @Service
 public class BankUpgradeIfPossibleTask {
     private final Logger logger = LoggerFactory.getLogger(BankUpgradeIfPossibleTask.class.getName());
+    private final CharHelper charHelper;
+
+    public BankUpgradeIfPossibleTask(CharHelper charHelper) {
+        this.charHelper = charHelper;
+    }
 
     public void perform(CommonBrain brain, CharacterResponseSchema character) {
-        brain.waitUntilCooldownDone(character);
+        charHelper.waitUntilCooldownDone(character);
 
         BankResponseSchema bankDetailsMyBankGet = brain.apiHolder.myAccountApi.getBankDetailsMyBankGet();
         if (bankDetailsMyBankGet.getData()
@@ -34,7 +40,7 @@ public class BankUpgradeIfPossibleTask {
             throw new RuntimeException("Could not find bank for character " + character.getData()
                                                                                        .getName());
         }
-        brain.moveToLocation(character, bank.get());
+        charHelper.moveToLocation(character, bank.get());
 
 
         DepositWithdrawGoldSchema transaction = new DepositWithdrawGoldSchema().quantity(bankDetailsMyBankGet.getData()
@@ -42,12 +48,12 @@ public class BankUpgradeIfPossibleTask {
         brain.apiHolder.myCharactersApi.actionWithdrawBankGoldMyNameActionBankWithdrawGoldPost(character.getData()
                                                                                                         .getName(), transaction
         );
-        brain.waitUntilCooldownDone(character);
+        charHelper.waitUntilCooldownDone(character);
 
         brain.apiHolder.myCharactersApi.actionBuyBankExpansionMyNameActionBankBuyExpansionPost(character.getData()
                                                                                                         .getName()
         );
-        brain.waitUntilCooldownDone(character);
+        charHelper.waitUntilCooldownDone(character);
     }
 
 }

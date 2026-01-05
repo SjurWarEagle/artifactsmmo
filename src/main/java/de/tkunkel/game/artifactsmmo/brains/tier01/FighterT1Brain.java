@@ -2,6 +2,7 @@ package de.tkunkel.game.artifactsmmo.brains.tier01;
 
 import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.Caches;
+import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.game.artifactsmmo.combat.CombatSimulator;
 import de.tkunkel.game.artifactsmmo.combat.CombatStats;
@@ -28,8 +29,12 @@ public class FighterT1Brain extends CommonBrain {
     private final CookingTask cookingTask;
     private final TaskAcceptNewTask taskAcceptNewTask;
 
-    public FighterT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, BankUpgradeIfPossibleTask bankUpgradeIfPossibleTask, BankDepositGoldIfRichTask bankDepositGoldIfRichTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, ItemHelper itemHelper, CombatSimulator combatSimulator, TaskCancelTask taskCancelTask, CookingTask cookingTask, TaskAcceptNewTask taskAcceptNewTask) {
-        super(caches, wishList, apiHolder, bankFetchItemsAndCraftTask);
+    public FighterT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder,
+                          BankUpgradeIfPossibleTask bankUpgradeIfPossibleTask, BankDepositGoldIfRichTask bankDepositGoldIfRichTask,
+                          BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask,
+                          ItemHelper itemHelper, CombatSimulator combatSimulator, TaskCancelTask taskCancelTask, CookingTask cookingTask,
+                          TaskAcceptNewTask taskAcceptNewTask, CharHelper charHelper) {
+        super(caches, wishList, apiHolder, charHelper, bankFetchItemsAndCraftTask);
         this.bankUpgradeIfPossibleTask = bankUpgradeIfPossibleTask;
         this.bankDepositGoldIfRichTask = bankDepositGoldIfRichTask;
         this.bankDepositAllTask = bankDepositAllTask;
@@ -42,7 +47,7 @@ public class FighterT1Brain extends CommonBrain {
     @Override
     public void runBaseLoop(String characterName) {
         CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-        waitUntilCooldownDone(character);
+        charHelper.waitUntilCooldownDone(character);
         bankDepositGoldIfRichTask.depositInventoryInBankIfInventoryIsFull(this, character);
         bankUpgradeIfPossibleTask.perform(this, character);
         depositNonFoodAtBankIfInventoryIsFull(character);
@@ -55,7 +60,7 @@ public class FighterT1Brain extends CommonBrain {
         // taskAcceptNewTask.getNewTaskIfCurrentTaskIsDone(this, character);
         bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
 
-        waitUntilCooldownDone(character);
+        charHelper.waitUntilCooldownDone(character);
 
         character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
         String enemyToHunt = decideWhatEnemyToHunt(character);
@@ -64,9 +69,9 @@ public class FighterT1Brain extends CommonBrain {
             logger.error("Could not find location of closest monster ({})", enemyToHunt);
             return;
         }
-        moveToLocation(character, locationOfClosestMonster.get());
+        charHelper.moveToLocation(character, locationOfClosestMonster.get());
 
-        waitUntilCooldownDone(character);
+        charHelper.waitUntilCooldownDone(character);
         FightRequestSchema fightRequest = new FightRequestSchema();
         apiHolder.myCharactersApi.actionFightMyNameActionFightPost(character.getData()
                                                                             .getName(), fightRequest
@@ -119,8 +124,8 @@ public class FighterT1Brain extends CommonBrain {
             throw new RuntimeException("Could not find bank for character " + character.getData()
                                                                                        .getName());
         }
-        moveToLocation(character, bank.get());
-        waitUntilCooldownDone(character);
+        charHelper.moveToLocation(character, bank.get());
+        charHelper.waitUntilCooldownDone(character);
         List<SimpleItemSchema> bankRequestSchema = character.getData()
                                                             .getInventory()
                                                             .stream()
@@ -156,7 +161,7 @@ public class FighterT1Brain extends CommonBrain {
         if (closestLocation.isEmpty()) {
             return;
         }
-        boolean moved = moveToLocation(character, closestLocation.get());
+        boolean moved = charHelper.moveToLocation(character, closestLocation.get());
         if (moved) {
             return;
         }

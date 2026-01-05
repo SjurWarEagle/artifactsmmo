@@ -1,6 +1,7 @@
 package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.ApiHolder;
+import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.MyAccountApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
@@ -20,11 +21,13 @@ public class TaskCancelTask extends CommonTask {
 
     private final MyAccountApiWrapper myAccountApiWrapper;
     private final MyCharactersApiWrapper myCharactersApiWrapper;
+    private final CharHelper charHelper;
 
-    public TaskCancelTask(ApiHolder apiHolder, MyAccountApiWrapper myAccountApiWrapper, MyCharactersApiWrapper myCharactersApiWrapper) {
-        super(apiHolder);
+    public TaskCancelTask(ApiHolder apiHolder, MyAccountApiWrapper myAccountApiWrapper, MyCharactersApiWrapper myCharactersApiWrapper, CharHelper charHelper) {
+        super(apiHolder, charHelper);
         this.myAccountApiWrapper = myAccountApiWrapper;
         this.myCharactersApiWrapper = myCharactersApiWrapper;
+        this.charHelper = charHelper;
     }
 
     public void perform(CommonBrain brain, String characterName) {
@@ -55,7 +58,7 @@ public class TaskCancelTask extends CommonTask {
         waitUntilCooldownDone(characterName);
         character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
 
-        brain.moveToLocation(character, taskMaster.get());
+        charHelper.moveToLocation(character, taskMaster.get());
         waitUntilCooldownDone(characterName);
         myCharactersApiWrapper.actionTaskCancelMyNameActionTaskCancelPost(characterName);
         waitUntilCooldownDone(characterName);

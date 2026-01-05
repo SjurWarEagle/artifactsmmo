@@ -1,6 +1,7 @@
 package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.Caches;
+import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyAccountApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
@@ -21,12 +22,14 @@ public class CookingTask {
     private final MyAccountApiWrapper myAccountApiWrapper;
     private final MyCharactersApiWrapper myCharactersApi;
     private final Caches caches;
+    private final CharHelper charHelper;
 
-    public CookingTask(CharactersApiWrapper charactersApiWrapper, MyAccountApiWrapper myAccountApiWrapper, MyCharactersApiWrapper myCharactersApi, Caches caches) {
+    public CookingTask(CharactersApiWrapper charactersApiWrapper, MyAccountApiWrapper myAccountApiWrapper, MyCharactersApiWrapper myCharactersApi, Caches caches, CharHelper charHelper) {
         this.charactersApiWrapper = charactersApiWrapper;
         this.myAccountApiWrapper = myAccountApiWrapper;
         this.myCharactersApi = myCharactersApi;
         this.caches = caches;
+        this.charHelper = charHelper;
     }
 
     public void cookFoodIfHaveSome(CommonBrain brain, CharacterResponseSchema character) {
@@ -56,8 +59,8 @@ public class CookingTask {
             return;
         }
         Optional<MapSchema> cooking = brain.findClosestLocation(character, "cooking");
-        brain.moveToLocation(character, cooking.get());
-        brain.waitUntilCooldownDone(character);
+        charHelper.moveToLocation(character, cooking.get());
+        charHelper.waitUntilCooldownDone(character);
 
         CraftingSchema craftingSchema = new CraftingSchema().code(cookableFood.get(0)
                                                                               .getCode())
@@ -65,7 +68,7 @@ public class CookingTask {
         myCharactersApi.actionCraftingMyNameActionCraftingPost(character.getData()
                                                                         .getName(), craftingSchema
         );
-        brain.waitUntilCooldownDone(character);
+        charHelper.waitUntilCooldownDone(character);
     }
 
 }

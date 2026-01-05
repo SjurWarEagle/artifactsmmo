@@ -17,10 +17,12 @@ import java.util.Optional;
 public class TrainingSkillTask {
     private final Caches caches;
     private final ItemHelper itemHelper;
+    private final CraftItemTask craftItemTask;
 
-    public TrainingSkillTask(Caches caches, ItemHelper itemHelper) {
+    public TrainingSkillTask(Caches caches, ItemHelper itemHelper, CraftItemTask craftItemTask) {
         this.caches = caches;
         this.itemHelper = itemHelper;
+        this.craftItemTask = craftItemTask;
     }
 
     public Optional<ItemSchema> findHighestItemThatThisCharCanCreateAlone(CharacterSchema character, Skill... skills) {
@@ -124,32 +126,31 @@ public class TrainingSkillTask {
                                                                                                           .getCode(), 1
         );
         neededForTrainingItem = CharHelper.removeWhatIsAlreadyInInventory(character, neededForTrainingItem);
-        Optional<String> itemCodeToCraft = findCraftableWithInventory(character, neededForTrainingItem);
+        Optional<String> itemCodeCraftableWithInventory = findCraftableWithInventory(character, neededForTrainingItem);
+        if (itemCodeCraftableWithInventory.isPresent()) {
+            craftItemTask.craftItem(null, character.getName(), itemCodeCraftableWithInventory.get());
+        } else {
+            
+            // TODO we need to harvest resources
+        }
 
     }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     private Optional<String> findCraftableWithInventory(CharacterSchema character, List<SimpleItemSchema> desiredItems) {
-        for (SimpleItemSchema desiredItem : desiredItems) {
-            ItemSchema itemDefinition = caches.findItemDefinition(desiredItem.getCode())
-                                              .get();
-            if (itemDefinition.getCraft() == null) {
-                // just crafts
-                continue;
-            }
-            boolean hasAllCraftingItems = itemDefinition.getCraft()
-                                                        .getItems()
-                                                        .stream()
-                                                        .allMatch(simpleItemSchema -> character.getInventory()
-                                                                                               .stream()
-                                                                                               .anyMatch(inventorySlot -> inventorySlot.getCode()
-                                                                                                                                       .equalsIgnoreCase(simpleItemSchema.getCode())
-                                                                                                       && inventorySlot.getQuantity() >= simpleItemSchema.getQuantity()))
-                    ;
-            if (hasAllCraftingItems) {
-                return Optional.of(desiredItem.getCode());
-            }
-        }
-        return Optional.empty();
+        return desiredItems.stream()
+                           .map(desiredItem -> caches.findItemDefinition(desiredItem.getCode())
+                                                     .get())
+                           .filter(desiredItem -> desiredItem.getCraft() != null)
+                           .filter(desiredItem -> desiredItem.getCraft()
+                                                             .getItems()
+                                                             .stream()
+                                                             .allMatch(simpleItemSchema -> character.getInventory()
+                                                                                                    .stream()
+                                                                                                    .anyMatch(inventorySlot -> inventorySlot.getCode()
+                                                                                                                                            .equalsIgnoreCase(simpleItemSchema.getCode())
+                                                                                                            && inventorySlot.getQuantity() >= simpleItemSchema.getQuantity())))
+                           .map(simpleItemSchema -> simpleItemSchema.getCode())
+                           .findFirst();
     }
 }

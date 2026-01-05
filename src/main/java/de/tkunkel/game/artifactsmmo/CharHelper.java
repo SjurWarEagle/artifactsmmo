@@ -1,12 +1,32 @@
 package de.tkunkel.game.artifactsmmo;
 
+import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
+import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.games.artifactsmmo.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
+@Service
 public class CharHelper {
+    private final Logger logger = LoggerFactory.getLogger(CharHelper.class.getName());
+
+    private final ServerDetailsApiWrapper serverDetailsApi;
+    private final CharactersApiWrapper charactersApi;
+    private final MyCharactersApiWrapper myCharactersApi;
+
+    public CharHelper(ServerDetailsApiWrapper serverDetailsApi, CharactersApiWrapper charactersApi, MyCharactersApiWrapper myCharactersApi) {
+        this.serverDetailsApi = serverDetailsApi;
+        this.charactersApi = charactersApi;
+        this.myCharactersApi = myCharactersApi;
+    }
+
     public static int getSkillLevelForSkill(CharacterSchema character, Skill requiredSkill) {
         return getSkillLevelForSkill(character, requiredSkill.name());
     }
@@ -98,4 +118,76 @@ public class CharHelper {
                                                           .equalsIgnoreCase(itemCodeInSlot))
                           .findFirst();
     }
+
+    public boolean moveToLocation(String characterName, MapSchema destination) {
+        CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
+        return moveToLocation(character, destination);
+    }
+
+    public boolean moveToLocation(CharacterResponseSchema character, MapSchema destination) {
+        character = charactersApi.getCharacterCharactersNameGet(character.getData()
+                                                                         .getName());
+        boolean alreadyReached = destination.getX()
+                                            .equals(character.getData()
+                                                             .getX())
+                && destination.getY()
+                              .equals(character.getData()
+                                               .getY());
+        if (alreadyReached) {
+            return false;
+        }
+        waitUntilCooldownDone(character.getData()
+                                       .getName());
+        DestinationSchema destinationSchema = new DestinationSchema().x(destination.getX())
+                                                                     .y(destination.getY());
+        myCharactersApi.actionMoveMyNameActionMovePost(character.getData()
+                                                                .getName(), destinationSchema
+        );
+        waitUntilCooldownDone(character.getData()
+                                       .getName());
+        return true;
+    }
+
+    public void waitUntilCooldownDone(String characterName) {
+        CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
+        waitUntilCooldownDone(character);
+    }
+
+    public void waitUntilCooldownDone(CharacterResponseSchema character) {
+        OffsetDateTime serverTime;
+        try {
+            serverTime = serverDetailsApi.getServerDetailsGet()
+                                         .getData()
+                                         .getServerTime();
+            character = charactersApi.getCharacterCharactersNameGet(character.getData()
+                                                                             .getName());
+            long timeToWait = character.getData()
+                                       .getCooldownExpiration()
+                                       .toEpochSecond() - serverTime.toEpochSecond();
+            if (timeToWait > 0) {
+                logger.info("Server time: {}", serverTime);
+                logger.info("Character cooldown expiration: {}", character.getData()
+                                                                          .getCooldownExpiration()
+                );
+                logger.info("Waiting for cooldown: {} seconds", timeToWait);
+                Thread.sleep(timeToWait + 1);
+            }
+        } catch (InterruptedException e) {
+            logger.error("Error waiting for cooldown", e);
+            throw new RuntimeException(e);
+        }
+        long secondsToWait = (character.getData()
+                                       .getCooldownExpiration()
+                                       .toEpochSecond()) - serverTime.toEpochSecond();
+        if (secondsToWait > 0) {
+            // has active cooldown
+            try {
+                Thread.sleep(TimeUnit.SECONDS.toMillis(secondsToWait + 1));
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+
 }
