@@ -2,14 +2,13 @@ package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.CharHelper;
+import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.helper.ItemHelper;
-import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
-import de.tkunkel.games.artifactsmmo.model.ItemSchema;
-import de.tkunkel.games.artifactsmmo.model.SimpleItemSchema;
-import de.tkunkel.games.artifactsmmo.model.Skill;
+import de.tkunkel.games.artifactsmmo.model.*;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,11 +17,15 @@ public class TrainingSkillTask {
     private final Caches caches;
     private final ItemHelper itemHelper;
     private final CraftItemTask craftItemTask;
+    private final CharHelper characterHelper;
+    private final MyCharactersApiWrapper myCharactersApi;
 
-    public TrainingSkillTask(Caches caches, ItemHelper itemHelper, CraftItemTask craftItemTask) {
+    public TrainingSkillTask(Caches caches, ItemHelper itemHelper, CraftItemTask craftItemTask, CharHelper characterHelper, MyCharactersApiWrapper myCharactersApi) {
         this.caches = caches;
         this.itemHelper = itemHelper;
         this.craftItemTask = craftItemTask;
+        this.characterHelper = characterHelper;
+        this.myCharactersApi = myCharactersApi;
     }
 
     public Optional<ItemSchema> findHighestItemThatThisCharCanCreateAlone(CharacterSchema character, Skill... skills) {
@@ -130,10 +133,29 @@ public class TrainingSkillTask {
         if (itemCodeCraftableWithInventory.isPresent()) {
             craftItemTask.craftItem(null, character.getName(), itemCodeCraftableWithInventory.get());
         } else {
-            
+            Optional<String> farmableItemCode = findFarmableItem(character, neededForTrainingItem);
+            if (farmableItemCode.isPresent()) {
+                MapSchema whereToGather = itemHelper.findLocationWhereToFarm(character, farmableItemCode.get());
+                characterHelper.moveToLocation(character.getName(), whereToGather);
+                characterHelper.waitUntilCooldownDone(character.getName());
+                myCharactersApi.actionGatheringMyNameActionGatheringPost(character.getName());
+                characterHelper.waitUntilCooldownDone(character.getName());
+            }
+
             // TODO we need to harvest resources
         }
 
+    }
+
+    private Optional<String> findFarmableItem(CharacterSchema character, List<SimpleItemSchema> neededForTrainingItem) {
+        return neededForTrainingItem.stream()
+                                    .map(simpleItemSchema -> caches.findItemDefinition(simpleItemSchema.getCode())
+                                                                   .get())
+                                    .filter(itemSchema -> itemSchema.getCraft() == null)
+                                    .sorted(Comparator.comparing(ItemSchema::getName))
+                                    .map(itemSchema -> itemSchema.getCode())
+                                    .findFirst()
+                ;
     }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")

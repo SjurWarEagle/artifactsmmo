@@ -1,9 +1,7 @@
 package de.tkunkel.game.artifactsmmo.helper;
 
 import de.tkunkel.game.artifactsmmo.Caches;
-import de.tkunkel.games.artifactsmmo.model.ItemSchema;
-import de.tkunkel.games.artifactsmmo.model.MapSchema;
-import de.tkunkel.games.artifactsmmo.model.SimpleItemSchema;
+import de.tkunkel.games.artifactsmmo.model.*;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -94,6 +92,47 @@ public class ItemHelper {
             throw new RuntimeException("No map found for skill " + itemSchemaOptional.get()
                                                                                      .getCraft()
                                                                                      .getSkill());
+        }
+        return map.get();
+    }
+
+    public MapSchema findLocationWhereToFarm(CharacterSchema character, String resourceToFarm) {
+        int charX = character.getX();
+        int charY = character.getY();
+        Optional<ResourceSchema> resourceHavingItem = caches.cachedResources.stream()
+                                                                            .filter(resourceSchema -> {
+                                                                                boolean isCorrectResource = resourceSchema.getCode()
+                                                                                                                          .equalsIgnoreCase(resourceToFarm);
+                                                                                boolean hasResource = resourceSchema.getDrops()
+                                                                                                                    .stream()
+                                                                                                                    .anyMatch(dropRateSchema -> dropRateSchema.getCode()
+                                                                                                                                                              .equalsIgnoreCase(resourceToFarm))
+                                                                                        ;
+                                                                                return isCorrectResource || hasResource;
+                                                                            })
+                                                                            .findFirst()
+                ;
+        if (resourceHavingItem.isEmpty()) {
+            throw new RuntimeException("No place to farm " + resourceToFarm);
+        }
+        Optional<MapSchema> map = caches.cachedMap.stream()
+                                                  .filter(mapSchema -> mapSchema.getInteractions()
+                                                                                .getContent() != null)
+                                                  .filter(mapSchema -> mapSchema.getInteractions()
+                                                                                .getContent()
+                                                                                .getCode()
+                                                                                .equals(resourceHavingItem.get()
+                                                                                                          .getCode()))
+                                                  .sorted((mapSchema1, mapSchema2) -> {
+                                                      int distance1 = Math.abs(mapSchema1.getX() - charX) + Math.abs(mapSchema1.getY() - charY);
+                                                      int distance2 = Math.abs(mapSchema2.getX() - charX) + Math.abs(mapSchema2.getY() - charY);
+                                                      return distance2 - distance1;
+                                                  })
+
+                                                  .findFirst()
+                ;
+        if (map.isEmpty()) {
+            throw new RuntimeException("No map found for resource " + resourceToFarm);
         }
         return map.get();
     }

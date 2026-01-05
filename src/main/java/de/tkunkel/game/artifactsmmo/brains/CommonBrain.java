@@ -356,23 +356,6 @@ public abstract class CommonBrain implements Brain {
 
     }
 
-    public MapSchema findLocationWhereToFarm(String resourceToFarm) {
-        Optional<MapSchema> map = caches.cachedMap.stream()
-                                                  .filter(mapSchema -> mapSchema.getInteractions()
-                                                                                .getContent() != null)
-                                                  .filter(mapSchema -> mapSchema.getInteractions()
-                                                                                .getContent()
-                                                                                .getCode()
-                                                                                .equals(resourceToFarm))
-                                                  // todo order by distance to character
-                                                  .findFirst()
-                ;
-        if (map.isEmpty()) {
-            throw new RuntimeException("No map found for resource " + resourceToFarm);
-        }
-        return map.get();
-    }
-
     public String decideWhatResourceToFarm(String characterName) {
         throw new UnsupportedOperationException("Not implemented");
     }

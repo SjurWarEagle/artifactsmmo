@@ -32,7 +32,10 @@ public class CookingTask {
         this.charHelper = charHelper;
     }
 
-    public void cookFoodIfHaveSome(CommonBrain brain, CharacterResponseSchema character) {
+    public void cookFoodIfHaveSome(CommonBrain brain, CharacterResponseSchema givenCharacter) {
+        final CharacterResponseSchema character = charactersApiWrapper.getCharacterCharactersNameGet(givenCharacter.getData()
+                                                                                                                   .getName());
+
         final int MIN_MOUNT_NEEDED = 5;
         var cookableFood = caches.cachedItems.stream()
                                              .filter(itemSchema -> itemSchema.getType()
