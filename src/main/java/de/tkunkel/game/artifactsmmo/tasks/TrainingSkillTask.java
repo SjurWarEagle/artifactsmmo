@@ -58,8 +58,36 @@ public class TrainingSkillTask {
 
                                  })
                                  .filter(itemSchema -> canCanGatherResources(character, itemSchema))
-                                 .min((o1, o2) -> o2.getLevel() - o1.getLevel())
+                                 .sorted((o1, o2) -> sortByNeededResource(o1, o2))
+                                 .findFirst()
                 ;
+    }
+
+    private int sortByNeededResource(ItemSchema o1, ItemSchema o2) {
+        int level1 = o1.getLevel();
+        int level2 = o2.getLevel();
+        if (level1 != level2) {
+            return Integer.compare(level1, level2);
+        }
+
+        int needed1 = o1.getCraft()
+                        .getItems()
+                        .stream()
+                        .mapToInt(simpleItemSchema -> simpleItemSchema.getQuantity())
+                        .sum()
+                ;
+        int needed2 = o2.getCraft()
+                        .getItems()
+                        .stream()
+                        .mapToInt(simpleItemSchema -> simpleItemSchema.getQuantity())
+                        .sum()
+                ;
+
+        if (needed1 != needed2) {
+            return Integer.compare(needed1, needed2);
+        }
+        return o1.getName()
+                 .compareTo(o2.getName());
     }
 
     private boolean canCanGatherResources(CharacterSchema character, ItemSchema itemSchema) {
