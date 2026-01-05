@@ -4,6 +4,7 @@ package de.tkunkel.game.artifactsmmo.brains.tier01;
 import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
+import de.tkunkel.game.artifactsmmo.helper.ItemHelper;
 import de.tkunkel.game.artifactsmmo.shopping.Wish;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.*;
@@ -24,7 +25,8 @@ public class MinerT1Brain extends CommonBrain {
     private final TrainingSkillTask trainingSkillTask;
     private final BankDepositAllTask bankDepositAllTask;
 
-    public MinerT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, FarmHighestResourceTask farmHighestResourceTask, CraftItemTask craftItemTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, TrainingSkillTask trainingSkillTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask1) {
+
+    public MinerT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, FarmHighestResourceTask farmHighestResourceTask, CraftItemTask craftItemTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, TrainingSkillTask trainingSkillTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask1, ItemHelper itemHelper) {
         super(caches, wishList, apiHolder, bankFetchItemsAndCraftTask);
         this.farmHighestResourceTask = farmHighestResourceTask;
         this.craftItemTask = craftItemTask;
@@ -99,8 +101,7 @@ public class MinerT1Brain extends CommonBrain {
                 wish.get().reservedBy = null;
                 wish.get().fulfilled = true;
             } else {
-                Optional<ItemSchema> itemToTrain = trainingSkillTask
-                        .findHighestItemThatThisCharCanCreateAlone(this, character, Skill.MINING, Skill.GEARCRAFTING, Skill.WEAPONCRAFTING);
+                trainingSkillTask.trainSkills(character.getData(), Skill.MINING, Skill.GEARCRAFTING, Skill.WEAPONCRAFTING);
 
                 var itemToCraft = findPossibleItemToCraft(character);
                 if (itemToCraft.isPresent()) {

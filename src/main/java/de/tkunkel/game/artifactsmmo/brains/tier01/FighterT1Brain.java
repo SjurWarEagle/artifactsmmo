@@ -5,6 +5,7 @@ import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.game.artifactsmmo.combat.CombatSimulator;
 import de.tkunkel.game.artifactsmmo.combat.CombatStats;
+import de.tkunkel.game.artifactsmmo.helper.ItemHelper;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.*;
 import de.tkunkel.games.artifactsmmo.model.*;
@@ -27,7 +28,7 @@ public class FighterT1Brain extends CommonBrain {
     private final CookingTask cookingTask;
     private final TaskAcceptNewTask taskAcceptNewTask;
 
-    public FighterT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, BankUpgradeIfPossibleTask bankUpgradeIfPossibleTask, BankDepositGoldIfRichTask bankDepositGoldIfRichTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, CombatSimulator combatSimulator, TaskCancelTask taskCancelTask, CookingTask cookingTask, TaskAcceptNewTask taskAcceptNewTask) {
+    public FighterT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, BankUpgradeIfPossibleTask bankUpgradeIfPossibleTask, BankDepositGoldIfRichTask bankDepositGoldIfRichTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, ItemHelper itemHelper, CombatSimulator combatSimulator, TaskCancelTask taskCancelTask, CookingTask cookingTask, TaskAcceptNewTask taskAcceptNewTask) {
         super(caches, wishList, apiHolder, bankFetchItemsAndCraftTask);
         this.bankUpgradeIfPossibleTask = bankUpgradeIfPossibleTask;
         this.bankDepositGoldIfRichTask = bankDepositGoldIfRichTask;
@@ -75,7 +76,7 @@ public class FighterT1Brain extends CommonBrain {
     private void cancelCurrentTaskIfTooHard(CharacterResponseSchema character) {
         var task = character.getData()
                             .getTask();
-        if (task == null) {
+        if (task == null || "".equalsIgnoreCase(task)) {
             return;
         }
         if (!"monsters".equalsIgnoreCase(character.getData()

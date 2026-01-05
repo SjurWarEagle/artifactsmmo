@@ -2,6 +2,7 @@ package de.tkunkel.game.artifactsmmo;
 
 import de.tkunkel.games.artifactsmmo.model.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -11,8 +12,7 @@ public class CharHelper {
     }
 
     public static int getSkillLevelForSkill(CharacterSchema character, String requiredSkill) {
-        int charSkillLevel = 0;
-        charSkillLevel = switch (requiredSkill.toLowerCase()) {
+        return switch (requiredSkill.toLowerCase()) {
             case "alchemy" -> character.getAlchemyLevel();
             case "fishing" -> character.getFishingLevel();
             case "jewelrycrafting" -> character.getJewelrycraftingLevel();
@@ -23,13 +23,37 @@ public class CharHelper {
             case "cooking" -> character.getCookingLevel();
             default -> throw new RuntimeException("unknown skill: " + requiredSkill);
         };
-        return charSkillLevel;
     }
 
     public static boolean charHasRequiredSkillLevel(CharacterSchema character, String requiredSkill, int requiredSkillLevel) {
         int charSkillLevel = getSkillLevelForSkill(character, requiredSkill);
         return charSkillLevel >= requiredSkillLevel;
     }
+
+    public static List<SimpleItemSchema> removeWhatIsAlreadyInInventory(CharacterSchema characterData, List<SimpleItemSchema> toCraft) {
+        List<SimpleItemSchema> rc = new ArrayList<>();
+        for (SimpleItemSchema simpleItemSchema : toCraft) {
+            Optional<InventorySlot> slotInInventory = characterData.getInventory()
+                                                                   .stream()
+                                                                   .filter(inventorySlot -> inventorySlot.getCode()
+                                                                                                         .equalsIgnoreCase(simpleItemSchema.getCode()))
+                                                                   .findFirst()
+                    ;
+            if (slotInInventory.isEmpty()) {
+                rc.add(simpleItemSchema);
+            } else {
+                int alreadyThere = slotInInventory.get()
+                                                  .getQuantity();
+                int missing = simpleItemSchema.getQuantity() - alreadyThere;
+                if (missing > 0) {
+                    rc.add(new SimpleItemSchema().code(simpleItemSchema.getCode())
+                                                 .quantity(missing));
+                }
+            }
+        }
+        return rc;
+    }
+
 
     public static Optional<ItemSchema> getEquippedItemOfSlot(List<ItemSchema> cachedItems, CharacterResponseSchema character, ItemSlot itemSlot) {
         String itemCodeInSlot = switch (itemSlot) {
