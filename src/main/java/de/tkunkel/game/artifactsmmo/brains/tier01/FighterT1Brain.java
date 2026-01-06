@@ -7,6 +7,7 @@ import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.game.artifactsmmo.combat.CombatSimulator;
 import de.tkunkel.game.artifactsmmo.combat.CombatStats;
 import de.tkunkel.game.artifactsmmo.helper.ItemHelper;
+import de.tkunkel.game.artifactsmmo.helper.MapHelper;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.*;
 import de.tkunkel.games.artifactsmmo.model.*;
@@ -33,8 +34,8 @@ public class FighterT1Brain extends CommonBrain {
                           BankUpgradeIfPossibleTask bankUpgradeIfPossibleTask, BankDepositGoldIfRichTask bankDepositGoldIfRichTask,
                           BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask,
                           ItemHelper itemHelper, CombatSimulator combatSimulator, TaskCancelTask taskCancelTask, CookingTask cookingTask,
-                          TaskAcceptNewTask taskAcceptNewTask, CharHelper charHelper) {
-        super(caches, wishList, apiHolder, charHelper, bankFetchItemsAndCraftTask);
+                          TaskAcceptNewTask taskAcceptNewTask, CharHelper charHelper, MapHelper mapHelper) {
+        super(caches, wishList, apiHolder, charHelper, bankFetchItemsAndCraftTask, mapHelper);
         this.bankUpgradeIfPossibleTask = bankUpgradeIfPossibleTask;
         this.bankDepositGoldIfRichTask = bankDepositGoldIfRichTask;
         this.bankDepositAllTask = bankDepositAllTask;
@@ -119,7 +120,7 @@ public class FighterT1Brain extends CommonBrain {
                                       .getInventoryMaxItems() * 0.75) {
             return;
         }
-        Optional<MapSchema> bank = findClosestLocation(character, "bank");
+        Optional<MapSchema> bank = mapHelper.findClosestLocation(character, "bank");
         if (bank.isEmpty()) {
             throw new RuntimeException("Could not find bank for character " + character.getData()
                                                                                        .getName());
@@ -157,7 +158,7 @@ public class FighterT1Brain extends CommonBrain {
                                                                                                                                         .getTaskTotal()) {
             return;
         }
-        Optional<MapSchema> closestLocation = findClosestLocation(character, "monsters");
+        Optional<MapSchema> closestLocation = mapHelper.findClosestLocation(character, "monsters");
         if (closestLocation.isEmpty()) {
             return;
         }

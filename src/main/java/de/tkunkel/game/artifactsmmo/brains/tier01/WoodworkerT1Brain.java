@@ -5,6 +5,7 @@ import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
+import de.tkunkel.game.artifactsmmo.helper.MapHelper;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
 import de.tkunkel.game.artifactsmmo.tasks.BankFetchItemsAndCraftTask;
@@ -21,14 +22,14 @@ import java.util.Optional;
 @Service
 public class WoodworkerT1Brain extends CommonBrain {
     private final Logger logger = LoggerFactory.getLogger(WoodworkerT1Brain.class.getName());
-    private FarmHighestResourceTask farmHighestResourceTask;
-    private CraftItemTask craftItemTask;
-    private BankDepositAllTask bankDepositAllTask;
+    private final FarmHighestResourceTask farmHighestResourceTask;
+    private final CraftItemTask craftItemTask;
+    private final BankDepositAllTask bankDepositAllTask;
 
     public WoodworkerT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, FarmHighestResourceTask farmHighestResourceTask,
                              CraftItemTask craftItemTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask,
-                             CharHelper charHelper) {
-        super(caches, wishList, apiHolder, charHelper, bankFetchItemsAndCraftTask);
+                             CharHelper charHelper, MapHelper mapHelper) {
+        super(caches, wishList, apiHolder, charHelper, bankFetchItemsAndCraftTask, mapHelper);
         this.farmHighestResourceTask = farmHighestResourceTask;
         this.craftItemTask = craftItemTask;
         this.bankDepositAllTask = bankDepositAllTask;

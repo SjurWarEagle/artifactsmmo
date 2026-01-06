@@ -8,6 +8,8 @@
 | 3        | copper boots (level 1, 8 bars)  | +59       |
 | 3        | copper helmet (level 1, 6 bars) | +59       |
 | 3        | copper helmet (level 1, 6 bars) | +59       |
+| 4        | copper helmet (level 1, 6 bars) | +57       |
+| 4        | copper helmet (level 1, 6 bars) | +57       |
 
 Note:
 

@@ -5,6 +5,7 @@ import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
+import de.tkunkel.game.artifactsmmo.helper.MapHelper;
 import de.tkunkel.game.artifactsmmo.shopping.Wish;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.*;
@@ -27,8 +28,8 @@ public class MinerT1Brain extends CommonBrain {
     public MinerT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, FarmHighestResourceTask farmHighestResourceTask,
                         CraftItemTask craftItemTask, BankDepositAllTask bankDepositAllTask,
                         BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, TrainingSkillTask trainingSkillTask,
-                        CharHelper charHelper) {
-        super(caches, wishList, apiHolder, charHelper, bankFetchItemsAndCraftTask);
+                        CharHelper charHelper, MapHelper mapHelper) {
+        super(caches, wishList, apiHolder, charHelper, bankFetchItemsAndCraftTask, mapHelper);
         this.bankDepositAllTask = bankDepositAllTask;
         this.trainingSkillTask = trainingSkillTask;
     }

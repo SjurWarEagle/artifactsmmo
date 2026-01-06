@@ -1,7 +1,9 @@
 package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.CharHelper;
-import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
+import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
+import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
+import de.tkunkel.game.artifactsmmo.helper.MapHelper;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.MapSchema;
 import de.tkunkel.games.artifactsmmo.model.SimpleItemSchema;
@@ -16,14 +18,20 @@ import java.util.Optional;
 public class BankDepositSingleItemTask {
     private final Logger logger = LoggerFactory.getLogger(BankDepositSingleItemTask.class.getName());
     private final CharHelper charHelper;
+    private final CharactersApiWrapper charactersApi;
+    private final MapHelper mapHelper;
+    private final MyCharactersApiWrapper myCharactersApi;
 
-    public BankDepositSingleItemTask(CharHelper charHelper) {
+    public BankDepositSingleItemTask(CharHelper charHelper, CharactersApiWrapper charactersApi, MapHelper mapHelper, MyCharactersApiWrapper myCharactersApi) {
         this.charHelper = charHelper;
+        this.charactersApi = charactersApi;
+        this.mapHelper = mapHelper;
+        this.myCharactersApi = myCharactersApi;
     }
 
-    public void depositInventoryInBank(CommonBrain brain, String characterName, String itemToDeposit) {
-        CharacterResponseSchema character = brain.apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-        Optional<MapSchema> bank = brain.findClosestLocation(character, "bank");
+    public void depositInventoryInBank(String characterName, String itemToDeposit) {
+        CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
+        Optional<MapSchema> bank = mapHelper.findClosestLocation(character, "bank");
         if (bank.isEmpty()) {
             logger.error("Could not find bank for character %s".formatted(character.getData()
                                                                                    .getName()));
@@ -42,8 +50,8 @@ public class BankDepositSingleItemTask {
         if (!itemsToDeposit.isEmpty()) {
             charHelper.moveToLocation(character, bank.get());
             charHelper.waitUntilCooldownDone(character);
-            brain.apiHolder.myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
-                                                                                                          .getName(), itemsToDeposit
+            myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
+                                                                                          .getName(), itemsToDeposit
             );
         }
         charHelper.waitUntilCooldownDone(character);

@@ -2,6 +2,7 @@ package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
+import de.tkunkel.game.artifactsmmo.helper.MapHelper;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,9 +15,11 @@ import java.util.Optional;
 public class BankDepositGoldIfRichTask {
     private final Logger logger = LoggerFactory.getLogger(BankDepositGoldIfRichTask.class.getName());
     private final CharHelper charHelper;
+    private final MapHelper mapHelper;
 
-    public BankDepositGoldIfRichTask(CharHelper charHelper) {
+    public BankDepositGoldIfRichTask(CharHelper charHelper, MapHelper mapHelper) {
         this.charHelper = charHelper;
+        this.mapHelper = mapHelper;
     }
 
     public void depositInventoryInBankIfInventoryIsFull(CommonBrain brain, CharacterResponseSchema character) {
@@ -25,7 +28,7 @@ public class BankDepositGoldIfRichTask {
             return;
         }
 
-        Optional<MapSchema> bank = brain.findClosestLocation(character, "bank");
+        Optional<MapSchema> bank = mapHelper.findClosestLocation(character, "bank");
         if (bank.isEmpty()) {
             throw new RuntimeException("Could not find bank for character " + character.getData()
                                                                                        .getName());
@@ -42,7 +45,7 @@ public class BankDepositGoldIfRichTask {
     }
 
     public void depositInventoryInBank(CommonBrain brain, CharacterResponseSchema character) {
-        Optional<MapSchema> bank = brain.findClosestLocation(character, "bank");
+        Optional<MapSchema> bank = mapHelper.findClosestLocation(character, "bank");
         if (bank.isEmpty()) {
             throw new RuntimeException("Could not find bank for character " + character.getData()
                                                                                        .getName());

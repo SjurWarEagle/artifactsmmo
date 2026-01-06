@@ -3,6 +3,7 @@ package de.tkunkel.game.artifactsmmo.tasks;
 import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
+import de.tkunkel.game.artifactsmmo.helper.MapHelper;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.SimpleItemSchema;
 import org.slf4j.Logger;
@@ -16,11 +17,13 @@ public class CommonTask {
     private final Logger logger = LoggerFactory.getLogger(CommonTask.class.getName());
 
     protected final ApiHolder apiHolder;
-    private final CharHelper charHelper;
+    protected final CharHelper charHelper;
+    protected final MapHelper mapHelper;
 
-    public CommonTask(ApiHolder apiHolder, CharHelper charHelper) {
+    public CommonTask(ApiHolder apiHolder, CharHelper charHelper, MapHelper mapHelper) {
         this.apiHolder = apiHolder;
         this.charHelper = charHelper;
+        this.mapHelper = mapHelper;
     }
 
     public void waitUntilCooldownDone(String characterName) {
@@ -31,8 +34,8 @@ public class CommonTask {
     public void fetchItemFromBank(CommonBrain brain, CharacterResponseSchema character, String neededItemCode, int quantity) {
         waitUntilCooldownDone(character.getData()
                                        .getName());
-        charHelper.moveToLocation(character, brain.findClosestLocation(character, "bank")
-                                                  .get()
+        charHelper.moveToLocation(character, mapHelper.findClosestLocation(character, "bank")
+                                                      .get()
         );
         waitUntilCooldownDone(character.getData()
                                        .getName());

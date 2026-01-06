@@ -5,6 +5,7 @@ import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.MyAccountApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
+import de.tkunkel.game.artifactsmmo.helper.MapHelper;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.DataPageSimpleItemSchema;
 import de.tkunkel.games.artifactsmmo.model.MapSchema;
@@ -21,13 +22,11 @@ public class TaskCancelTask extends CommonTask {
 
     private final MyAccountApiWrapper myAccountApiWrapper;
     private final MyCharactersApiWrapper myCharactersApiWrapper;
-    private final CharHelper charHelper;
 
-    public TaskCancelTask(ApiHolder apiHolder, MyAccountApiWrapper myAccountApiWrapper, MyCharactersApiWrapper myCharactersApiWrapper, CharHelper charHelper) {
-        super(apiHolder, charHelper);
+    public TaskCancelTask(ApiHolder apiHolder, MyAccountApiWrapper myAccountApiWrapper, MyCharactersApiWrapper myCharactersApiWrapper, CharHelper charHelper, MapHelper mapHelper) {
+        super(apiHolder, charHelper, mapHelper);
         this.myAccountApiWrapper = myAccountApiWrapper;
         this.myCharactersApiWrapper = myCharactersApiWrapper;
-        this.charHelper = charHelper;
     }
 
     public void perform(CommonBrain brain, String characterName) {

@@ -6,6 +6,7 @@ import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyAccountApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
+import de.tkunkel.game.artifactsmmo.helper.MapHelper;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.CraftingSchema;
 import de.tkunkel.games.artifactsmmo.model.MapSchema;
@@ -23,13 +24,15 @@ public class CookingTask {
     private final MyCharactersApiWrapper myCharactersApi;
     private final Caches caches;
     private final CharHelper charHelper;
+    private final MapHelper mapHelper;
 
-    public CookingTask(CharactersApiWrapper charactersApiWrapper, MyAccountApiWrapper myAccountApiWrapper, MyCharactersApiWrapper myCharactersApi, Caches caches, CharHelper charHelper) {
+    public CookingTask(CharactersApiWrapper charactersApiWrapper, MyAccountApiWrapper myAccountApiWrapper, MyCharactersApiWrapper myCharactersApi, Caches caches, CharHelper charHelper, MapHelper mapHelper) {
         this.charactersApiWrapper = charactersApiWrapper;
         this.myAccountApiWrapper = myAccountApiWrapper;
         this.myCharactersApi = myCharactersApi;
         this.caches = caches;
         this.charHelper = charHelper;
+        this.mapHelper = mapHelper;
     }
 
     public void cookFoodIfHaveSome(CommonBrain brain, CharacterResponseSchema givenCharacter) {
@@ -61,7 +64,7 @@ public class CookingTask {
         if (cookableFood.isEmpty()) {
             return;
         }
-        Optional<MapSchema> cooking = brain.findClosestLocation(character, "cooking");
+        Optional<MapSchema> cooking = mapHelper.findClosestLocation(character, "cooking");
         charHelper.moveToLocation(character, cooking.get());
         charHelper.waitUntilCooldownDone(character);
 

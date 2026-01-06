@@ -3,6 +3,7 @@ package de.tkunkel.game.artifactsmmo.tasks;
 import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
+import de.tkunkel.game.artifactsmmo.helper.MapHelper;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.ItemSchema;
 import de.tkunkel.games.artifactsmmo.model.MapSchema;
@@ -19,10 +20,12 @@ public class BankDepositAllTask {
     private final Logger logger = LoggerFactory.getLogger(BankDepositAllTask.class.getName());
     private final CharactersApiWrapper charactersApi;
     private final CharHelper charHelper;
+    private final MapHelper mapHelper;
 
-    public BankDepositAllTask(CharactersApiWrapper charactersApi, CharHelper charHelper) {
+    public BankDepositAllTask(CharactersApiWrapper charactersApi, CharHelper charHelper, MapHelper mapHelper) {
         this.charactersApi = charactersApi;
         this.charHelper = charHelper;
+        this.mapHelper = mapHelper;
     }
 
     public void depositInventoryInBankIfInventoryIsFull(CommonBrain brain, CharacterResponseSchema character) {
@@ -35,7 +38,7 @@ public class BankDepositAllTask {
             return;
         }
 
-        Optional<MapSchema> bank = brain.findClosestLocation(character, "bank");
+        Optional<MapSchema> bank = mapHelper.findClosestLocation(character, "bank");
         if (bank.isEmpty()) {
             throw new RuntimeException("Could not find bank for character " + character.getData()
                                                                                        .getName());
@@ -66,7 +69,7 @@ public class BankDepositAllTask {
     }
 
     public void depositInventoryInBank(CommonBrain brain, CharacterResponseSchema character) {
-        Optional<MapSchema> bank = brain.findClosestLocation(character, "bank");
+        Optional<MapSchema> bank = mapHelper.findClosestLocation(character, "bank");
         if (bank.isEmpty()) {
             throw new RuntimeException("Could not find bank for character " + character.getData()
                                                                                        .getName());

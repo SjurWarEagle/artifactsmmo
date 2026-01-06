@@ -17,13 +17,15 @@ public class TrainingSkillTask {
     private final Caches caches;
     private final ItemHelper itemHelper;
     private final CraftItemTask craftItemTask;
+    private final BankDepositSingleItemTask bankDepositSingleItemTask;
     private final CharHelper characterHelper;
     private final MyCharactersApiWrapper myCharactersApi;
 
-    public TrainingSkillTask(Caches caches, ItemHelper itemHelper, CraftItemTask craftItemTask, CharHelper characterHelper, MyCharactersApiWrapper myCharactersApi) {
+    public TrainingSkillTask(Caches caches, ItemHelper itemHelper, CraftItemTask craftItemTask, BankDepositSingleItemTask bankDepositSingleItemTask, CharHelper characterHelper, MyCharactersApiWrapper myCharactersApi) {
         this.caches = caches;
         this.itemHelper = itemHelper;
         this.craftItemTask = craftItemTask;
+        this.bankDepositSingleItemTask = bankDepositSingleItemTask;
         this.characterHelper = characterHelper;
         this.myCharactersApi = myCharactersApi;
     }
@@ -153,6 +155,11 @@ public class TrainingSkillTask {
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     public void trainSkills(CharacterSchema character, Skill... skills) {
         Optional<ItemSchema> itemToTrain = findHighestItemThatThisCharCanCreateAlone(character, skills);
+        // This is needed to have a loop, if we do not get rid of the item it is detected as "already crafted" and therefore skipped, no training would be done.
+        bankDepositSingleItemTask.depositInventoryInBank(character.getName(), itemToTrain.get()
+                                                                                         .getCode()
+        );
+
         List<SimpleItemSchema> neededForTrainingItem = itemHelper.getRecursiveResourcesToCraft(itemToTrain.get()
                                                                                                           .getCode(), 1
         );
