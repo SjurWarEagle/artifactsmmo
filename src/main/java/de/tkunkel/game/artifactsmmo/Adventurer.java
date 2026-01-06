@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 public class Adventurer {
     private final AdventurerClass adventurerClass;
@@ -65,11 +64,6 @@ public class Adventurer {
             } catch (BrainCompletedException e) {
                 logger.info("Adventurer {} of class {} needs new brain", characterName, adventurerClass.name());
                 brain = decideNewBrain();
-            }
-            try {
-                Thread.sleep(TimeUnit.SECONDS.toMillis(1));
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
             }
         }
     }
