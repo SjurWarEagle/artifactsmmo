@@ -16,6 +16,10 @@ public class CombatStats implements Cloneable {
     public int resAir;
     public int attackWater;
     public int resWater;
+    public int dmgAir;
+    public int dmgEarth;
+    public int dmgWater;
+    public int dmgFire;
 
     public static CombatStats fromCharacter(CharacterSchema character) {
         var rc = new CombatStats();
@@ -33,6 +37,11 @@ public class CombatStats implements Cloneable {
         rc.resAir = character.getResAir();
         rc.resWater = character.getResWater();
         rc.resFire = character.getResFire();
+
+        rc.dmgEarth = character.getDmgEarth();
+        rc.dmgAir = character.getDmgAir();
+        rc.dmgWater = character.getDmgWater();
+        rc.dmgFire = character.getDmgFire();
         return rc;
     }
 

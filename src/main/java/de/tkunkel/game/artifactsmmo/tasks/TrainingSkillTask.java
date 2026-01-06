@@ -93,9 +93,12 @@ public class TrainingSkillTask {
     }
 
     private boolean canCanGatherResources(CharacterSchema character, ItemSchema itemSchema) {
-        assert itemSchema.getCraft() != null;
-        assert itemSchema.getCraft()
-                         .getItems() != null;
+        if (itemSchema.getCraft() == null ||
+                itemSchema.getCraft()
+                          .getItems() == null) {
+            // TODO check if returning false here is correct
+            return false;
+        }
 
         return itemSchema.getCraft()
                          .getItems()

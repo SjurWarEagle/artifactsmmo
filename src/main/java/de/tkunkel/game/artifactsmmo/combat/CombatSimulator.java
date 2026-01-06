@@ -48,23 +48,19 @@ public class CombatSimulator {
 
             if (attackerActsFirst) {
                 defenderHp -= attackerDamage;
-                // logger.info("turn {}: attacker hit for {}, Defender: {}/{}", round, attackerDamage, defenderHp, defender.hp);
                 if (defenderHp <= 0) {
                     return true;
                 }
                 attackerHp -= defenderDamage;
-                // logger.info("turn {}: defender hit for {}, Attacker: {}/{}", round, defenderDamage, attackerHp, attacker.hp);
                 if (attackerHp <= 0) {
                     return false;
                 }
             } else {
                 attackerHp -= defenderDamage;
-                // logger.info("turn {}: defender hit for {}, Attacker: {}/{}", round, defenderDamage, attackerHp, attacker.hp);
                 if (attackerHp <= 0) {
                     return false;
                 }
                 defenderHp -= attackerDamage;
-                // logger.info("turn {}: attacker hit for {}, Defender: {}/{}", round, attackerDamage, defenderHp, defender.hp);
                 if (defenderHp <= 0) {
                     return true;
                 }
@@ -76,10 +72,11 @@ public class CombatSimulator {
 
     private int calculateDamage(CombatStats attacker, CombatStats defender) {
         double damage = 0;
-        damage += attacker.attackWater * ((100f - defender.resWater) / 100);
-        damage += attacker.attackAir * ((100f - defender.resAir) / 100);
-        damage += attacker.attackEarth * ((100f - defender.resEarth) / 100);
-        damage += attacker.attackFire * ((100f - defender.resFire) / 100);
+        damage += attacker.attackWater * ((100f - defender.resWater) / 100) * (1 + defender.dmgWater / 100d);
+        damage += attacker.attackAir * ((100f - defender.resAir) / 100) * (1 + defender.dmgAir / 100d);
+        damage += attacker.attackEarth * ((100f - defender.resEarth) / 100) * (1 + defender.dmgEarth / 100d);
+        damage += attacker.attackFire * ((100f - defender.resFire) / 100) * (1 + defender.dmgFire / 100d);
+        damage *= (1 + defender.dmg / 100d);
         boolean isCritted = Math.random() <= (float) attacker.criticalStrike / 100;
         if (isCritted) {
             // TODO figure out it crit is done this way or if it is per element separately

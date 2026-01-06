@@ -45,7 +45,12 @@ public class MyCharactersApiWrapper {
 
     public SkillResponseSchema actionCraftingMyNameActionCraftingPost(String name, CraftingSchema craftingSchema) {
         try {
-            return charactersApi.actionCraftingMyNameActionCraftingPost(name, craftingSchema);
+            var rc = charactersApi.actionCraftingMyNameActionCraftingPost(name, craftingSchema);
+            logger.info("[XP] {} crafted {} and got {} xp", name, craftingSchema.getCode(), rc.getData()
+                                                                                              .getDetails()
+                                                                                              .getXp()
+            );
+            return rc;
         } catch (ApiException e) {
             throw new RuntimeException(e);
         }
@@ -70,7 +75,16 @@ public class MyCharactersApiWrapper {
 
     public CharacterFightResponseSchema actionFightMyNameActionFightPost(String name, FightRequestSchema fightRequest) {
         try {
-            return charactersApi.actionFightMyNameActionFightPost(name, fightRequest);
+            var rc = charactersApi.actionFightMyNameActionFightPost(name, fightRequest);
+            logger.info("[XP] {} fought {} and got {} xp", name, rc.getData()
+                                                                   .getFight()
+                                                                   .getOpponent(), rc.getData()
+                                                                                     .getFight()
+                                                                                     .getCharacters()
+                                                                                     .get(0)
+                                                                                     .getXp()
+            );
+            return rc;
         } catch (ApiException e) {
             logger.warn("Problems with actionFightMyNameActionFightPost(" + fightRequest.toJson() + ")", e);
             throw new RuntimeException(e);
@@ -87,7 +101,12 @@ public class MyCharactersApiWrapper {
 
     public SkillResponseSchema actionGatheringMyNameActionGatheringPost(String name) {
         try {
-            return charactersApi.actionGatheringMyNameActionGatheringPost(name);
+            var rc = charactersApi.actionGatheringMyNameActionGatheringPost(name);
+            logger.info("[XP] {} gathered and got {} xp", name, rc.getData()
+                                                                  .getDetails()
+                                                                  .getXp()
+            );
+            return rc;
         } catch (ApiException e) {
             logger.error("could not gather resources", e);
             throw new RuntimeException(e);

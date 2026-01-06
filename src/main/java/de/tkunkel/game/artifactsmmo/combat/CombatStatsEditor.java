@@ -13,8 +13,8 @@ public class CombatStatsEditor {
     public CombatStats createManipulatedStats(CombatStats baseStats, ItemSchema originalGear, ItemSchema replacementGear) {
         try {
             CombatStats rc = (CombatStats) baseStats.clone();
-            addGear(originalGear, rc);
             removeGear(originalGear, rc);
+            addGear(replacementGear, rc);
             return rc;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
@@ -36,6 +36,10 @@ public class CombatStatsEditor {
 
                 case "hp" -> rc.hp += effect.getValue() * factor;
                 case "dmg" -> rc.dmg += effect.getValue() * factor;
+                case "dmg_fire" -> rc.dmgFire += effect.getValue() * factor;
+                case "dmg_water" -> rc.dmgWater += effect.getValue() * factor;
+                case "dmg_earth" -> rc.dmgEarth += effect.getValue() * factor;
+                case "dmg_air" -> rc.dmgAir += effect.getValue() * factor;
                 case "critical_strike" -> rc.criticalStrike += effect.getValue() * factor;
                 case "attack_fire" -> rc.attackFire += effect.getValue() * factor;
                 case "attack_water" -> rc.attackWater += effect.getValue() * factor;
