@@ -60,7 +60,7 @@ public class TrainingSkillTask {
 
                                  })
                                  .filter(itemSchema -> canCanGatherResources(character, itemSchema))
-                                 .sorted((o1, o2) -> sortByNeededResource(o1, o2))
+                                 .sorted(this::sortByNeededResource)
                                  .findFirst()
                 ;
     }
@@ -71,17 +71,27 @@ public class TrainingSkillTask {
         if (level1 != level2) {
             return Integer.compare(level1, level2);
         }
+        if (o1.getCraft() == null
+                || o1.getCraft()
+                     .getItems() == null) {
+            return -1;
+        }
+        if (o2.getCraft() == null
+                || o2.getCraft()
+                     .getItems() == null) {
+            return -1;
+        }
 
         int needed1 = o1.getCraft()
                         .getItems()
                         .stream()
-                        .mapToInt(simpleItemSchema -> simpleItemSchema.getQuantity())
+                        .mapToInt(SimpleItemSchema::getQuantity)
                         .sum()
                 ;
         int needed2 = o2.getCraft()
                         .getItems()
                         .stream()
-                        .mapToInt(simpleItemSchema -> simpleItemSchema.getQuantity())
+                        .mapToInt(SimpleItemSchema::getQuantity)
                         .sum()
                 ;
 
@@ -155,9 +165,11 @@ public class TrainingSkillTask {
         };
     }
 
-    @SuppressWarnings("OptionalGetWithoutIsPresent")
     public void trainSkills(CharacterSchema character, Skill... skills) {
         Optional<ItemSchema> itemToTrain = findHighestItemThatThisCharCanCreateAlone(character, skills);
+        if (itemToTrain.isEmpty()) {
+            return;
+        }
         // This is needed to have a loop, if we do not get rid of the item it is detected as "already crafted" and therefore skipped, no training would be done.
         bankDepositSingleItemTask.depositInventoryInBank(character.getName(), itemToTrain.get()
                                                                                          .getCode()
@@ -171,7 +183,7 @@ public class TrainingSkillTask {
         if (itemCodeCraftableWithInventory.isPresent()) {
             craftItemTask.craftItem(null, character.getName(), itemCodeCraftableWithInventory.get());
         } else {
-            Optional<String> farmableItemCode = findFarmableItem(character, neededForTrainingItem);
+            Optional<String> farmableItemCode = findFarmableItem(neededForTrainingItem);
             if (farmableItemCode.isPresent()) {
                 MapSchema whereToGather = itemHelper.findLocationWhereToFarm(character, farmableItemCode.get());
                 characterHelper.moveToLocation(character.getName(), whereToGather);
@@ -179,19 +191,17 @@ public class TrainingSkillTask {
                 myCharactersApi.actionGatheringMyNameActionGatheringPost(character.getName());
                 characterHelper.waitUntilCooldownDone(character.getName());
             }
-
-            // TODO we need to harvest resources
         }
 
     }
 
-    private Optional<String> findFarmableItem(CharacterSchema character, List<SimpleItemSchema> neededForTrainingItem) {
+    private Optional<String> findFarmableItem(List<SimpleItemSchema> neededForTrainingItem) {
         return neededForTrainingItem.stream()
                                     .map(simpleItemSchema -> caches.findItemDefinition(simpleItemSchema.getCode())
                                                                    .get())
                                     .filter(itemSchema -> itemSchema.getCraft() == null)
                                     .sorted(Comparator.comparing(ItemSchema::getName))
-                                    .map(itemSchema -> itemSchema.getCode())
+                                    .map(ItemSchema::getCode)
                                     .findFirst()
                 ;
     }
@@ -210,7 +220,7 @@ public class TrainingSkillTask {
                                                                                                     .anyMatch(inventorySlot -> inventorySlot.getCode()
                                                                                                                                             .equalsIgnoreCase(simpleItemSchema.getCode())
                                                                                                             && inventorySlot.getQuantity() >= simpleItemSchema.getQuantity())))
-                           .map(simpleItemSchema -> simpleItemSchema.getCode())
+                           .map(ItemSchema::getCode)
                            .findFirst();
     }
 }

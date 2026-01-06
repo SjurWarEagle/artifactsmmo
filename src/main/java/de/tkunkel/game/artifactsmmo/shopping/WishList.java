@@ -44,12 +44,10 @@ public class WishList {
 
         this.allWishes.add(wish);
         addWishesForComponents(wish);
-        // logger.info("Added wish for {}", wish.itemCode);
     }
 
     private boolean hasAlreadyInBank(Wish wish) {
         AtomicInteger totals = new AtomicInteger();
-        // TODO add paging
         DataPageSimpleItemSchema bankItemsMyBankItemsGet = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(null, 1, 100);
         bankItemsMyBankItemsGet.getData()
                                .stream()
@@ -57,10 +55,8 @@ public class WishList {
                                                                            .equals(wish.itemCode))
                                .forEach(bankItem -> totals.addAndGet(bankItem.getQuantity()))
         ;
-        if (totals.get() >= wish.amount) {
-            return true;
-        }
-        return false;
+
+        return totals.get() >= wish.amount;
     }
 
     private void addWishesForComponents(Wish wish) {
@@ -77,9 +73,7 @@ public class WishList {
         itemDefinition.get()
                       .getCraft()
                       .getItems()
-                      .forEach(component -> {
-                          addRequest(new Wish(wish.characterName, component.getCode(), component.getQuantity()));
-                      })
+                      .forEach(component -> addRequest(new Wish(wish.characterName, component.getCode(), component.getQuantity())))
         ;
     }
 
@@ -102,11 +96,9 @@ public class WishList {
             if (!wish.fulfilled
                     && wish.reservedBy == null) {
                 Optional<ItemSchema> itemDefinition = caches.findItemDefinition(wish.itemCode);
-                if (itemDefinition.isEmpty()) {
-                    continue;
-                }
-                if (itemDefinition.get()
-                                  .getCraft() == null) {
+                if (itemDefinition.isEmpty()
+                        || itemDefinition.get()
+                                         .getCraft() == null) {
                     // nothing to craft, this one needs to be gathered
                     continue;
                 }
@@ -137,11 +129,9 @@ public class WishList {
     private boolean areAllItemsInBank(List<SimpleItemSchema> items) {
         DataPageSimpleItemSchema bankItemsMyBankItemsGet = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(null, 1, 100);
         return items.stream()
-                    .allMatch(simpleItemSchema -> {
-                        return bankItemsMyBankItemsGet.getData()
-                                                      .stream()
-                                                      .anyMatch(bankItem -> bankItem.getCode()
-                                                                                    .equalsIgnoreCase(simpleItemSchema.getCode()));
-                    });
+                    .allMatch(simpleItemSchema -> bankItemsMyBankItemsGet.getData()
+                                                                         .stream()
+                                                                         .anyMatch(bankItem -> bankItem.getCode()
+                                                                                                       .equalsIgnoreCase(simpleItemSchema.getCode())));
     }
 }

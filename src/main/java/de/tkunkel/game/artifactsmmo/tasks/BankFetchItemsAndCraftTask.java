@@ -39,7 +39,6 @@ public class BankFetchItemsAndCraftTask extends CommonTask {
             throw new RuntimeException("No item found for " + itemToCraft);
         }
         // is item already in the bank?
-        // TODO paging
         DataPageSimpleItemSchema bankItemsMyBankItemsGet = brain.apiHolder.myAccountApi.getBankItemsMyBankItemsGet(null, 1, 100);
         Optional<SimpleItemSchema> itemInBank = bankItemsMyBankItemsGet.getData()
                                                                        .stream()

@@ -11,15 +11,10 @@ public class CombatStatsEditor {
      * creates new combat stats with different equipment.
      */
     public CombatStats createManipulatedStats(CombatStats baseStats, ItemSchema originalGear, ItemSchema replacementGear) {
-        try {
-            CombatStats rc = (CombatStats) baseStats.clone();
-            removeGear(originalGear, rc);
-            addGear(replacementGear, rc);
-            return rc;
-        } catch (CloneNotSupportedException e) {
-            throw new RuntimeException(e);
-        }
-
+        CombatStats rc = new CombatStats(baseStats);
+        removeGear(originalGear, rc);
+        addGear(replacementGear, rc);
+        return rc;
     }
 
     private static CombatStats removeGear(ItemSchema originalGear, CombatStats rc) {
@@ -33,7 +28,6 @@ public class CombatStatsEditor {
     private static CombatStats changeGear(ItemSchema originalGear, CombatStats rc, int factor) {
         for (SimpleEffectSchema effect : originalGear.getEffects()) {
             switch (effect.getCode()) {
-
                 case "hp" -> rc.hp += effect.getValue() * factor;
                 case "dmg" -> rc.dmg += effect.getValue() * factor;
                 case "dmg_fire" -> rc.dmgFire += effect.getValue() * factor;

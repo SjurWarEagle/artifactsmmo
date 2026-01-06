@@ -3,28 +3,27 @@ package de.tkunkel.game.artifactsmmo.combat;
 import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
 import de.tkunkel.games.artifactsmmo.model.MonsterSchema;
 
-public class CombatStats implements Cloneable {
-    public int hp;
-    public int dmg;
-    public int criticalStrike;
-    public int initiative;
-    public int attackEarth;
-    public int resEarth;
-    public int attackFire;
-    public int resFire;
-    public int attackAir;
-    public int resAir;
-    public int attackWater;
-    public int resWater;
-    public int dmgAir;
-    public int dmgEarth;
-    public int dmgWater;
-    public int dmgFire;
+public class CombatStats {
+    protected int hp;
+    protected int dmg;
+    protected int criticalStrike;
+    protected int initiative;
+    protected int attackEarth;
+    protected int resEarth;
+    protected int attackFire;
+    protected int resFire;
+    protected int attackAir;
+    protected int resAir;
+    protected int attackWater;
+    protected int resWater;
+    protected int dmgAir;
+    protected int dmgEarth;
+    protected int dmgWater;
+    protected int dmgFire;
 
     public static CombatStats fromCharacter(CharacterSchema character) {
         var rc = new CombatStats();
         rc.hp = character.getHp();
-        // TODO add support for dmg (overall bonus)
         rc.attackEarth = character.getAttackEarth();
         rc.attackAir = character.getAttackAir();
         rc.attackWater = character.getAttackWater();
@@ -80,9 +79,27 @@ public class CombatStats implements Cloneable {
                 '}';
     }
 
+    public CombatStats() {
+    }
 
-    @Override
-    public Object clone() throws CloneNotSupportedException {
-        return super.clone();  // Native shallow copy
+    public CombatStats(CombatStats org) {
+        this.hp = org.hp;
+        this.criticalStrike = org.criticalStrike;
+        this.dmg = org.dmg;
+
+        this.dmgAir = org.dmgAir;
+        this.dmgFire = org.dmgFire;
+        this.dmgWater = org.dmgWater;
+        this.dmgEarth = org.dmgEarth;
+
+        this.resAir = org.resAir;
+        this.resFire = org.resFire;
+        this.resWater = org.resWater;
+        this.resEarth = org.resEarth;
+
+        this.attackAir = org.attackAir;
+        this.attackFire = org.attackFire;
+        this.attackWater = org.attackWater;
+        this.attackEarth = org.attackEarth;
     }
 }
