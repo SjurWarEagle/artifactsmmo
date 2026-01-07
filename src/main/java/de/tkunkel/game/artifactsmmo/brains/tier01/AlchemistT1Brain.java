@@ -10,6 +10,7 @@ import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.*;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.GatheringSkill;
+import de.tkunkel.games.artifactsmmo.model.ItemSlot;
 import de.tkunkel.games.artifactsmmo.model.Skill;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +50,7 @@ public class AlchemistT1Brain extends CommonBrain {
         CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
         charHelper.waitUntilCooldownDone(character);
         equipOrRequestBestToolForSkill(character, "alchemy");
-        equipOrRequestBestArmorForSlot(characterName, "body_armor");
+        equipOrRequestItemArmorForSlot(characterName, ItemSlot.BODY_ARMOR);
         bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
 
         character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);

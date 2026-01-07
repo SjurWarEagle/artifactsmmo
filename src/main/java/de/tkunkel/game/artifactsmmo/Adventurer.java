@@ -7,6 +7,7 @@ import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.ItemSchema;
+import de.tkunkel.games.artifactsmmo.model.ItemSlot;
 import org.jetbrains.annotations.UnknownNullability;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,15 +42,17 @@ public class Adventurer {
             logger.info("Adventurer {} of class {} is running", characterName, adventurerClass.name());
             // disabled becauase a non-fighter switched between tool and weapon in each loop
             // brain.equipOrRequestBestWeapon(characterName);
-            brain.equipOrRequestBestArmorForSlot(characterName, "body_armor");
-            brain.equipOrRequestBestArmorForSlot(characterName, "helmet");
-            brain.equipOrRequestBestArmorForSlot(characterName, "shield");
-            brain.equipOrRequestBestArmorForSlot(characterName, "boots");
-            brain.equipOrRequestBestArmorForSlot(characterName, "leg_armor");
+            brain.equipOrRequestItemArmorForSlot(characterName, ItemSlot.BODY_ARMOR);
+            brain.equipOrRequestItemArmorForSlot(characterName, ItemSlot.HELMET);
+            brain.equipOrRequestItemArmorForSlot(characterName, ItemSlot.SHIELD);
+            brain.equipOrRequestItemArmorForSlot(characterName, ItemSlot.BOOTS);
+            brain.equipOrRequestItemArmorForSlot(characterName, ItemSlot.RING1);
+            brain.equipOrRequestItemArmorForSlot(characterName, ItemSlot.RING2);
+            brain.equipOrRequestItemArmorForSlot(characterName, ItemSlot.AMULET);
+            brain.equipOrRequestItemArmorForSlot(characterName, ItemSlot.LEG_ARMOR);
 
             try {
-                CharacterResponseSchema character = null;
-                character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+                CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
                 Optional<Wish> wishThatCanBeCraftedByMe = wishList.reserveWishThatCanBeCraftedByMe(character);
                 boolean allResourcesAvailable = checkIfAllResourcesAreAvailable(character, wishThatCanBeCraftedByMe);
                 if (allResourcesAvailable && wishThatCanBeCraftedByMe.isPresent()) {

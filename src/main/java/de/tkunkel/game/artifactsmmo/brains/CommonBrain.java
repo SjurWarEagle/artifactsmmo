@@ -215,11 +215,15 @@ public abstract class CommonBrain implements Brain {
         EquipSchema equipSchema = new EquipSchema().slot(itemSlot)
                                                    .code(gear);
         CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+        charHelper.waitUntilCooldownDone(character);
         boolean alreadyEquipped = checkIfEquipped(gear, itemSlot, character);
         if (alreadyEquipped) {
             return;
         }
-        charHelper.waitUntilCooldownDone(character);
+        boolean hasInInventory = cntSpecificItemsInInventory(character, gear) > 0;
+        if (!hasInInventory) {
+            return;
+        }
         apiHolder.myCharactersApi.actionEquipItemMyNameActionEquipPost(character.getData()
                                                                                 .getName(), equipSchema
         );
@@ -341,7 +345,7 @@ public abstract class CommonBrain implements Brain {
     public void equipOrRequestBestWeapon(String characterName) {
         CharacterResponseSchema character = null;
         character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-        Optional<ItemSchema> bestForSlot = caches.findBestItemForSlotThatCanBeCraftedByAccount(ItemSlot.WEAPON.name(), character);
+        Optional<ItemSchema> bestForSlot = caches.findBestItemForSlotThatCanBeCraftedByAccount(ItemSlot.WEAPON, character);
         if (bestForSlot.isEmpty()) {
             return;
         }
@@ -397,63 +401,57 @@ public abstract class CommonBrain implements Brain {
         }
     }
 
-    public void equipOrRequestBestArmorForSlot(String characterName, String slotName) {
-        CharacterResponseSchema character = null;
-        character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+    public void equipOrRequestItemArmorForSlot(String characterName, ItemSlot slot) {
+        CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
 
-        Optional<ItemSchema> bestArmorForSkill = caches.findBestItemForSlotThatCanBeCraftedByAccount(slotName, character);
-        if (bestArmorForSkill.isEmpty()) {
+        Optional<ItemSchema> bestInSlot = caches.findBestItemForSlotThatCanBeCraftedByAccount(slot, character);
+        if (bestInSlot.isEmpty()) {
             return;
         }
-        ItemSlot itemSlot = ItemSlot.fromValue(bestArmorForSkill.get()
-                                                                .getType());
         if (checkIfEquipped(character.getData()
-                                     .getName(), bestArmorForSkill.get()
-                                                                  .getCode(), itemSlot
+                                     .getName(), bestInSlot.get()
+                                                           .getCode(), slot
         )) {
             return;
         }
-        //        logger.info("Equipping {}", bestArmorForSkill.get()
-        //                                                  .getCode()
-        //       );
         Optional<InventorySlot> inventorySlot = character.getData()
                                                          .getInventory()
                                                          .stream()
                                                          .filter(innerInventorySlot -> innerInventorySlot.getCode()
-                                                                                                         .equals(bestArmorForSkill.get()
-                                                                                                                                  .getCode()))
+                                                                                                         .equals(bestInSlot.get()
+                                                                                                                           .getCode()))
                                                          .findFirst()
                 ;
         boolean itemExistsInBank;
-        itemExistsInBank = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(bestArmorForSkill.get()
-                                                                                              .getCode(), 1, 100
+        itemExistsInBank = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(bestInSlot.get()
+                                                                                       .getCode(), 1, 100
                                     )
                                                  .getData()
                                                  .size() > 0;
         boolean itemExistsInInventory = inventorySlot.isPresent();
 
-        boolean alreadyEquipped = checkIfEquipped(bestArmorForSkill.get()
-                                                                   .getCode(), itemSlot, character
+        boolean alreadyEquipped = checkIfEquipped(bestInSlot.get()
+                                                            .getCode(), slot, character
         );
         if (!itemExistsInInventory && !itemExistsInBank && !alreadyEquipped) {
-            logger.info("Best tool (" + bestArmorForSkill.get()
-                                                         .getCode() + ") not in inventory nor bank nor equipped, requesting");
+            logger.info("Best tool (" + bestInSlot.get()
+                                                  .getCode() + ") not in inventory nor bank nor equipped, requesting");
             wishList.addRequest(new Wish(character.getData()
-                                                  .getName(), bestArmorForSkill.get()
-                                                                               .getCode()
+                                                  .getName(), bestInSlot.get()
+                                                                        .getCode()
                     , 1
             ));
             return;
         }
         if (!alreadyEquipped && itemExistsInBank) {
-            fetchItemFromBank(character, bestArmorForSkill.get()
-                                                          .getCode()
+            fetchItemFromBank(character, bestInSlot.get()
+                                                   .getCode()
             );
         }
         if (!alreadyEquipped) {
             equipGearIfNotEquipped(character.getData()
-                                            .getName(), bestArmorForSkill.get()
-                                                                         .getCode(), itemSlot
+                                            .getName(), bestInSlot.get()
+                                                                  .getCode(), slot
             );
         }
     }

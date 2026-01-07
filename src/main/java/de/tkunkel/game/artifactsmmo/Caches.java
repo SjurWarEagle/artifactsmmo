@@ -155,7 +155,7 @@ public class Caches {
                           .findFirst();
     }
 
-    public Optional<ItemSchema> findBestItemForSlotThatCanBeCraftedByAccount(String slotName, CharacterResponseSchema character) {
+    public Optional<ItemSchema> findBestItemForSlotThatCanBeCraftedByAccount(ItemSlot slot, CharacterResponseSchema character) {
         final CombatStats characterCombatStats = CombatStats.fromCharacter(character.getData());
 
         final List<CombatStats> monsterCombatStats = cachedMonsters.stream()
@@ -163,8 +163,7 @@ public class Caches {
                                                                    .toList()
                 ;
         return cachedItems.stream()
-                          .filter(itemSchema -> itemSchema.getType()
-                                                          .equalsIgnoreCase(slotName))
+                          .filter(itemSchema -> isCorrectSlot(itemSchema, slot))
                           .filter(itemSchema -> itemSchema.getCraft() != null)
                           .filter(itemSchema -> aCharCanCraftThis(itemSchema.getCraft()
                                                                             .getSkill()
@@ -179,6 +178,15 @@ public class Caches {
                           // use last of streams
                           .reduce((o1, o2) -> o2)
                 ;
+    }
+
+    private boolean isCorrectSlot(ItemSchema itemSchema, ItemSlot slot) {
+        String slotName = slot.name();
+        // this is because of items like rings
+        slotName = slotName.replace("1", "");
+        slotName = slotName.replace("2", "");
+        return itemSchema.getType()
+                         .equalsIgnoreCase(slotName);
     }
 
     private int compareByKillableMonsters(ItemSchema item1, ItemSchema item2, CharacterResponseSchema character, CombatStats characterCombatStats, List<CombatStats> defenders) {
