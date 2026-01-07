@@ -231,6 +231,7 @@ public class FighterT1Brain extends CommonBrain {
 
     private String findHighestMonsterToHunt(CharacterResponseSchema character) {
         CombatStats charCombatStats = CombatStats.fromCharacter(character.getData());
+
         String rc = "chicken";
         return rc;
     }

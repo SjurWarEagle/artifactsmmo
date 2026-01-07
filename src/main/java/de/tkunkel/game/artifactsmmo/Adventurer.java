@@ -39,14 +39,16 @@ public class Adventurer {
         this.huntForItemTask = huntForItemTask;
         this.brains = brains;
         this.wishList = wishList;
-        brain = decideBrain();
+        this.charHelper = charHelper;
+        brain = decideNewBrain();
     }
 
     public void startLoop() {
         bankDepositAllTask.depositInventoryInBank(brain, apiHolder.charactersApi.getCharacterCharactersNameGet(characterName));
         while (true) {
             logger.info("Adventurer {} of class {} is running", characterName, adventurerClass.name());
-            // no weapon because a non-fighter switched between tool and weapon in each loop
+            // disabled becauase a non-fighter switched between tool and weapon in each loop
+            // brain.equipOrRequestBestWeapon(characterName);
             brain.equipOrRequestItemArmorForSlot(characterName, ItemSlot.BODY_ARMOR);
             brain.equipOrRequestItemArmorForSlot(characterName, ItemSlot.HELMET);
             brain.equipOrRequestItemArmorForSlot(characterName, ItemSlot.SHIELD);
@@ -58,21 +60,49 @@ public class Adventurer {
 
             try {
                 CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-                Optional<Wish> wishThatCanBeCraftedByMe = wishList.reserveWishThatCanBeCraftedByMe(character);
-                boolean allResourcesAvailable = checkIfAllResourcesAreAvailable(character, wishThatCanBeCraftedByMe);
-                if (allResourcesAvailable && wishThatCanBeCraftedByMe.isPresent()) {
-                    Wish wish = wishThatCanBeCraftedByMe.get();
-                    brain.bankFetchItemsAndCraftTask.craftItemWithBankItems(brain, character, wish.itemCode, wish.amount);
-                    wish.fulfilled = true;
-                    wish.reservedBy = null;
+                if (isHandlingHuntingWish(character)) {
+                } else if (isHandlingCraftingWish(character)) {
                 } else {
                     // nothing to craft, so use default
                     brain.runBaseLoop(characterName);
                 }
-            } catch (BrainCompletedException _) {
+            } catch (BrainCompletedException e) {
                 logger.info("Adventurer {} of class {} needs new brain", characterName, adventurerClass.name());
-                brain = decideBrain();
+                brain = decideNewBrain();
             }
+        }
+    }
+
+    private boolean isHandlingHuntingWish(CharacterResponseSchema character) {
+        Optional<Wish> wishThatCanBeHuntedByMe = wishList.reserveWishThatCanBeHuntedByMe(character);
+        if (wishThatCanBeHuntedByMe.isEmpty()) {
+            return false;
+        }
+        Wish wish = wishThatCanBeHuntedByMe.get();
+        boolean enoughInInventory = charHelper.cntItemsInInventory(characterName, wish.itemCode) >= wish.amount;
+        while (!enoughInInventory) {
+            huntForItemTask.huntForItem(characterName, wish.itemCode);
+            enoughInInventory = charHelper.cntItemsInInventory(characterName, wish.itemCode) >= wish.amount;
+        }
+
+        bankDepositAllTask.depositItemInBank(character, wish.itemCode, wish.amount);
+        wish.fulfilled = true;
+        wish.reservedBy = null;
+
+        return false;
+    }
+
+    private boolean isHandlingCraftingWish(CharacterResponseSchema character) {
+        Optional<Wish> wishThatCanBeCraftedByMe = wishList.reserveWishThatCanBeCraftedByMe(character);
+        boolean allResourcesAvailable = checkIfAllResourcesAreAvailable(character, wishThatCanBeCraftedByMe);
+        if (allResourcesAvailable && wishThatCanBeCraftedByMe.isPresent()) {
+            Wish wish = wishThatCanBeCraftedByMe.get();
+            brain.bankFetchItemsAndCraftTask.craftItemWithBankItems(brain, character, wish.itemCode, wish.amount);
+            wish.fulfilled = true;
+            wish.reservedBy = null;
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -82,58 +112,53 @@ public class Adventurer {
         }
         Wish wish = optionalWish.get();
         Optional<ItemSchema> itemDefinition = brain.caches.findItemDefinition(wish.itemCode);
-        if (itemDefinition.isEmpty()
-                || itemDefinition.get().getCraft()==null
-                || itemDefinition.get().getCraft().getItems()==null) {
-            return false;
-        }
         return itemDefinition.get()
                              .getCraft()
                              .getItems()
                              .stream()
                              .allMatch(resourceItem -> {
-                                 if (character.getData()
-                                         .getInventory()==null){
-                                     return false;
-                                 }
                                  boolean inInventory = character.getData()
                                                                 .getInventory()
                                                                 .stream()
-                                                                .anyMatch(inventorySlot -> inventorySlot.getCode()
+                                                                .filter(inventorySlot -> inventorySlot.getCode()
                                                                                                       .equals(resourceItem.getCode()))
+                                                                .findAny()
+                                                                .isPresent()
                                          ;
                                  if (inInventory) {
                                      return true;
                                  }
-                                 return !apiHolder.myAccountApi.getBankItemsMyBankItemsGet(resourceItem.getCode(), 1, 100
+                                 boolean inBank = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(resourceItem.getCode(), 1, 100
                                                            )
-                                                                        .getData().isEmpty();
+                                                                        .getData()
+                                                                        .size() > 0;
+                                 return inBank;
                              })
                 ;
 
 
     }
 
-    private CommonBrain decideBrain() {
+    private CommonBrain decideNewBrain() {
         Optional<CommonBrain> optionalBrain = switch (adventurerClass) {
             case MINER -> brains.stream()
-                                .filter(MinerT1Brain.class::isInstance)
+                                .filter(brain -> brain instanceof MinerT1Brain)
                                 .findFirst()
             ;
             case FIGHTER -> brains.stream()
-                                  .filter(FighterT1Brain.class::isInstance)
+                                  .filter(brain -> brain instanceof FighterT1Brain)
                                   .findFirst()
             ;
             case WOODWORKER -> brains.stream()
-                                     .filter(WoodworkerT1Brain.class::isInstance)
+                                     .filter(brain -> brain instanceof WoodworkerT1Brain)
                                      .findFirst()
             ;
             case ALCHEMIST -> brains.stream()
-                                    .filter(AlchemistT1Brain.class::isInstance)
+                                    .filter(brain -> brain instanceof AlchemistT1Brain)
                                     .findFirst()
             ;
             case FISHER -> brains.stream()
-                                 .filter(FisherT1Brain.class::isInstance)
+                                 .filter(brain -> brain instanceof FisherT1Brain)
                                  .findFirst()
             ;
         };

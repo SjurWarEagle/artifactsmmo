@@ -42,7 +42,6 @@ public class TrainingSkillTask {
         }
         // TODO what to do if it is null?
         return caches.cachedItems.stream()
-                                 // TODO what to do if it is null?
                                  .filter(itemSchema -> itemSchema.getCraft() != null)
                                  .filter(itemSchema -> itemSchema.getCraft()
                                                                  .getSkill()
@@ -53,8 +52,12 @@ public class TrainingSkillTask {
                                      Integer neededLevel = itemSchema.getCraft()
                                                                      .getLevel();
 
-                                     boolean isRelevantSkill = Arrays.asList(skills)
-                                                                     .contains(skillToTrain.get());
+                                     boolean isRelevantSkill = itemSchema.getCraft()
+                                                                         .getSkill()
+                                                                         .name()
+                                                                         .equalsIgnoreCase(skillToTrain.get()
+                                                                                                       .name())
+                                             ;
                                      boolean charHasEnoughSkill = charHasEnoughSkill(character, skillToTrain.get(), neededLevel);
                                      return isRelevantSkill && charHasEnoughSkill;
 
