@@ -85,13 +85,24 @@ public class TrainingSkillTask {
         int needed1 = o1.getCraft()
                         .getItems()
                         .stream()
-                        .mapToInt(SimpleItemSchema::getQuantity)
+                        .mapToInt(item -> {
+                            List<SimpleItemSchema> neededItems = itemHelper.getRecursiveResourcesToCraft(item.getCode(), 1);
+                            return neededItems.stream()
+                                              .mapToInt(SimpleItemSchema::getQuantity)
+                                              .sum() * item.getQuantity();
+                        })
                         .sum()
                 ;
+
         int needed2 = o2.getCraft()
                         .getItems()
                         .stream()
-                        .mapToInt(SimpleItemSchema::getQuantity)
+                        .mapToInt(item -> {
+                            List<SimpleItemSchema> neededItems = itemHelper.getRecursiveResourcesToCraft(item.getCode(), 1);
+                            return neededItems.stream()
+                                              .mapToInt(SimpleItemSchema::getQuantity)
+                                              .sum() * item.getQuantity();
+                        })
                         .sum()
                 ;
 
@@ -192,7 +203,6 @@ public class TrainingSkillTask {
                 characterHelper.waitUntilCooldownDone(character.getName());
             }
         }
-
     }
 
     private Optional<String> findFarmableItem(List<SimpleItemSchema> neededForTrainingItem) {

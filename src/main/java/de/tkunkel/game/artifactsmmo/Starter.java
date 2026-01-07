@@ -7,10 +7,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.ApplicationContext;
+import org.springframework.retry.annotation.EnableRetry;
 
 @SpringBootApplication(scanBasePackages = "de.tkunkel.game.artifactsmmo")
 @ConfigurationPropertiesScan
 @EnableCaching
+@EnableRetry
 public class Starter {
     private final Logger logger = LoggerFactory.getLogger(Starter.class.getName());
 

@@ -11,6 +11,8 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
+import java.net.SocketException;
+
 @Service
 public class MyAccountApiWrapper {
     private final ApiClient apiClient;
@@ -22,6 +24,7 @@ public class MyAccountApiWrapper {
         this.myAccountApi = new MyAccountApi(apiClient);
     }
 
+    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
     // TODO paging! - call all pages
     public DataPageSimpleItemSchema getBankItemsMyBankItemsGet(String itemCode, int page, int size) {
         try {
@@ -32,12 +35,7 @@ public class MyAccountApiWrapper {
         }
     }
 
-    @Retryable(
-            retryFor = Exception.class,
-            exceptionExpression = "#root.message.contains('retry this')",
-            maxAttempts = 3,
-            backoff = @Backoff(delay = 1000)
-    )
+    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
     public BankResponseSchema getBankDetailsMyBankGet() {
         try {
             return myAccountApi.getBankDetailsMyBankGet();

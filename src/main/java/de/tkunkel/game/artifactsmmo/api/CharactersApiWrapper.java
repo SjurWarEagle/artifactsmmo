@@ -6,8 +6,11 @@ import de.tkunkel.games.artifactsmmo.api.CharactersApi;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
+import java.net.SocketException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,6 +28,7 @@ public class CharactersApiWrapper {
         charactersApi = new CharactersApi(apiClient);
     }
 
+    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
     public CharacterResponseSchema getCharacterCharactersNameGet(String name) {
         Instant now = Instant.now();
         CharacterCacheEntry entry = characterCache.get(name);
@@ -46,6 +50,7 @@ public class CharactersApiWrapper {
         }
     }
 
+    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
     private static class CharacterCacheEntry {
         final CharacterResponseSchema response;
         final Instant timestamp;

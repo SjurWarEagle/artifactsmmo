@@ -8,7 +8,11 @@ import de.tkunkel.games.artifactsmmo.model.CharactersListSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
+
+import java.net.SocketException;
 
 @Service
 public class AccountsApiWrapper {
@@ -21,6 +25,7 @@ public class AccountsApiWrapper {
         this.config = config;
     }
 
+    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
     @Cacheable(cacheNames = "getAccountCharactersAccountsAccountCharactersGet")
     public CharactersListSchema getAccountCharactersAccountsAccountCharactersGet() {
         try {
