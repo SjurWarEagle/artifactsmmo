@@ -57,7 +57,7 @@ public class TaskCancelTask extends CommonTask {
         waitUntilCooldownDone(characterName);
         character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
 
-        charHelper.moveToLocation(character, taskMaster.get());
+        charHelper.moveToLocationSync(character, taskMaster.get());
         waitUntilCooldownDone(characterName);
         myCharactersApiWrapper.actionTaskCancelMyNameActionTaskCancelPost(characterName);
         waitUntilCooldownDone(characterName);

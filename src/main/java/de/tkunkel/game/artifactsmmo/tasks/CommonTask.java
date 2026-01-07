@@ -34,8 +34,8 @@ public class CommonTask {
     public void fetchItemFromBank(CommonBrain brain, CharacterResponseSchema character, String neededItemCode, int quantity) {
         waitUntilCooldownDone(character.getData()
                                        .getName());
-        charHelper.moveToLocation(character, mapHelper.findClosestLocation(character, "bank")
-                                                      .get()
+        charHelper.moveToLocationSync(character, mapHelper.findClosestLocation(character, "bank")
+                                                          .get()
         );
         waitUntilCooldownDone(character.getData()
                                        .getName());

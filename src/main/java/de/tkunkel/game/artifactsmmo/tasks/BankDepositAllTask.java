@@ -43,7 +43,7 @@ public class BankDepositAllTask {
             throw new RuntimeException("Could not find bank for character " + character.getData()
                                                                                        .getName());
         }
-        charHelper.moveToLocation(character, bank.get());
+        charHelper.moveToLocationSync(character, bank.get());
         charHelper.waitUntilCooldownDone(character);
         List<SimpleItemSchema> itemsToDeposit = character.getData()
                                                          .getInventory()
@@ -92,7 +92,7 @@ public class BankDepositAllTask {
                                                          .toList()
                 ;
         if (!itemsToDeposit.isEmpty()) {
-            charHelper.moveToLocation(character, bank.get());
+            charHelper.moveToLocationSync(character, bank.get());
             charHelper.waitUntilCooldownDone(character);
             brain.apiHolder.myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
                                                                                                           .getName(), itemsToDeposit

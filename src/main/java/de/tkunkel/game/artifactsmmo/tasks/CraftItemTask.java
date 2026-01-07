@@ -40,7 +40,7 @@ public class CraftItemTask {
             return;
         }
         MapSchema map = itemHelper.findLocationToCraftItem(itemToCraft);
-        charHelper.moveToLocation(characterName, map);
+        charHelper.moveToLocationSync(characterName, map);
         charHelper.waitUntilCooldownDone(characterName);
         myCharactersApi.actionCraftingMyNameActionCraftingPost(characterName, new CraftingSchema().code(itemToCraft)
                                                                                                   .quantity(1)
@@ -59,7 +59,7 @@ public class CraftItemTask {
             return;
         }
         MapSchema map = itemHelper.findLocationToCraftItem(wish.itemCode);
-        charHelper.moveToLocation(characterName, map);
+        charHelper.moveToLocationSync(characterName, map);
         charHelper.waitUntilCooldownDone(characterName);
         myCharactersApi.actionCraftingMyNameActionCraftingPost(characterName, new CraftingSchema().code(wish.itemCode)
                                                                                                   .quantity(1)

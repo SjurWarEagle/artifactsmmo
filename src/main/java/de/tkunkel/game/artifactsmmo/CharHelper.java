@@ -119,12 +119,12 @@ public class CharHelper {
                           .findFirst();
     }
 
-    public boolean moveToLocation(String characterName, MapSchema destination) {
+    public boolean moveToLocationSync(String characterName, MapSchema destination) {
         CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
-        return moveToLocation(character, destination);
+        return moveToLocationSync(character, destination);
     }
 
-    public boolean moveToLocation(CharacterResponseSchema character, MapSchema destination) {
+    public boolean moveToLocationSync(CharacterResponseSchema character, MapSchema destination) {
         character = charactersApi.getCharacterCharactersNameGet(character.getData()
                                                                          .getName());
         boolean alreadyReached = destination.getX()
@@ -133,19 +133,27 @@ public class CharHelper {
                 && destination.getY()
                               .equals(character.getData()
                                                .getY());
+        waitUntilCooldownDone(character.getData()
+                                       .getName());
         if (alreadyReached) {
             return false;
         }
-        waitUntilCooldownDone(character.getData()
-                                       .getName());
         DestinationSchema destinationSchema = new DestinationSchema().x(destination.getX())
                                                                      .y(destination.getY());
-        myCharactersApi.actionMoveMyNameActionMovePost(character.getData()
-                                                                .getName(), destinationSchema
+        CharacterMovementResponseSchema characterMovementResponseSchema = myCharactersApi.actionMoveMyNameActionMovePost(character.getData()
+                                                                                                                                  .getName(), destinationSchema
         );
-        waitUntilCooldownDone(character.getData()
-                                       .getName());
+        waitUntilCooldownDone(characterMovementResponseSchema.getData()
+                                                             .getCooldown());
         return true;
+    }
+
+    private void waitUntilCooldownDone(CooldownSchema cooldown) {
+        try {
+            Thread.sleep(cooldown.getTotalSeconds());
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void waitUntilCooldownDone(String characterName) {

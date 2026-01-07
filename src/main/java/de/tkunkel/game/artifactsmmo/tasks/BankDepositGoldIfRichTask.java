@@ -33,7 +33,7 @@ public class BankDepositGoldIfRichTask {
             throw new RuntimeException("Could not find bank for character " + character.getData()
                                                                                        .getName());
         }
-        charHelper.moveToLocation(character, bank.get());
+        charHelper.moveToLocationSync(character, bank.get());
         charHelper.waitUntilCooldownDone(character);
 
         DepositWithdrawGoldSchema goldDeposit = new DepositWithdrawGoldSchema().quantity(character.getData()
@@ -68,7 +68,7 @@ public class BankDepositGoldIfRichTask {
                                                          .toList()
                 ;
         if (!itemsToDeposit.isEmpty()) {
-            charHelper.moveToLocation(character, bank.get());
+            charHelper.moveToLocationSync(character, bank.get());
             charHelper.waitUntilCooldownDone(character);
             brain.apiHolder.myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
                                                                                                           .getName(), itemsToDeposit

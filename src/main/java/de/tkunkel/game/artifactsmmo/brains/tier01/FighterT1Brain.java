@@ -70,7 +70,7 @@ public class FighterT1Brain extends CommonBrain {
             logger.error("Could not find location of closest monster ({})", enemyToHunt);
             return;
         }
-        charHelper.moveToLocation(character, locationOfClosestMonster.get());
+        charHelper.moveToLocationSync(character, locationOfClosestMonster.get());
 
         charHelper.waitUntilCooldownDone(character);
         FightRequestSchema fightRequest = new FightRequestSchema();
@@ -125,7 +125,7 @@ public class FighterT1Brain extends CommonBrain {
             throw new RuntimeException("Could not find bank for character " + character.getData()
                                                                                        .getName());
         }
-        charHelper.moveToLocation(character, bank.get());
+        charHelper.moveToLocationSync(character, bank.get());
         charHelper.waitUntilCooldownDone(character);
         List<SimpleItemSchema> bankRequestSchema = character.getData()
                                                             .getInventory()
@@ -162,7 +162,7 @@ public class FighterT1Brain extends CommonBrain {
         if (closestLocation.isEmpty()) {
             return;
         }
-        boolean moved = charHelper.moveToLocation(character, closestLocation.get());
+        boolean moved = charHelper.moveToLocationSync(character, closestLocation.get());
         if (moved) {
             return;
         }

@@ -30,7 +30,7 @@ public class TaskAcceptNewTask {
         if (closestLocation.isEmpty()) {
             return;
         }
-        boolean moved = charHelper.moveToLocation(character, closestLocation.get());
+        boolean moved = charHelper.moveToLocationSync(character, closestLocation.get());
         if (moved) {
             return;
         }

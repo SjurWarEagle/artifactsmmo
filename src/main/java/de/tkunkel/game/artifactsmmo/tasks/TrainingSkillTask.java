@@ -197,7 +197,7 @@ public class TrainingSkillTask {
             Optional<String> farmableItemCode = findFarmableItem(neededForTrainingItem);
             if (farmableItemCode.isPresent()) {
                 MapSchema whereToGather = itemHelper.findLocationWhereToFarm(character, farmableItemCode.get());
-                characterHelper.moveToLocation(character.getName(), whereToGather);
+                characterHelper.moveToLocationSync(character.getName(), whereToGather);
                 characterHelper.waitUntilCooldownDone(character.getName());
                 myCharactersApi.actionGatheringMyNameActionGatheringPost(character.getName());
                 characterHelper.waitUntilCooldownDone(character.getName());

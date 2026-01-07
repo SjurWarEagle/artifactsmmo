@@ -43,7 +43,7 @@ public class BankUpgradeIfPossibleTask {
             throw new RuntimeException("Could not find bank for character " + character.getData()
                                                                                        .getName());
         }
-        charHelper.moveToLocation(character, bank.get());
+        charHelper.moveToLocationSync(character, bank.get());
 
 
         DepositWithdrawGoldSchema transaction = new DepositWithdrawGoldSchema().quantity(bankDetailsMyBankGet.getData()

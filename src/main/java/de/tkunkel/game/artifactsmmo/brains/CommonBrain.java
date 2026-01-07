@@ -324,7 +324,7 @@ public abstract class CommonBrain implements Brain {
             logger.error("No location found for {}", craftingStation);
             return;
         }
-        charHelper.moveToLocation(character, closestLocation.get());
+        charHelper.moveToLocationSync(character, closestLocation.get());
         charHelper.waitUntilCooldownDone(character);
         CraftingSchema craftingSchema = new CraftingSchema().code(gear)
                                                             .quantity(1);
@@ -525,7 +525,7 @@ public abstract class CommonBrain implements Brain {
             throw new RuntimeException("Could not find bank for character " + character.getData()
                                                                                        .getName());
         }
-        charHelper.moveToLocation(character, bank.get());
+        charHelper.moveToLocationSync(character, bank.get());
         charHelper.waitUntilCooldownDone(character);
 
         SimpleItemSchema simpleItemSchema = new SimpleItemSchema().code(itemCode)

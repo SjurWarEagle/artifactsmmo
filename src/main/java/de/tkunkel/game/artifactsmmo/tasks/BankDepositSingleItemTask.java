@@ -48,7 +48,7 @@ public class BankDepositSingleItemTask {
                                                          .toList()
                 ;
         if (!itemsToDeposit.isEmpty()) {
-            charHelper.moveToLocation(character, bank.get());
+            charHelper.moveToLocationSync(character, bank.get());
             charHelper.waitUntilCooldownDone(character);
             myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
                                                                                           .getName(), itemsToDeposit
