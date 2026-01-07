@@ -34,7 +34,7 @@ public class Caches {
     private ResourcesApi resourcesApi;
     private final AccountsApiWrapper accountsApi;
     private final CombatStatsEditor combatStatsEditor;
-    private CombatSimulator combatSimulator;
+    private final CombatSimulator combatSimulator;
 
     public final List<MapSchema> cachedMap = new ArrayList<>();
     public final List<MonsterSchema> cachedMonsters = new ArrayList<>();
@@ -85,7 +85,7 @@ public class Caches {
         logger.info("Starting cache of resources");
         try {
             DataPageResourceSchema all = resourcesApi.getAllResourcesResourcesGet(null, null, null, null, 1, 100);
-            if (all == null) {
+            if (all == null || all.getPages() == null) {
                 throw new RuntimeException("No resources found");
             }
             int cntPages = all.getPages();
@@ -104,6 +104,9 @@ public class Caches {
         logger.info("Starting cache of monsters");
         try {
             DataPageMonsterSchema allMonstersMonstersGet = monstersApi.getAllMonstersMonstersGet(null, null, null, null, 1, 100);
+            if (allMonstersMonstersGet.getPages()==null){
+                return;
+            }
             int cntPages = allMonstersMonstersGet.getPages();
             logger.info("Caching monsters page count {}", cntPages);
             for (Integer pageNr = 1; pageNr < cntPages + 1; pageNr++) {
@@ -120,6 +123,9 @@ public class Caches {
         logger.info("Starting cache of items");
         try {
             DataPageItemSchema allItemsItems = itemsApi.getAllItemsItemsGet(null, null, null, null, null, null, 1, 100);
+            if (allItemsItems.getPages()==null){
+                return;
+            }
             int cntPages = allItemsItems.getPages();
             logger.info("Caching item page count {}", cntPages);
             for (Integer pageNr = 1; pageNr < cntPages + 1; pageNr++) {
@@ -136,6 +142,9 @@ public class Caches {
         logger.info("Starting cache of map");
         try {
             DataPageMapSchema allMapsMapsGet = mapsApi.getAllMapsMapsGet(null, null, null, true, 4, 100);
+            if (allMapsMapsGet.getPages()==null){
+                return;
+            }
             int cntPages = allMapsMapsGet.getPages();
             logger.info("Caching map page count {}", cntPages);
             for (Integer pageNr = 1; pageNr < cntPages + 1; pageNr++) {
@@ -165,6 +174,7 @@ public class Caches {
         return cachedItems.stream()
                           .filter(itemSchema -> isCorrectSlot(itemSchema, slot))
                           .filter(itemSchema -> itemSchema.getCraft() != null)
+                          .filter(itemSchema -> itemSchema.getCraft().getSkill() != null)
                           .filter(itemSchema -> aCharCanCraftThis(itemSchema.getCraft()
                                                                             .getSkill()
                                                                             .name(), itemSchema.getCraft()
@@ -213,16 +223,14 @@ public class Caches {
         if (itemSchema.getConditions() == null) {
             return true;
         }
-        var rc = itemSchema.getConditions()
+        return itemSchema.getConditions()
                            .stream()
                            .allMatch(conditionSchema -> (conditionSchema.getOperator()
                                                                         .equals(ConditionOperator.GT)
                                    && conditionSchema.getCode()
                                                      .equalsIgnoreCase("level")
                                    && charLevel >= conditionSchema.getValue()
-                           ))
-                ;
-        return rc;
+                           ));
     }
 
     private boolean canAnyCharFarmResourcesForItem(String itemCode) {
@@ -253,7 +261,6 @@ public class Caches {
                                                                                                        .getLevel()
                                      );
                                  }
-                                 //
                              })
                 ;
     }
@@ -267,13 +274,11 @@ public class Caches {
 
     private boolean canACharHuntMonsterThatDropsThis(ItemSchema itemSchema) {
         List<MonsterSchema> monstersThatDropThis = findMonstersThatDropThis(itemSchema.getCode());
-        final List<CombatStats> characters = new ArrayList<>();
-        characters.addAll(accountsApi.getAccountCharactersAccountsAccountCharactersGet()
-                                     .getData()
-                                     .stream()
-                                     .map(CombatStats::fromCharacter)
-                                     .toList()
-        );
+        final List<CombatStats> characters = new ArrayList<>(accountsApi.getAccountCharactersAccountsAccountCharactersGet()
+                .getData()
+                .stream()
+                .map(CombatStats::fromCharacter)
+                .toList());
 
         return monstersThatDropThis.stream()
                                    .anyMatch(monsterSchema -> {
@@ -289,7 +294,6 @@ public class Caches {
 
     private List<MonsterSchema> findMonstersThatDropThis(String code) {
         return cachedMonsters.stream()
-                             .filter(monsterSchema -> monsterSchema.getDrops() != null)
                              .filter(monsterSchema -> monsterSchema.getDrops()
                                                                    .stream()
                                                                    .anyMatch(dropSchema -> dropSchema.getCode()

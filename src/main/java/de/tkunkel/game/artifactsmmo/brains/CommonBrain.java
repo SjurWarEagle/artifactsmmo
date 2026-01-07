@@ -25,7 +25,7 @@ public abstract class CommonBrain implements Brain {
     protected final WishList wishList;
     public final ApiHolder apiHolder;
     public final CharHelper charHelper;
-    public BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask;
+    public final BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask;
 
     private final Logger logger = LoggerFactory.getLogger(CommonBrain.class.getName());
     protected final MapHelper mapHelper;
@@ -50,18 +50,12 @@ public abstract class CommonBrain implements Brain {
 
     /**
      * find an item that can be crafted with the items in inventory and skill of the char.
-     * Use  higest level
-     *
-     * @param character
-     * @return
+     * Use  highest level
      */
     public Optional<String> findPossibleItemToCraft(CharacterResponseSchema character) {
         return caches.cachedItems.stream()
                                  .filter(
                                          item -> item.getCraft() != null)
-                                 .filter(
-                                         item -> item.getCraft()
-                                                     .getItems() != null)
                                  .filter(
                                          item -> item.getCraft()
                                                      .getSkill() != null)
@@ -79,7 +73,7 @@ public abstract class CommonBrain implements Brain {
                                  .filter(item -> hasAllItemsInInventory(character, item.getCraft()
                                                                                        .getItems()
                                  ))
-                                 .map(itemSchema -> itemSchema.getCode())
+                                 .map(ItemSchema::getCode)
                                  .findFirst()
                 ;
     }
@@ -119,7 +113,7 @@ public abstract class CommonBrain implements Brain {
                                          .getMaxHp() * 0.75) {
             return;
         }
-        if (eatFoodIfHasFood(character)) {
+        if (eatFoodIfHasFood(character.getData())) {
             return;
         }
         charHelper.waitUntilCooldownDone(character);
@@ -128,9 +122,11 @@ public abstract class CommonBrain implements Brain {
         charHelper.waitUntilCooldownDone(character);
     }
 
-    private boolean eatFoodIfHasFood(CharacterResponseSchema character) {
-        for (InventorySlot inventorySlot : character.getData()
-                                                    .getInventory()) {
+    private boolean eatFoodIfHasFood(CharacterSchema character) {
+        if (character.getInventory() == null) {
+            return false;
+        }
+        for (InventorySlot inventorySlot : character.getInventory()) {
             if (inventorySlot.getQuantity() >= 1
                     && (inventorySlot.getCode()
                                      .equalsIgnoreCase("apple")
@@ -139,9 +135,8 @@ public abstract class CommonBrain implements Brain {
             ) {
                 SimpleItemSchema simpleItemSchema = new SimpleItemSchema().quantity(1)
                                                                           .code(inventorySlot.getCode());
-                charHelper.waitUntilCooldownDone(character);
-                apiHolder.myCharactersApi.actionUseItemMyNameActionUsePost(character.getData()
-                                                                                    .getName(), simpleItemSchema
+                charHelper.waitUntilCooldownDone(character.getName());
+                apiHolder.myCharactersApi.actionUseItemMyNameActionUsePost(character.getName(), simpleItemSchema
                 );
                 return true;
             }
@@ -177,18 +172,13 @@ public abstract class CommonBrain implements Brain {
     }
 
     public Optional<MapSchema> findClosesTaskMaster(CharacterResponseSchema character, String taskMasterType) {
-        AtomicReference<Optional<MapSchema>> rc = new AtomicReference<>(Optional.empty());
-
         int charX = character.getData()
                              .getX();
         int charY = character.getData()
                              .getY();
-        caches.cachedMap.stream()
+        return caches.cachedMap.stream()
                         .filter(mapSchema -> mapSchema.getInteractions()
                                                       .getContent() != null)
-                        .filter(mapSchema -> mapSchema.getInteractions()
-                                                      .getContent()
-                                                      .getType() != null)
                         .filter(mapSchema -> mapSchema.getInteractions()
                                                       .getContent()
                                                       .getType()
@@ -203,11 +193,8 @@ public abstract class CommonBrain implements Brain {
                             int distance2 = Math.abs(mapSchema2.getX() - charX) + Math.abs(mapSchema2.getY() - charY);
                             return distance2 - distance1;
                         })
-                        .forEach(mapSchema -> {
-                            rc.set(Optional.of(mapSchema));
-                        })
-        ;
-        return rc.get();
+                        .findFirst()
+                ;
     }
 
 
@@ -343,8 +330,7 @@ public abstract class CommonBrain implements Brain {
     }
 
     public void equipOrRequestBestWeapon(String characterName) {
-        CharacterResponseSchema character = null;
-        character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+        CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
         Optional<ItemSchema> bestForSlot = caches.findBestItemForSlotThatCanBeCraftedByAccount(ItemSlot.WEAPON, character);
         if (bestForSlot.isEmpty()) {
             return;
@@ -366,11 +352,9 @@ public abstract class CommonBrain implements Brain {
                                                          .findFirst()
                 ;
         boolean itemExistsInBank;
-        itemExistsInBank = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(bestForSlot.get()
+        itemExistsInBank = !apiHolder.myAccountApi.getBankItemsMyBankItemsGet(bestForSlot.get()
                                                                                         .getCode(), 1, 100
-                                    )
-                                                 .getData()
-                                                 .size() > 0;
+                                    ).getData().isEmpty();
         boolean itemExistsInInventory = inventorySlot.isPresent();
 
         boolean alreadyEquipped = checkIfEquipped(bestForSlot.get()
@@ -471,9 +455,7 @@ public abstract class CommonBrain implements Brain {
         )) {
             return;
         }
-        //        logger.info("Equipping {}", bestToolForSkill.get()
-        //                                                  .getCode()
-        //       );
+
         Optional<InventorySlot> inventorySlot = character.getData()
                                                          .getInventory()
                                                          .stream()
@@ -482,11 +464,9 @@ public abstract class CommonBrain implements Brain {
                                                                                                                                  .getCode()))
                                                          .findFirst()
                 ;
-        boolean itemExistsInBank = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(bestToolForSkill.get()
+        boolean itemExistsInBank = !apiHolder.myAccountApi.getBankItemsMyBankItemsGet(bestToolForSkill.get()
                                                                                                      .getCode(), 1, 100
-                                            )
-                                                         .getData()
-                                                         .size() > 0;
+                                            ).getData().isEmpty();
         boolean itemExistsInInventory = inventorySlot.isPresent();
 
         boolean alreadyEquipped = checkIfEquipped(bestToolForSkill.get()

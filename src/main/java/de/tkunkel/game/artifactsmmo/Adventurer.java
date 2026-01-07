@@ -33,15 +33,14 @@ public class Adventurer {
         this.bankDepositAllTask = bankDepositAllTask;
         this.brains = brains;
         this.wishList = wishList;
-        brain = decideNewBrain();
+        brain = decideBrain();
     }
 
     public void startLoop() {
         bankDepositAllTask.depositInventoryInBank(brain, apiHolder.charactersApi.getCharacterCharactersNameGet(characterName));
         while (true) {
             logger.info("Adventurer {} of class {} is running", characterName, adventurerClass.name());
-            // disabled becauase a non-fighter switched between tool and weapon in each loop
-            // brain.equipOrRequestBestWeapon(characterName);
+            // no weapon because a non-fighter switched between tool and weapon in each loop
             brain.equipOrRequestItemArmorForSlot(characterName, ItemSlot.BODY_ARMOR);
             brain.equipOrRequestItemArmorForSlot(characterName, ItemSlot.HELMET);
             brain.equipOrRequestItemArmorForSlot(characterName, ItemSlot.SHIELD);
@@ -64,9 +63,9 @@ public class Adventurer {
                     // nothing to craft, so use default
                     brain.runBaseLoop(characterName);
                 }
-            } catch (BrainCompletedException e) {
+            } catch (BrainCompletedException _) {
                 logger.info("Adventurer {} of class {} needs new brain", characterName, adventurerClass.name());
-                brain = decideNewBrain();
+                brain = decideBrain();
             }
         }
     }
@@ -77,53 +76,58 @@ public class Adventurer {
         }
         Wish wish = optionalWish.get();
         Optional<ItemSchema> itemDefinition = brain.caches.findItemDefinition(wish.itemCode);
+        if (itemDefinition.isEmpty()
+                || itemDefinition.get().getCraft()==null
+                || itemDefinition.get().getCraft().getItems()==null) {
+            return false;
+        }
         return itemDefinition.get()
                              .getCraft()
                              .getItems()
                              .stream()
                              .allMatch(resourceItem -> {
+                                 if (character.getData()
+                                         .getInventory()==null){
+                                     return false;
+                                 }
                                  boolean inInventory = character.getData()
                                                                 .getInventory()
                                                                 .stream()
-                                                                .filter(inventorySlot -> inventorySlot.getCode()
+                                                                .anyMatch(inventorySlot -> inventorySlot.getCode()
                                                                                                       .equals(resourceItem.getCode()))
-                                                                .findAny()
-                                                                .isPresent()
                                          ;
                                  if (inInventory) {
                                      return true;
                                  }
-                                 boolean inBank = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(resourceItem.getCode(), 1, 100
+                                 return !apiHolder.myAccountApi.getBankItemsMyBankItemsGet(resourceItem.getCode(), 1, 100
                                                            )
-                                                                        .getData()
-                                                                        .size() > 0;
-                                 return inBank;
+                                                                        .getData().isEmpty();
                              })
                 ;
 
 
     }
 
-    private CommonBrain decideNewBrain() {
+    private CommonBrain decideBrain() {
         Optional<CommonBrain> optionalBrain = switch (adventurerClass) {
             case MINER -> brains.stream()
-                                .filter(brain -> brain instanceof MinerT1Brain)
+                                .filter(MinerT1Brain.class::isInstance)
                                 .findFirst()
             ;
             case FIGHTER -> brains.stream()
-                                  .filter(brain -> brain instanceof FighterT1Brain)
+                                  .filter(FighterT1Brain.class::isInstance)
                                   .findFirst()
             ;
             case WOODWORKER -> brains.stream()
-                                     .filter(brain -> brain instanceof WoodworkerT1Brain)
+                                     .filter(WoodworkerT1Brain.class::isInstance)
                                      .findFirst()
             ;
             case ALCHEMIST -> brains.stream()
-                                    .filter(brain -> brain instanceof AlchemistT1Brain)
+                                    .filter(AlchemistT1Brain.class::isInstance)
                                     .findFirst()
             ;
             case FISHER -> brains.stream()
-                                 .filter(brain -> brain instanceof FisherT1Brain)
+                                 .filter(FisherT1Brain.class::isInstance)
                                  .findFirst()
             ;
         };
