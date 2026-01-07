@@ -148,7 +148,7 @@ public class CharHelper {
         return true;
     }
 
-    private void waitUntilCooldownDone(CooldownSchema cooldown) {
+    public void waitUntilCooldownDone(CooldownSchema cooldown) {
         try {
             Thread.sleep(cooldown.getTotalSeconds());
         } catch (InterruptedException e) {
@@ -198,4 +198,28 @@ public class CharHelper {
     }
 
 
+    public void healIfNeededSync(String characterName) {
+        waitUntilCooldownDone(characterName);
+        CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
+        if (character.getData()
+                     .getHp() < character.getData()
+                                         .getMaxHp()) {
+            // TODO to change this to also use healing items
+            CharacterRestResponseSchema characterRestResponseSchema = myCharactersApi.actionRestMyNameActionRestPost(character.getData()
+                                                                                                                              .getName());
+            waitUntilCooldownDone(characterRestResponseSchema.getData()
+                                                             .getCooldown());
+        }
+    }
+
+    public int cntItemsInInventory(String characterName, String itemCode) {
+        CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
+        return character.getData()
+                        .getInventory()
+                        .stream()
+                        .filter(itemSchema -> itemSchema.getCode()
+                                                        .equals(itemCode))
+                        .mapToInt(inventorySlot -> inventorySlot.getQuantity())
+                        .sum();
+    }
 }

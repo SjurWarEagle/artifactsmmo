@@ -292,7 +292,7 @@ public class Caches {
                                    });
     }
 
-    private List<MonsterSchema> findMonstersThatDropThis(String code) {
+    public List<MonsterSchema> findMonstersThatDropThis(String code) {
         return cachedMonsters.stream()
                              .filter(monsterSchema -> monsterSchema.getDrops()
                                                                    .stream()

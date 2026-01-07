@@ -3,10 +3,12 @@ package de.tkunkel.game.artifactsmmo.shopping;
 import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.CharHelper;
-import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
-import de.tkunkel.games.artifactsmmo.model.DataPageSimpleItemSchema;
-import de.tkunkel.games.artifactsmmo.model.ItemSchema;
-import de.tkunkel.games.artifactsmmo.model.SimpleItemSchema;
+import de.tkunkel.game.artifactsmmo.combat.CombatSimulator;
+import de.tkunkel.game.artifactsmmo.combat.CombatStats;
+import de.tkunkel.game.artifactsmmo.helper.ItemHelper;
+import de.tkunkel.game.artifactsmmo.tasks.HuntForItemTask;
+import de.tkunkel.games.artifactsmmo.model.*;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -23,11 +25,17 @@ public class WishList {
     private final Logger logger = LoggerFactory.getLogger(WishList.class.getName());
     private final Caches caches;
     private final ApiHolder apiHolder;
+    private final ItemHelper itemHelper;
+    private final HuntForItemTask huntForItemTask;
+    private final CombatSimulator combatSimulator;
     private final Set<Wish> allWishes = new CopyOnWriteArraySet<>();
 
-    public WishList(Caches caches, ApiHolder apiHolder) {
+    public WishList(Caches caches, ApiHolder apiHolder, ItemHelper itemHelper, HuntForItemTask huntForItemTask, CombatSimulator combatSimulator) {
         this.caches = caches;
         this.apiHolder = apiHolder;
+        this.itemHelper = itemHelper;
+        this.huntForItemTask = huntForItemTask;
+        this.combatSimulator = combatSimulator;
     }
 
     public void addRequest(Wish wish) {
@@ -81,13 +89,47 @@ public class WishList {
         return Collections.unmodifiableSet(allWishes);
     }
 
-    public synchronized Optional<Wish> reserveWishThatCanBeCraftedByMe(CharacterResponseSchema character) {
-        Optional<Wish> existingReservedWish = allWishes.stream()
-                                                       .filter(wish -> character.getData()
-                                                                                .getName()
-                                                                                .equalsIgnoreCase(wish.reservedBy))
-                                                       .findFirst()
+    public synchronized Optional<Wish> reserveWishThatCanBeHuntedByMe(CharacterResponseSchema character) {
+        Optional<Wish> existingReservedWish = getAlreadyReservedWish(character);
+        if (existingReservedWish.isPresent()) {
+            return existingReservedWish;
+        }
+        var newWish = allWishes.stream()
+                               .filter(wish -> !wish.fulfilled)
+                               .filter(wish -> wish.reservedBy == null)
+                               .filter(wish -> {
+                                   Optional<ItemSchema> item = caches.findItemDefinition(wish.itemCode);
+                                   if (item.isEmpty()) {
+                                       return false;
+                                   }
+                                   return item.get()
+                                              .getCraft() == null;
+                               })
+                               .filter(item -> {
+                                   List<MonsterSchema> monsterSchemas = caches.findMonstersThatDropThis(item.itemCode);
+                                   for (MonsterSchema monsterSchema : monsterSchemas) {
+                                       CombatStats attacker = CombatStats.fromCharacter(character.getData());
+                                       CombatStats defender = CombatStats.fromMonster(monsterSchema);
+                                       boolean canWin = combatSimulator.winMoreThanXPercentAgainst(attacker, defender, 90);
+                                       return canWin;
+                                   }
+                                   return false;
+                               })
+                               .findFirst()
                 ;
+        if (newWish.isEmpty()) {
+            return Optional.empty();
+        }
+        newWish.get().reservedBy = character.getData()
+                                            .getName();
+
+        return newWish;
+
+
+    }
+
+    public synchronized Optional<Wish> reserveWishThatCanBeCraftedByMe(CharacterResponseSchema character) {
+        Optional<Wish> existingReservedWish = getAlreadyReservedWish(character);
         if (existingReservedWish.isPresent()) {
             return existingReservedWish;
         }
@@ -124,6 +166,17 @@ public class WishList {
             }
         }
         return Optional.empty();
+    }
+
+    private @NonNull Optional<Wish> getAlreadyReservedWish(CharacterResponseSchema character) {
+        Optional<Wish> existingReservedWish = allWishes.stream()
+                                                       .filter(wish -> !wish.fulfilled)
+                                                       .filter(wish -> character.getData()
+                                                                                .getName()
+                                                                                .equalsIgnoreCase(wish.reservedBy))
+                                                       .findFirst()
+                ;
+        return existingReservedWish;
     }
 
     private boolean areAllItemsInBank(List<SimpleItemSchema> items) {

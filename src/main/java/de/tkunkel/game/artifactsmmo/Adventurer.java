@@ -5,6 +5,7 @@ import de.tkunkel.game.artifactsmmo.brains.tier01.*;
 import de.tkunkel.game.artifactsmmo.shopping.Wish;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
+import de.tkunkel.game.artifactsmmo.tasks.HuntForItemTask;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.ItemSchema;
 import de.tkunkel.games.artifactsmmo.model.ItemSlot;
@@ -19,18 +20,23 @@ public class Adventurer {
     private final AdventurerClass adventurerClass;
     private final ApiHolder apiHolder;
     private final BankDepositAllTask bankDepositAllTask;
+    private final HuntForItemTask huntForItemTask;
+
     Logger logger = LoggerFactory.getLogger(Adventurer.class.getName());
 
     private final String characterName;
     private final Set<CommonBrain> brains;
     private CommonBrain brain;
     private final WishList wishList;
+    private final CharHelper charHelper;
 
-    public Adventurer(String characterName, AdventurerClass adventurerClass, ApiHolder apiHolder, BankDepositAllTask bankDepositAllTask, Set<CommonBrain> brains, WishList wishList) {
+    public Adventurer(String characterName, AdventurerClass adventurerClass, ApiHolder apiHolder, BankDepositAllTask bankDepositAllTask,
+                      HuntForItemTask huntForItemTask, Set<CommonBrain> brains, WishList wishList, CharHelper charHelper) {
         this.characterName = characterName;
         this.adventurerClass = adventurerClass;
         this.apiHolder = apiHolder;
         this.bankDepositAllTask = bankDepositAllTask;
+        this.huntForItemTask = huntForItemTask;
         this.brains = brains;
         this.wishList = wishList;
         brain = decideBrain();

@@ -2,6 +2,7 @@ package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
+import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.game.artifactsmmo.helper.MapHelper;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
@@ -12,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,11 +21,13 @@ import java.util.Optional;
 public class BankDepositAllTask {
     private final Logger logger = LoggerFactory.getLogger(BankDepositAllTask.class.getName());
     private final CharactersApiWrapper charactersApi;
+    private final MyCharactersApiWrapper myCharactersApi;
     private final CharHelper charHelper;
     private final MapHelper mapHelper;
 
-    public BankDepositAllTask(CharactersApiWrapper charactersApi, CharHelper charHelper, MapHelper mapHelper) {
+    public BankDepositAllTask(CharactersApiWrapper charactersApi, MyCharactersApiWrapper myCharactersApi, CharHelper charHelper, MapHelper mapHelper) {
         this.charactersApi = charactersApi;
+        this.myCharactersApi = myCharactersApi;
         this.charHelper = charHelper;
         this.mapHelper = mapHelper;
     }
@@ -101,4 +105,16 @@ public class BankDepositAllTask {
         charHelper.waitUntilCooldownDone(character);
     }
 
+    public void depositItemInBank(CharacterResponseSchema character, String itemCode, int amount) {
+        Optional<MapSchema> bank = mapHelper.findClosestLocation(character, "bank");
+        charHelper.moveToLocationSync(character, bank.get());
+        List<SimpleItemSchema> itemsToDeposit = new ArrayList<>();
+        itemsToDeposit.add(new SimpleItemSchema().code(itemCode)
+                                                 .quantity(amount));
+        charHelper.waitUntilCooldownDone(character);
+        myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
+                                                                                      .getName(), itemsToDeposit
+        );
+        charHelper.waitUntilCooldownDone(character);
+    }
 }
