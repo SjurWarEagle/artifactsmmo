@@ -56,7 +56,7 @@ public class AlchemistT1Brain extends CommonBrain {
         character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
         Optional<String> itemToCraft = findPossibleItemToCraft(character);
         if (itemToCraft.isPresent()) {
-            craftItemTask.craftItem(this, characterName, itemToCraft.get());
+            craftItemTask.craftItem(characterName, itemToCraft.get());
         } else {
             trainingSkillTask.trainSkills(character.getData(), Skill.ALCHEMY);
             // farmHighestResourceTask.farmResource(this, characterName);

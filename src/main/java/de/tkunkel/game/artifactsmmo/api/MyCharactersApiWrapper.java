@@ -77,6 +77,7 @@ public class MyCharactersApiWrapper {
         try {
             return charactersApi.actionWithdrawBankItemMyNameActionBankWithdrawItemPost(name, simpleItemSchemas);
         } catch (ApiException e) {
+            logger.warn("{} cannot withdraw {} from bank because it is not there", name, simpleItemSchemas);
             logger.warn("actionWithdrawBankItemMyNameActionBankWithdrawItemPost, ignoring with the assumption another char was faster", e);
         }
         return null;

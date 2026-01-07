@@ -192,7 +192,7 @@ public class TrainingSkillTask {
         neededForTrainingItem = CharHelper.removeWhatIsAlreadyInInventory(character, neededForTrainingItem);
         Optional<String> itemCodeCraftableWithInventory = findCraftableWithInventory(character, neededForTrainingItem);
         if (itemCodeCraftableWithInventory.isPresent()) {
-            craftItemTask.craftItem(null, character.getName(), itemCodeCraftableWithInventory.get());
+            craftItemTask.craftItem(character.getName(), itemCodeCraftableWithInventory.get());
         } else {
             Optional<String> farmableItemCode = findFarmableItem(neededForTrainingItem);
             if (farmableItemCode.isPresent()) {

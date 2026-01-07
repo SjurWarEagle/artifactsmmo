@@ -27,7 +27,7 @@ public class BankFetchItemsAndCraftTask extends CommonTask {
         this.bankDepositSingleItemTask = bankDepositSingleItemTask;
     }
 
-    public void craftItemWithBankItems(CommonBrain brain, CharacterResponseSchema character, String itemToCraft) {
+    public void craftItemWithBankItems(CommonBrain brain, CharacterResponseSchema character, String itemToCraft, int amount) {
         // get resources needed for item
         Optional<ItemSchema> optionalItemSchema = brain.caches.cachedItems.stream()
                                                                           .filter(item -> item.getCode()
@@ -43,6 +43,7 @@ public class BankFetchItemsAndCraftTask extends CommonTask {
         Optional<SimpleItemSchema> itemInBank = bankItemsMyBankItemsGet.getData()
                                                                        .stream()
                                                                        .filter(item -> itemToCraft.equals(item.getCode()))
+                                                                       .filter(item -> item.getQuantity() >= amount)
                                                                        .filter(item -> item.getQuantity() >= 1)
                                                                        .findFirst()
                 ;
@@ -59,18 +60,22 @@ public class BankFetchItemsAndCraftTask extends CommonTask {
         for (SimpleItemSchema neededItem : neededItems) {
             if (bankItemsMyBankItemsGet.getData()
                                        .stream()
-                                       .noneMatch(simpleItemSchema -> simpleItemSchema.getCode()
-                                                                                      .equalsIgnoreCase(neededItem.getCode()))) {
+                                       .noneMatch(simpleItemSchema ->
+                                                          simpleItemSchema.getCode()
+                                                                          .equalsIgnoreCase(neededItem.getCode())
+                                                                  && simpleItemSchema.getQuantity() >= neededItem.getQuantity()
+                                       )
+            ) {
                 return;
             }
-            fetchItemFromBank(brain, character, neededItem.getCode(), neededItem.getQuantity());
+            fetchItemFromBank(brain, character, neededItem.getCode(), neededItem.getQuantity() * amount);
         }
 
         // todo after fetching check again if item can be crafted
 
         // craft item
-        craftItemTask.craftItem(brain, character.getData()
-                                                .getName(), itemToCraft
+        craftItemTask.craftItem(character.getData()
+                                         .getName(), itemToCraft, amount
         );
 
         // deposit crafted item into bank

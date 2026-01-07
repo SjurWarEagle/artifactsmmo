@@ -55,7 +55,7 @@ public class WoodworkerT1Brain extends CommonBrain {
         character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
         Optional<String> itemToCraft = findPossibleItemToCraft(character);
         if (itemToCraft.isPresent()) {
-            craftItemTask.craftItem(this, characterName, itemToCraft.get());
+            craftItemTask.craftItem(characterName, itemToCraft.get());
         } else {
             trainingSkillTask.trainSkills(character.getData(), Skill.WOODCUTTING, Skill.WEAPONCRAFTING);
             // farmHighestResourceTask.farmResource(this, characterName);

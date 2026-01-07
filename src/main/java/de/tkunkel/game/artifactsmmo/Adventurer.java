@@ -57,7 +57,7 @@ public class Adventurer {
                 boolean allResourcesAvailable = checkIfAllResourcesAreAvailable(character, wishThatCanBeCraftedByMe);
                 if (allResourcesAvailable && wishThatCanBeCraftedByMe.isPresent()) {
                     Wish wish = wishThatCanBeCraftedByMe.get();
-                    brain.bankFetchItemsAndCraftTask.craftItemWithBankItems(brain, character, wish.itemCode);
+                    brain.bankFetchItemsAndCraftTask.craftItemWithBankItems(brain, character, wish.itemCode, wish.amount);
                     wish.fulfilled = true;
                     wish.reservedBy = null;
                 } else {

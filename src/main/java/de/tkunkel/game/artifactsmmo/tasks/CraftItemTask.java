@@ -5,7 +5,6 @@ import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyAccountApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
-import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.game.artifactsmmo.helper.ItemHelper;
 import de.tkunkel.game.artifactsmmo.shopping.Wish;
 import de.tkunkel.games.artifactsmmo.model.*;
@@ -34,7 +33,11 @@ public class CraftItemTask {
         this.myCharactersApi = myCharactersApi;
     }
 
-    public void craftItem(CommonBrain brain, String characterName, String itemToCraft) {
+    public void craftItem(String characterName, String itemToCraft) {
+        craftItem(characterName, itemToCraft, 1);
+    }
+
+    public void craftItem(String characterName, String itemToCraft, int amount) {
         if (!hasResourcesInInventory(characterName, itemToCraft)) {
             logger.warn("Tried to craft {} but did not have all resources.", itemToCraft);
             return;
@@ -43,7 +46,7 @@ public class CraftItemTask {
         charHelper.moveToLocationSync(characterName, map);
         charHelper.waitUntilCooldownDone(characterName);
         myCharactersApi.actionCraftingMyNameActionCraftingPost(characterName, new CraftingSchema().code(itemToCraft)
-                                                                                                  .quantity(1)
+                                                                                                  .quantity(amount)
         );
         charHelper.waitUntilCooldownDone(characterName);
     }
@@ -68,6 +71,10 @@ public class CraftItemTask {
     }
 
     public boolean hasResourcesInBank(String itemToCraft) {
+        return hasResourcesInBank(itemToCraft, 1);
+    }
+
+    public boolean hasResourcesInBank(String itemToCraft, int amount) {
         Optional<ItemSchema> itemDefinition = caches.findItemDefinition(itemToCraft);
         if (itemDefinition.isEmpty()
                 || itemDefinition.get()
@@ -86,7 +93,11 @@ public class CraftItemTask {
                              .allMatch(simpleItemSchema -> bankItemsMyBankItemsGet.getData()
                                                                                   .stream()
                                                                                   .anyMatch(inventorySlot -> inventorySlot.getCode()
-                                                                                                                          .equalsIgnoreCase(simpleItemSchema.getCode())));
+                                                                                                                          .equalsIgnoreCase(simpleItemSchema.getCode())
+                                                                                          && inventorySlot.getQuantity() >= amount
+                                                                                  )
+
+                             );
     }
 
     public boolean hasResourcesInInventory(String characterName, String itemToCraft) {

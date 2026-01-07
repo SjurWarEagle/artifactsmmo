@@ -127,11 +127,14 @@ public class WishList {
     }
 
     private boolean areAllItemsInBank(List<SimpleItemSchema> items) {
-        DataPageSimpleItemSchema bankItemsMyBankItemsGet = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(null, 1, 100);
+        DataPageSimpleItemSchema bankItems = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(null, 1, 100);
         return items.stream()
-                    .allMatch(simpleItemSchema -> bankItemsMyBankItemsGet.getData()
-                                                                         .stream()
-                                                                         .anyMatch(bankItem -> bankItem.getCode()
-                                                                                                       .equalsIgnoreCase(simpleItemSchema.getCode())));
+                    .allMatch(simpleItemSchema -> bankItems.getData()
+                                                           .stream()
+                                                           .anyMatch(bankItem -> bankItem.getCode()
+                                                                                         .equalsIgnoreCase(simpleItemSchema.getCode())
+                                                                   && bankItem.getQuantity() >= simpleItemSchema.getQuantity()
+                                                           )
+                    );
     }
 }

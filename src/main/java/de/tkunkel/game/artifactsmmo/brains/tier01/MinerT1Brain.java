@@ -42,10 +42,11 @@ public class MinerT1Brain extends CommonBrain {
         charHelper.waitUntilCooldownDone(character);
         equipOrRequestBestToolForSkill(character, "mining");
 
+        // TODO farm items for wish
         Optional<Wish> wish = findPossibleItemToCraftFromWishlist(character);
 
         if (wish.isPresent()) {
-            bankFetchItemsAndCraftTask.craftItemWithBankItems(this, character, wish.get().itemCode);
+            bankFetchItemsAndCraftTask.craftItemWithBankItems(this, character, wish.get().itemCode, wish.get().amount);
             wish.get().reservedBy = null;
             wish.get().fulfilled = true;
         } else {
