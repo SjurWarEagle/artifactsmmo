@@ -2,6 +2,7 @@ package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.CharHelper;
+import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.helper.ItemHelper;
 import de.tkunkel.games.artifactsmmo.model.*;
@@ -20,14 +21,18 @@ public class TrainingSkillTask {
     private final BankDepositSingleItemTask bankDepositSingleItemTask;
     private final CharHelper characterHelper;
     private final MyCharactersApiWrapper myCharactersApi;
+    private final CommonTask bankFetchItemsAndCraftTask;
+    private final CharactersApiWrapper charactersApi;
 
-    public TrainingSkillTask(Caches caches, ItemHelper itemHelper, CraftItemTask craftItemTask, BankDepositSingleItemTask bankDepositSingleItemTask, CharHelper characterHelper, MyCharactersApiWrapper myCharactersApi) {
+    public TrainingSkillTask(Caches caches, ItemHelper itemHelper, CraftItemTask craftItemTask, BankDepositSingleItemTask bankDepositSingleItemTask, CharHelper characterHelper, MyCharactersApiWrapper myCharactersApi, CommonTask bankFetchItemsAndCraftTask, CharactersApiWrapper charactersApi) {
         this.caches = caches;
         this.itemHelper = itemHelper;
         this.craftItemTask = craftItemTask;
         this.bankDepositSingleItemTask = bankDepositSingleItemTask;
         this.characterHelper = characterHelper;
         this.myCharactersApi = myCharactersApi;
+        this.bankFetchItemsAndCraftTask = bankFetchItemsAndCraftTask;
+        this.charactersApi = charactersApi;
     }
 
     public Optional<ItemSchema> findHighestItemThatThisCharCanCreateAlone(CharacterSchema character, Skill... skills) {
@@ -193,7 +198,18 @@ public class TrainingSkillTask {
                                                                                                           .getCode(), 1
         );
         neededForTrainingItem = CharHelper.removeWhatIsAlreadyInInventory(character, neededForTrainingItem);
-        Optional<String> itemCodeCraftableWithInventory = findCraftableWithInventory(character, neededForTrainingItem);
+        //       bankFetchItemsAndCraftTask.fetchItemFromBank(character, "copper_bar", 6);
+
+        character = charactersApi.getCharacterCharactersNameGet(character.getName())
+                                 .getData();
+
+        Optional<String> itemCodeCraftableWithInventory;
+        if (canCraftItem(character, itemToTrain.get())) {
+            itemCodeCraftableWithInventory = Optional.of(itemToTrain.get()
+                                                                    .getCode());
+        } else {
+            itemCodeCraftableWithInventory = findCraftableWithInventory(character, neededForTrainingItem);
+        }
         if (itemCodeCraftableWithInventory.isPresent()) {
             craftItemTask.craftItem(character.getName(), itemCodeCraftableWithInventory.get());
         } else {
@@ -206,6 +222,19 @@ public class TrainingSkillTask {
                 characterHelper.waitUntilCooldownDone(character.getName());
             }
         }
+    }
+
+    private boolean canCraftItem(CharacterSchema character, ItemSchema itemSchema) {
+        return itemSchema.getCraft()
+                         .getItems()
+                         .stream()
+                         .allMatch(simpleItemSchema -> {
+                             return
+                                     character.getInventory()
+                                              .stream()
+                                              .anyMatch(inventorySlot -> inventorySlot.getCode()
+                                                                                      .equalsIgnoreCase(simpleItemSchema.getCode()) && inventorySlot.getQuantity() >= simpleItemSchema.getQuantity());
+                         });
     }
 
     private Optional<String> findFarmableItem(List<SimpleItemSchema> neededForTrainingItem) {

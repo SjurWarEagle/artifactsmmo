@@ -23,8 +23,9 @@ public class TaskCancelTask extends CommonTask {
     private final MyAccountApiWrapper myAccountApiWrapper;
     private final MyCharactersApiWrapper myCharactersApiWrapper;
 
-    public TaskCancelTask(ApiHolder apiHolder, MyAccountApiWrapper myAccountApiWrapper, MyCharactersApiWrapper myCharactersApiWrapper, CharHelper charHelper, MapHelper mapHelper) {
-        super(apiHolder, charHelper, mapHelper);
+    public TaskCancelTask(ApiHolder apiHolder, MyAccountApiWrapper myAccountApiWrapper, MyCharactersApiWrapper myCharactersApiWrapper,
+                          CharHelper charHelper, MapHelper mapHelper) {
+        super(apiHolder, charHelper, mapHelper, myCharactersApiWrapper);
         this.myAccountApiWrapper = myAccountApiWrapper;
         this.myCharactersApiWrapper = myCharactersApiWrapper;
     }
@@ -53,11 +54,11 @@ public class TaskCancelTask extends CommonTask {
             return;
 
         }
-        fetchItemFromBank(brain, character, "tasks_coin", 1);
+        fetchItemFromBank(character.getData(), "tasks_coin", 1);
         waitUntilCooldownDone(characterName);
         character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
 
-        charHelper.moveToLocationSync(character, taskMaster.get());
+        charHelper.moveToLocationSync(character.getData(), taskMaster.get());
         waitUntilCooldownDone(characterName);
         myCharactersApiWrapper.actionTaskCancelMyNameActionTaskCancelPost(characterName);
         waitUntilCooldownDone(characterName);

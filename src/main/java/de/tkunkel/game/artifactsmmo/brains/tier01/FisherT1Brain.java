@@ -16,8 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-
 @Service
 public class FisherT1Brain extends CommonBrain {
     private final Logger logger = LoggerFactory.getLogger(FisherT1Brain.class.getName());
@@ -54,13 +52,6 @@ public class FisherT1Brain extends CommonBrain {
         equipOrRequestBestToolForSkill(character, "fishing");
         bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
 
-        character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-        Optional<String> itemToCraft = findPossibleItemToCraft(character);
-        if (itemToCraft.isPresent()) {
-            craftItemTask.craftItem(characterName, itemToCraft.get());
-        } else {
-            trainingSkillTask.trainSkills(character.getData(), Skill.FISHING, Skill.JEWELRYCRAFTING);
-            // farmHighestResourceTask.farmResource(this, characterName);
-        }
+        trainingSkillTask.trainSkills(character.getData(), Skill.FISHING, Skill.JEWELRYCRAFTING);
     }
 }

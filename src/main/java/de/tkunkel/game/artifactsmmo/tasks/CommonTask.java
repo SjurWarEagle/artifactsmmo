@@ -2,15 +2,17 @@ package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.CharHelper;
-import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
+import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.helper.MapHelper;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
+import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
 import de.tkunkel.games.artifactsmmo.model.SimpleItemSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class CommonTask {
@@ -19,11 +21,13 @@ public class CommonTask {
     protected final ApiHolder apiHolder;
     protected final CharHelper charHelper;
     protected final MapHelper mapHelper;
+    private final MyCharactersApiWrapper myCharactersApi;
 
-    public CommonTask(ApiHolder apiHolder, CharHelper charHelper, MapHelper mapHelper) {
+    public CommonTask(ApiHolder apiHolder, CharHelper charHelper, MapHelper mapHelper, MyCharactersApiWrapper myCharactersApi) {
         this.apiHolder = apiHolder;
         this.charHelper = charHelper;
         this.mapHelper = mapHelper;
+        this.myCharactersApi = myCharactersApi;
     }
 
     public void waitUntilCooldownDone(String characterName) {
@@ -31,22 +35,30 @@ public class CommonTask {
         waitUntilCooldownDone(character);
     }
 
-    public void fetchItemFromBank(CommonBrain brain, CharacterResponseSchema character, String neededItemCode, int quantity) {
-        waitUntilCooldownDone(character.getData()
-                                       .getName());
+    public void fetchItemsFromBank(CharacterSchema character, List<SimpleItemSchema> items) {
+        waitUntilCooldownDone(character.getName());
         charHelper.moveToLocationSync(character, mapHelper.findClosestLocation(character, "bank")
                                                           .get()
         );
-        waitUntilCooldownDone(character.getData()
-                                       .getName());
+        waitUntilCooldownDone(character.getName());
+
+        myCharactersApi.actionWithdrawBankItemMyNameActionBankWithdrawItemPost(character.getName(), items
+        );
+        waitUntilCooldownDone(character.getName());
+    }
+
+    public void fetchItemFromBank(CharacterSchema character, String neededItemCode, int quantity) {
+        waitUntilCooldownDone(character.getName());
+        charHelper.moveToLocationSync(character, mapHelper.findClosestLocation(character, "bank")
+                                                          .get()
+        );
+        waitUntilCooldownDone(character.getName());
 
         SimpleItemSchema simpleItemSchema = new SimpleItemSchema().code(neededItemCode)
                                                                   .quantity(quantity);
-        brain.apiHolder.myCharactersApi.actionWithdrawBankItemMyNameActionBankWithdrawItemPost(character.getData()
-                                                                                                        .getName(), Collections.singletonList(simpleItemSchema)
+        myCharactersApi.actionWithdrawBankItemMyNameActionBankWithdrawItemPost(character.getName(), Collections.singletonList(simpleItemSchema)
         );
-        waitUntilCooldownDone(character.getData()
-                                       .getName());
+        waitUntilCooldownDone(character.getName());
     }
 
     public void waitUntilCooldownDone(CharacterResponseSchema character) {

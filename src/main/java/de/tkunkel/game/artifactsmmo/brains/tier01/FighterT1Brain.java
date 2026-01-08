@@ -70,7 +70,7 @@ public class FighterT1Brain extends CommonBrain {
             logger.error("Could not find location of closest monster ({})", enemyToHunt);
             return;
         }
-        charHelper.moveToLocationSync(character, locationOfClosestMonster.get());
+        charHelper.moveToLocationSync(character.getData(), locationOfClosestMonster.get());
 
         charHelper.waitUntilCooldownDone(character);
         FightRequestSchema fightRequest = new FightRequestSchema();
@@ -120,12 +120,12 @@ public class FighterT1Brain extends CommonBrain {
                                       .getInventoryMaxItems() * 0.75) {
             return;
         }
-        Optional<MapSchema> bank = mapHelper.findClosestLocation(character, "bank");
+        Optional<MapSchema> bank = mapHelper.findClosestLocation(character.getData(), "bank");
         if (bank.isEmpty()) {
             throw new RuntimeException("Could not find bank for character " + character.getData()
                                                                                        .getName());
         }
-        charHelper.moveToLocationSync(character, bank.get());
+        charHelper.moveToLocationSync(character.getData(), bank.get());
         charHelper.waitUntilCooldownDone(character);
         List<SimpleItemSchema> bankRequestSchema = character.getData()
                                                             .getInventory()
@@ -158,11 +158,11 @@ public class FighterT1Brain extends CommonBrain {
                                                                                                                                         .getTaskTotal()) {
             return;
         }
-        Optional<MapSchema> closestLocation = mapHelper.findClosestLocation(character, "monsters");
+        Optional<MapSchema> closestLocation = mapHelper.findClosestLocation(character.getData(), "monsters");
         if (closestLocation.isEmpty()) {
             return;
         }
-        boolean moved = charHelper.moveToLocationSync(character, closestLocation.get());
+        boolean moved = charHelper.moveToLocationSync(character.getData(), closestLocation.get());
         if (moved) {
             return;
         }

@@ -64,8 +64,8 @@ public class CookingTask {
         if (cookableFood.isEmpty()) {
             return;
         }
-        Optional<MapSchema> cooking = mapHelper.findClosestLocation(character, "cooking");
-        charHelper.moveToLocationSync(character, cooking.get());
+        Optional<MapSchema> cooking = mapHelper.findClosestLocation(character.getData(), "cooking");
+        charHelper.moveToLocationSync(character.getData(), cooking.get());
         charHelper.waitUntilCooldownDone(character);
 
         CraftingSchema craftingSchema = new CraftingSchema().code(cookableFood.get(0)

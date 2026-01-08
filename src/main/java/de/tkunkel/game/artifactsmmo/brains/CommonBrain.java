@@ -177,23 +177,23 @@ public abstract class CommonBrain implements Brain {
         int charY = character.getData()
                              .getY();
         return caches.cachedMap.stream()
-                        .filter(mapSchema -> mapSchema.getInteractions()
-                                                      .getContent() != null)
-                        .filter(mapSchema -> mapSchema.getInteractions()
-                                                      .getContent()
-                                                      .getType()
-                                                      .getValue()
-                                                      .equals("tasks_master"))
-                        .filter(mapSchema -> mapSchema.getInteractions()
-                                                      .getContent()
-                                                      .getCode()
-                                                      .equals(taskMasterType))
-                        .sorted((mapSchema1, mapSchema2) -> {
-                            int distance1 = Math.abs(mapSchema1.getX() - charX) + Math.abs(mapSchema1.getY() - charY);
-                            int distance2 = Math.abs(mapSchema2.getX() - charX) + Math.abs(mapSchema2.getY() - charY);
-                            return distance2 - distance1;
-                        })
-                        .findFirst()
+                               .filter(mapSchema -> mapSchema.getInteractions()
+                                                             .getContent() != null)
+                               .filter(mapSchema -> mapSchema.getInteractions()
+                                                             .getContent()
+                                                             .getType()
+                                                             .getValue()
+                                                             .equals("tasks_master"))
+                               .filter(mapSchema -> mapSchema.getInteractions()
+                                                             .getContent()
+                                                             .getCode()
+                                                             .equals(taskMasterType))
+                               .sorted((mapSchema1, mapSchema2) -> {
+                                   int distance1 = Math.abs(mapSchema1.getX() - charX) + Math.abs(mapSchema1.getY() - charY);
+                                   int distance2 = Math.abs(mapSchema2.getX() - charX) + Math.abs(mapSchema2.getY() - charY);
+                                   return distance2 - distance1;
+                               })
+                               .findFirst()
                 ;
     }
 
@@ -310,12 +310,12 @@ public abstract class CommonBrain implements Brain {
             return;
         }
 
-        Optional<MapSchema> closestLocation = mapHelper.findClosestLocation(character, craftingStation);
+        Optional<MapSchema> closestLocation = mapHelper.findClosestLocation(character.getData(), craftingStation);
         if (closestLocation.isEmpty()) {
             logger.error("No location found for {}", craftingStation);
             return;
         }
-        charHelper.moveToLocationSync(character, closestLocation.get());
+        charHelper.moveToLocationSync(character.getData(), closestLocation.get());
         charHelper.waitUntilCooldownDone(character);
         CraftingSchema craftingSchema = new CraftingSchema().code(gear)
                                                             .quantity(1);
@@ -353,8 +353,10 @@ public abstract class CommonBrain implements Brain {
                 ;
         boolean itemExistsInBank;
         itemExistsInBank = !apiHolder.myAccountApi.getBankItemsMyBankItemsGet(bestForSlot.get()
-                                                                                        .getCode(), 1, 100
-                                    ).getData().isEmpty();
+                                                                                         .getCode(), 1, 100
+                                     )
+                                                  .getData()
+                                                  .isEmpty();
         boolean itemExistsInInventory = inventorySlot.isPresent();
 
         boolean alreadyEquipped = checkIfEquipped(bestForSlot.get()
@@ -465,8 +467,10 @@ public abstract class CommonBrain implements Brain {
                                                          .findFirst()
                 ;
         boolean itemExistsInBank = !apiHolder.myAccountApi.getBankItemsMyBankItemsGet(bestToolForSkill.get()
-                                                                                                     .getCode(), 1, 100
-                                            ).getData().isEmpty();
+                                                                                                      .getCode(), 1, 100
+                                             )
+                                                          .getData()
+                                                          .isEmpty();
         boolean itemExistsInInventory = inventorySlot.isPresent();
 
         boolean alreadyEquipped = checkIfEquipped(bestToolForSkill.get()
@@ -496,14 +500,14 @@ public abstract class CommonBrain implements Brain {
     }
 
     private void fetchItemFromBank(CharacterResponseSchema character, String itemCode) {
-        Optional<MapSchema> bank = mapHelper.findClosestLocation(character, "bank");
+        Optional<MapSchema> bank = mapHelper.findClosestLocation(character.getData(), "bank");
         if (bank.isEmpty()) {
             logger.error("Could not find bank for character %s".formatted(character.getData()
                                                                                    .getName()));
             throw new RuntimeException("Could not find bank for character " + character.getData()
                                                                                        .getName());
         }
-        charHelper.moveToLocationSync(character, bank.get());
+        charHelper.moveToLocationSync(character.getData(), bank.get());
         charHelper.waitUntilCooldownDone(character);
 
         SimpleItemSchema simpleItemSchema = new SimpleItemSchema().code(itemCode)

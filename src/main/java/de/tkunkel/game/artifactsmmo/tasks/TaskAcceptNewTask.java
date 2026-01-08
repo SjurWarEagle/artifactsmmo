@@ -26,11 +26,11 @@ public class TaskAcceptNewTask {
             // still has task
             return;
         }
-        Optional<MapSchema> closestLocation = mapHelper.findClosestLocation(character, "monsters");
+        Optional<MapSchema> closestLocation = mapHelper.findClosestLocation(character.getData(), "monsters");
         if (closestLocation.isEmpty()) {
             return;
         }
-        boolean moved = charHelper.moveToLocationSync(character, closestLocation.get());
+        boolean moved = charHelper.moveToLocationSync(character.getData(), closestLocation.get());
         if (moved) {
             return;
         }

@@ -2,6 +2,7 @@ package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.CharHelper;
+import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.game.artifactsmmo.helper.MapHelper;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
@@ -20,11 +21,13 @@ public class BankFetchItemsAndCraftTask extends CommonTask {
     private final Logger logger = LoggerFactory.getLogger(BankFetchItemsAndCraftTask.class.getName());
     private final CraftItemTask craftItemTask;
     private final BankDepositSingleItemTask bankDepositSingleItemTask;
+    private final MyCharactersApiWrapper myCharactersApi;
 
-    public BankFetchItemsAndCraftTask(ApiHolder apiHolder, CraftItemTask craftItemTask, BankDepositSingleItemTask bankDepositSingleItemTask, CharHelper charHelper, MapHelper mapHelper) {
-        super(apiHolder, charHelper, mapHelper);
+    public BankFetchItemsAndCraftTask(ApiHolder apiHolder, CraftItemTask craftItemTask, BankDepositSingleItemTask bankDepositSingleItemTask, CharHelper charHelper, MapHelper mapHelper, MyCharactersApiWrapper myCharactersApi) {
+        super(apiHolder, charHelper, mapHelper, myCharactersApi);
         this.craftItemTask = craftItemTask;
         this.bankDepositSingleItemTask = bankDepositSingleItemTask;
+        this.myCharactersApi = myCharactersApi;
     }
 
     public void craftItemWithBankItems(CommonBrain brain, CharacterResponseSchema character, String itemToCraft, int amount) {
@@ -68,7 +71,7 @@ public class BankFetchItemsAndCraftTask extends CommonTask {
             ) {
                 return;
             }
-            fetchItemFromBank(brain, character, neededItem.getCode(), neededItem.getQuantity() * amount);
+            fetchItemFromBank(character.getData(), neededItem.getCode(), neededItem.getQuantity() * amount);
         }
 
         // todo after fetching check again if item can be crafted

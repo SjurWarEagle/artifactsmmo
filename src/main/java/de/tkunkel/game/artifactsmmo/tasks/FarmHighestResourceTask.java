@@ -27,7 +27,7 @@ public class FarmHighestResourceTask {
         MapSchema whereToGather = itemHelper.findLocationWhereToFarm(character.getData(), resourceToFarm);
         // logger.info("Farming {} at {}", resourceToFarm, whereToGather);
         charHelper.waitUntilCooldownDone(character);
-        charHelper.moveToLocationSync(character, whereToGather);
+        charHelper.moveToLocationSync(character.getData(), whereToGather);
         charHelper.waitUntilCooldownDone(character);
         brain.apiHolder.myCharactersApi.actionGatheringMyNameActionGatheringPost(character.getData()
                                                                                           .getName());

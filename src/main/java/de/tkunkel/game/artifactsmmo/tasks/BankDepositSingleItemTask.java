@@ -31,7 +31,7 @@ public class BankDepositSingleItemTask {
 
     public void depositInventoryInBank(String characterName, String itemToDeposit) {
         CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
-        Optional<MapSchema> bank = mapHelper.findClosestLocation(character, "bank");
+        Optional<MapSchema> bank = mapHelper.findClosestLocation(character.getData(), "bank");
         if (bank.isEmpty()) {
             logger.error("Could not find bank for character %s".formatted(character.getData()
                                                                                    .getName()));
@@ -48,7 +48,7 @@ public class BankDepositSingleItemTask {
                                                          .toList()
                 ;
         if (!itemsToDeposit.isEmpty()) {
-            charHelper.moveToLocationSync(character, bank.get());
+            charHelper.moveToLocationSync(character.getData(), bank.get());
             charHelper.waitUntilCooldownDone(character);
             myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
                                                                                           .getName(), itemsToDeposit

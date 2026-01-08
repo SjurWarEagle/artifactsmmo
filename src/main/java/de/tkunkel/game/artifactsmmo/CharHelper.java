@@ -121,27 +121,23 @@ public class CharHelper {
 
     public boolean moveToLocationSync(String characterName, MapSchema destination) {
         CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
-        return moveToLocationSync(character, destination);
+        return moveToLocationSync(character.getData(), destination);
     }
 
-    public boolean moveToLocationSync(CharacterResponseSchema character, MapSchema destination) {
-        character = charactersApi.getCharacterCharactersNameGet(character.getData()
-                                                                         .getName());
+    public boolean moveToLocationSync(CharacterSchema character, MapSchema destination) {
+        character = charactersApi.getCharacterCharactersNameGet(character.getName())
+                                 .getData();
         boolean alreadyReached = destination.getX()
-                                            .equals(character.getData()
-                                                             .getX())
+                                            .equals(character.getX())
                 && destination.getY()
-                              .equals(character.getData()
-                                               .getY());
-        waitUntilCooldownDone(character.getData()
-                                       .getName());
+                              .equals(character.getY());
+        waitUntilCooldownDone(character.getName());
         if (alreadyReached) {
             return false;
         }
         DestinationSchema destinationSchema = new DestinationSchema().x(destination.getX())
                                                                      .y(destination.getY());
-        CharacterMovementResponseSchema characterMovementResponseSchema = myCharactersApi.actionMoveMyNameActionMovePost(character.getData()
-                                                                                                                                  .getName(), destinationSchema
+        CharacterMovementResponseSchema characterMovementResponseSchema = myCharactersApi.actionMoveMyNameActionMovePost(character.getName(), destinationSchema
         );
         waitUntilCooldownDone(characterMovementResponseSchema.getData()
                                                              .getCooldown());

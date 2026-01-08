@@ -38,12 +38,12 @@ public class BankUpgradeIfPossibleTask {
                                                                        .getName()
         );
 
-        Optional<MapSchema> bank = mapHelper.findClosestLocation(character, "bank");
+        Optional<MapSchema> bank = mapHelper.findClosestLocation(character.getData(), "bank");
         if (bank.isEmpty()) {
             throw new RuntimeException("Could not find bank for character " + character.getData()
                                                                                        .getName());
         }
-        charHelper.moveToLocationSync(character, bank.get());
+        charHelper.moveToLocationSync(character.getData(), bank.get());
 
 
         DepositWithdrawGoldSchema transaction = new DepositWithdrawGoldSchema().quantity(bankDetailsMyBankGet.getData()

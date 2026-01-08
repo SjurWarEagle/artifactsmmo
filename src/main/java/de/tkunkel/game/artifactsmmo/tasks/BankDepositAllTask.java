@@ -42,12 +42,12 @@ public class BankDepositAllTask {
             return;
         }
 
-        Optional<MapSchema> bank = mapHelper.findClosestLocation(character, "bank");
+        Optional<MapSchema> bank = mapHelper.findClosestLocation(character.getData(), "bank");
         if (bank.isEmpty()) {
             throw new RuntimeException("Could not find bank for character " + character.getData()
                                                                                        .getName());
         }
-        charHelper.moveToLocationSync(character, bank.get());
+        charHelper.moveToLocationSync(character.getData(), bank.get());
         charHelper.waitUntilCooldownDone(character);
         List<SimpleItemSchema> itemsToDeposit = character.getData()
                                                          .getInventory()
@@ -73,7 +73,7 @@ public class BankDepositAllTask {
     }
 
     public void depositInventoryInBank(CommonBrain brain, CharacterResponseSchema character) {
-        Optional<MapSchema> bank = mapHelper.findClosestLocation(character, "bank");
+        Optional<MapSchema> bank = mapHelper.findClosestLocation(character.getData(), "bank");
         if (bank.isEmpty()) {
             throw new RuntimeException("Could not find bank for character " + character.getData()
                                                                                        .getName());
@@ -96,7 +96,7 @@ public class BankDepositAllTask {
                                                          .toList()
                 ;
         if (!itemsToDeposit.isEmpty()) {
-            charHelper.moveToLocationSync(character, bank.get());
+            charHelper.moveToLocationSync(character.getData(), bank.get());
             charHelper.waitUntilCooldownDone(character);
             brain.apiHolder.myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
                                                                                                           .getName(), itemsToDeposit
@@ -106,8 +106,8 @@ public class BankDepositAllTask {
     }
 
     public void depositItemInBank(CharacterResponseSchema character, String itemCode, int amount) {
-        Optional<MapSchema> bank = mapHelper.findClosestLocation(character, "bank");
-        charHelper.moveToLocationSync(character, bank.get());
+        Optional<MapSchema> bank = mapHelper.findClosestLocation(character.getData(), "bank");
+        charHelper.moveToLocationSync(character.getData(), bank.get());
         List<SimpleItemSchema> itemsToDeposit = new ArrayList<>();
         itemsToDeposit.add(new SimpleItemSchema().code(itemCode)
                                                  .quantity(amount));

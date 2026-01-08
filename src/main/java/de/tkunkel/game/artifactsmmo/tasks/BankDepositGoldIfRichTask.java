@@ -28,12 +28,12 @@ public class BankDepositGoldIfRichTask {
             return;
         }
 
-        Optional<MapSchema> bank = mapHelper.findClosestLocation(character, "bank");
+        Optional<MapSchema> bank = mapHelper.findClosestLocation(character.getData(), "bank");
         if (bank.isEmpty()) {
             throw new RuntimeException("Could not find bank for character " + character.getData()
                                                                                        .getName());
         }
-        charHelper.moveToLocationSync(character, bank.get());
+        charHelper.moveToLocationSync(character.getData(), bank.get());
         charHelper.waitUntilCooldownDone(character);
 
         DepositWithdrawGoldSchema goldDeposit = new DepositWithdrawGoldSchema().quantity(character.getData()
@@ -45,7 +45,7 @@ public class BankDepositGoldIfRichTask {
     }
 
     public void depositInventoryInBank(CommonBrain brain, CharacterResponseSchema character) {
-        Optional<MapSchema> bank = mapHelper.findClosestLocation(character, "bank");
+        Optional<MapSchema> bank = mapHelper.findClosestLocation(character.getData(), "bank");
         if (bank.isEmpty()) {
             throw new RuntimeException("Could not find bank for character " + character.getData()
                                                                                        .getName());
@@ -68,7 +68,7 @@ public class BankDepositGoldIfRichTask {
                                                          .toList()
                 ;
         if (!itemsToDeposit.isEmpty()) {
-            charHelper.moveToLocationSync(character, bank.get());
+            charHelper.moveToLocationSync(character.getData(), bank.get());
             charHelper.waitUntilCooldownDone(character);
             brain.apiHolder.myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
                                                                                                           .getName(), itemsToDeposit
