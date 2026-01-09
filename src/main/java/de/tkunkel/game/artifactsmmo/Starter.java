@@ -8,11 +8,13 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.ApplicationContext;
 import org.springframework.retry.annotation.EnableRetry;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication(scanBasePackages = "de.tkunkel.game.artifactsmmo")
 @ConfigurationPropertiesScan
 @EnableCaching
 @EnableRetry
+@EnableScheduling
 public class Starter {
     private final Logger logger = LoggerFactory.getLogger(Starter.class.getName());
 
@@ -27,11 +29,11 @@ public class Starter {
         AdventureManager adventureManager = context.getBean(AdventureManager.class);
 
         /*
+         */
+        adventureManager.addAndStartAdventurer("Fin", AdventurerClass.FISHER);
         adventureManager.addAndStartAdventurer("Sjur", AdventurerClass.FIGHTER);
         adventureManager.addAndStartAdventurer("Melanie", AdventurerClass.MINER);
         adventureManager.addAndStartAdventurer("Albrecht", AdventurerClass.ALCHEMIST);
         adventureManager.addAndStartAdventurer("Wolfgang", AdventurerClass.WOODWORKER);
-         */
-        adventureManager.addAndStartAdventurer("Fin", AdventurerClass.FISHER);
     }
 }

@@ -1,6 +1,7 @@
 package de.tkunkel.game.artifactsmmo;
 
 import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
+import de.tkunkel.game.artifactsmmo.api.MyAccountApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
@@ -20,11 +21,13 @@ public class CharHelper {
     private final ServerDetailsApiWrapper serverDetailsApi;
     private final CharactersApiWrapper charactersApi;
     private final MyCharactersApiWrapper myCharactersApi;
+    private final MyAccountApiWrapper myAccountApi;
 
-    public CharHelper(ServerDetailsApiWrapper serverDetailsApi, CharactersApiWrapper charactersApi, MyCharactersApiWrapper myCharactersApi) {
+    public CharHelper(ServerDetailsApiWrapper serverDetailsApi, CharactersApiWrapper charactersApi, MyCharactersApiWrapper myCharactersApi, MyAccountApiWrapper myAccountApi) {
         this.serverDetailsApi = serverDetailsApi;
         this.charactersApi = charactersApi;
         this.myCharactersApi = myCharactersApi;
+        this.myAccountApi = myAccountApi;
     }
 
     public static int getSkillLevelForSkill(CharacterSchema character, Skill requiredSkill) {
@@ -206,6 +209,14 @@ public class CharHelper {
             waitUntilCooldownDone(characterRestResponseSchema.getData()
                                                              .getCooldown());
         }
+    }
+
+    public int cntItemsInBank(String itemCode) {
+        DataPageSimpleItemSchema bankItemsGet = myAccountApi.getBankItemsMyBankItemsGet(itemCode, 1, 100);
+        return bankItemsGet.getData()
+                           .stream()
+                           .mapToInt(SimpleItemSchema::getQuantity)
+                           .sum();
     }
 
     public int cntItemsInInventory(String characterName, String itemCode) {

@@ -11,13 +11,12 @@ import de.tkunkel.games.artifactsmmo.model.*;
 import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
@@ -26,19 +25,58 @@ public class WishList {
     private final Caches caches;
     private final ApiHolder apiHolder;
     private final ItemHelper itemHelper;
+    private final CharHelper charHelper;
     private final HuntForItemTask huntForItemTask;
     private final CombatSimulator combatSimulator;
     private final Set<Wish> allWishes = new CopyOnWriteArraySet<>();
 
-    public WishList(Caches caches, ApiHolder apiHolder, ItemHelper itemHelper, HuntForItemTask huntForItemTask, CombatSimulator combatSimulator) {
+    public WishList(Caches caches, ApiHolder apiHolder, ItemHelper itemHelper, CharHelper charHelper, HuntForItemTask huntForItemTask, CombatSimulator combatSimulator) {
         this.caches = caches;
         this.apiHolder = apiHolder;
         this.itemHelper = itemHelper;
+        this.charHelper = charHelper;
         this.huntForItemTask = huntForItemTask;
         this.combatSimulator = combatSimulator;
     }
 
-    public void addRequest(Wish wish) {
+
+    @Scheduled(fixedRate = 5, timeUnit = TimeUnit.MINUTES)
+    public void fillStorage() {
+        requestItemsForStorage("copper_ore", 500);
+        requestItemsForStorage("copper_bar", 100);
+    }
+
+    private void requestItemsForStorage(String item, int amount) {
+        removePreviousWishes(item);
+        int inBank = charHelper.cntItemsInBank(item);
+        // check what is already in bank and only request what is missing
+        int remainingAmount = amount - inBank;
+
+        if (remainingAmount > 0) {
+            requestInSmallerPackages(item, remainingAmount);
+        }
+    }
+
+    private void removePreviousWishes(String item) {
+        List<Wish> toRemove = new ArrayList<>();
+        allWishes.stream()
+                 .filter(wish -> wish.reservedBy == null)
+                 .filter(wish -> wish.itemCode.startsWith("storage " + item))
+                 .forEach(toRemove::add)
+        ;
+
+        allWishes.removeAll(toRemove);
+    }
+
+    private void requestInSmallerPackages(String item, int remainingAmount) {
+        // request in smaller packages
+        int packages = remainingAmount / 10;
+        for (int i = 0; i < packages; i++) {
+            addRequest(new Wish("storage " + item + " " + i, item, 10), true);
+        }
+    }
+
+    public void addRequest(Wish wish, boolean ignoreBankCheck) {
         if (allWishes.stream()
                      .anyMatch(existingWish -> existingWish.itemCode.equals(wish.itemCode)
                              && existingWish.characterName.equalsIgnoreCase(wish.characterName)
@@ -46,7 +84,7 @@ public class WishList {
                      )) {
             return;
         }
-        if (hasAlreadyInBank(wish)) {
+        if (!ignoreBankCheck && hasAlreadyInBank(wish)) {
             return;
         }
 
@@ -81,7 +119,9 @@ public class WishList {
         itemDefinition.get()
                       .getCraft()
                       .getItems()
-                      .forEach(component -> addRequest(new Wish(wish.characterName, component.getCode(), component.getQuantity())))
+                      .forEach(component -> addRequest(new Wish(wish.characterName, component.getCode(), component.getQuantity())
+                              , false
+                      ))
         ;
     }
 

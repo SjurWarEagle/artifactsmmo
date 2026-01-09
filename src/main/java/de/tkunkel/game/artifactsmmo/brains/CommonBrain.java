@@ -370,8 +370,9 @@ public abstract class CommonBrain implements Brain {
             wishList.addRequest(new Wish(character.getData()
                                                   .getName(), bestForSlot.get()
                                                                          .getCode()
-                    , 1
-            ));
+                                        , 1
+                                ), false
+            );
             return;
         }
         if (!alreadyEquipped && itemExistsInBank) {
@@ -425,8 +426,9 @@ public abstract class CommonBrain implements Brain {
             wishList.addRequest(new Wish(character.getData()
                                                   .getName(), bestInSlot.get()
                                                                         .getCode()
-                    , 1
-            ));
+                                        , 1
+                                ), false
+            );
             return;
         }
         if (!alreadyEquipped && itemExistsInBank) {
@@ -482,8 +484,9 @@ public abstract class CommonBrain implements Brain {
             wishList.addRequest(new Wish(character.getData()
                                                   .getName(), bestToolForSkill.get()
                                                                               .getCode()
-                    , 1
-            ));
+                                        , 1
+                                ), false
+            );
             return;
         }
         if (!alreadyEquipped && itemExistsInBank) {
