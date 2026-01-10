@@ -3,7 +3,8 @@ package de.tkunkel.game.artifactsmmo.brains.tier01;
 import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.CharHelper;
-import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
+import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
+import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.combat.CombatSimulator;
 import de.tkunkel.game.artifactsmmo.combat.CombatStats;
 import de.tkunkel.game.artifactsmmo.helper.ItemHelper;
@@ -20,7 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class FighterT1Brain extends CommonBrain {
+public class FighterT1Brain {
     private final Logger logger = LoggerFactory.getLogger(FighterT1Brain.class.getName());
     private final BankUpgradeIfPossibleTask bankUpgradeIfPossibleTask;
     private final BankDepositGoldIfRichTask bankDepositGoldIfRichTask;
@@ -29,13 +30,18 @@ public class FighterT1Brain extends CommonBrain {
     private final TaskCancelTask taskCancelTask;
     private final CookingTask cookingTask;
     private final TaskAcceptNewTask taskAcceptNewTask;
+    private final CharactersApiWrapper charactersApi;
+    private final CharHelper charHelper;
+    private final GetBestItemForSlotTask getBestItemForSlot;
+    private final MyCharactersApiWrapper myCharactersApi;
+    private final Caches caches;
+    private final MapHelper mapHelper;
 
     public FighterT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder,
                           BankUpgradeIfPossibleTask bankUpgradeIfPossibleTask, BankDepositGoldIfRichTask bankDepositGoldIfRichTask,
                           BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask,
                           ItemHelper itemHelper, CombatSimulator combatSimulator, TaskCancelTask taskCancelTask, CookingTask cookingTask,
-                          TaskAcceptNewTask taskAcceptNewTask, CharHelper charHelper, MapHelper mapHelper) {
-        super(caches, wishList, apiHolder, charHelper, bankFetchItemsAndCraftTask, mapHelper);
+                          TaskAcceptNewTask taskAcceptNewTask, CharHelper charHelper, MapHelper mapHelper, CharactersApiWrapper charactersApi, CharHelper charHelper1, GetBestItemForSlotTask getBestItemForSlot, MyCharactersApiWrapper myCharactersApi, Caches caches1, MapHelper mapHelper1) {
         this.bankUpgradeIfPossibleTask = bankUpgradeIfPossibleTask;
         this.bankDepositGoldIfRichTask = bankDepositGoldIfRichTask;
         this.bankDepositAllTask = bankDepositAllTask;
@@ -43,30 +49,35 @@ public class FighterT1Brain extends CommonBrain {
         this.taskCancelTask = taskCancelTask;
         this.cookingTask = cookingTask;
         this.taskAcceptNewTask = taskAcceptNewTask;
+        this.charactersApi = charactersApi;
+        this.charHelper = charHelper1;
+        this.getBestItemForSlot = getBestItemForSlot;
+        this.myCharactersApi = myCharactersApi;
+        this.caches = caches1;
+        this.mapHelper = mapHelper1;
     }
 
-    @Override
     public void runBaseLoop(String characterName) {
-        CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+        CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
         charHelper.waitUntilCooldownDone(character);
-        bankDepositGoldIfRichTask.depositInventoryInBankIfInventoryIsFull(this, character);
-        bankUpgradeIfPossibleTask.perform(this, character);
+        bankDepositGoldIfRichTask.depositInventoryInBankIfInventoryIsFull(character);
+        bankUpgradeIfPossibleTask.perform(character);
         depositNonFoodAtBankIfInventoryIsFull(character);
-        cookingTask.cookFoodIfHaveSome(this, character);
+        cookingTask.cookFoodIfHaveSome(character);
         charHelper.healIfNeededSync(character.getData()
                                              .getName());
-        equipOrRequestBestWeapon(characterName);
+        getBestItemForSlot.equipOrRequestBestWeapon(characterName);
 
         completeCurrentTaskIfDone(character);
         cancelCurrentTaskIfTooHard(character);
         // taskAcceptNewTask.getNewTaskIfCurrentTaskIsDone(this, character);
-        bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
+        bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(character);
 
         charHelper.waitUntilCooldownDone(character);
 
-        character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+        character = charactersApi.getCharacterCharactersNameGet(characterName);
         String enemyToHunt = decideWhatEnemyToHunt(character);
-        Optional<MapSchema> locationOfClosestMonster = findLocationOfClosestMonster(character, enemyToHunt);
+        Optional<MapSchema> locationOfClosestMonster = mapHelper.findLocationOfClosestMonster(character, enemyToHunt);
         if (locationOfClosestMonster.isEmpty()) {
             logger.error("Could not find location of closest monster ({})", enemyToHunt);
             return;
@@ -75,8 +86,8 @@ public class FighterT1Brain extends CommonBrain {
 
         charHelper.waitUntilCooldownDone(character);
         FightRequestSchema fightRequest = new FightRequestSchema();
-        apiHolder.myCharactersApi.actionFightMyNameActionFightPost(character.getData()
-                                                                            .getName(), fightRequest
+        myCharactersApi.actionFightMyNameActionFightPost(character.getData()
+                                                                  .getName(), fightRequest
         );
     }
 
@@ -109,13 +120,12 @@ public class FighterT1Brain extends CommonBrain {
             return;
         }
         logger.info("Too hard, canceling task");
-        taskCancelTask.perform(this, character.getData()
-                                              .getName()
-        );
+        taskCancelTask.perform(character.getData()
+                                        .getName());
     }
 
     private void depositNonFoodAtBankIfInventoryIsFull(CharacterResponseSchema character) {
-        int inventoryUsed = cntAllItemsInInventory(character);
+        int inventoryUsed = charHelper.cntAllItemsInInventory(character);
         // store if more than 75% are used
         if (inventoryUsed <= character.getData()
                                       .getInventoryMaxItems() * 0.75) {
@@ -145,8 +155,8 @@ public class FighterT1Brain extends CommonBrain {
                                                                                                         .quantity(inventorySlot.getQuantity()))
                                                             .toList()
                 ;
-        apiHolder.myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
-                                                                                                .getName(), bankRequestSchema
+        myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
+                                                                                      .getName(), bankRequestSchema
         );
     }
 
@@ -167,8 +177,8 @@ public class FighterT1Brain extends CommonBrain {
         if (moved) {
             return;
         }
-        apiHolder.myCharactersApi.actionCompleteTaskMyNameActionTaskCompletePost(character.getData()
-                                                                                          .getName());
+        myCharactersApi.actionCompleteTaskMyNameActionTaskCompletePost(character.getData()
+                                                                                .getName());
     }
 
 

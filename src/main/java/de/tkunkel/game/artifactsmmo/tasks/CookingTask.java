@@ -5,7 +5,6 @@ import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyAccountApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
-import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.game.artifactsmmo.helper.MapHelper;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.CraftingSchema;
@@ -35,7 +34,7 @@ public class CookingTask {
         this.mapHelper = mapHelper;
     }
 
-    public void cookFoodIfHaveSome(CommonBrain brain, CharacterResponseSchema givenCharacter) {
+    public void cookFoodIfHaveSome(CharacterResponseSchema givenCharacter) {
         final CharacterResponseSchema character = charactersApiWrapper.getCharacterCharactersNameGet(givenCharacter.getData()
                                                                                                                    .getName());
 

@@ -4,7 +4,7 @@ package de.tkunkel.game.artifactsmmo.brains.tier01;
 import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.CharHelper;
-import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
+import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.helper.MapHelper;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.*;
@@ -18,26 +18,32 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-public class WoodworkerT1Brain extends CommonBrain {
+public class WoodworkerT1Brain {
     private final Logger logger = LoggerFactory.getLogger(WoodworkerT1Brain.class.getName());
     private final FarmHighestResourceTask farmHighestResourceTask;
     private final CraftItemTask craftItemTask;
     private final BankDepositAllTask bankDepositAllTask;
     private final TrainingSkillTask trainingSkillTask;
+    private final CharHelper charHelper;
+    private final CharactersApiWrapper charactersApi;
+    private final Caches caches;
+    private final GetBestItemForSlotTask getBestItemForSlot;
 
     public WoodworkerT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, FarmHighestResourceTask farmHighestResourceTask,
                              CraftItemTask craftItemTask, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask,
-                             CharHelper charHelper, MapHelper mapHelper, TrainingSkillTask trainingSkillTask) {
-        super(caches, wishList, apiHolder, charHelper, bankFetchItemsAndCraftTask, mapHelper);
+                             CharHelper charHelper, MapHelper mapHelper, TrainingSkillTask trainingSkillTask, CharHelper charHelper1, CharactersApiWrapper charactersApi, Caches caches1, GetBestItemForSlotTask getBestItemForSlot) {
         this.farmHighestResourceTask = farmHighestResourceTask;
         this.craftItemTask = craftItemTask;
         this.bankDepositAllTask = bankDepositAllTask;
         this.trainingSkillTask = trainingSkillTask;
+        this.charHelper = charHelper1;
+        this.charactersApi = charactersApi;
+        this.caches = caches;
+        this.getBestItemForSlot = getBestItemForSlot;
     }
 
-    @Override
     public String decideWhatResourceToFarm(String characterName) {
-        CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+        CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
 
         String resource = caches.findHighestFarmableResourceForSkillLevel(character.getData()
                                                                                    .getWoodcuttingLevel(), GatheringSkill.WOODCUTTING
@@ -45,15 +51,14 @@ public class WoodworkerT1Brain extends CommonBrain {
         return resource;
     }
 
-    @Override
     public void runBaseLoop(String characterName) {
-        CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+        CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
         charHelper.waitUntilCooldownDone(character);
-        equipOrRequestBestToolForSkill(character, "woodcutting");
-        bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
+        getBestItemForSlot.equipOrRequestBestToolForSkill(character, "woodcutting");
+        bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(character);
 
-        character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-        Optional<String> itemToCraft = findPossibleItemToCraft(character);
+        character = charactersApi.getCharacterCharactersNameGet(characterName);
+        Optional<String> itemToCraft = charHelper.findPossibleItemToCraft(character);
         if (itemToCraft.isPresent()) {
             craftItemTask.craftItem(characterName, itemToCraft.get());
         } else {

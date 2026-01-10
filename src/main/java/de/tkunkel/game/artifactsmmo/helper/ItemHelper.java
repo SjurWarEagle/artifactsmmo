@@ -21,13 +21,13 @@ public class ItemHelper {
         rc.add(new SimpleItemSchema().code(itemCode)
                                      .quantity(quantity));
 
-        ItemSchema itemToCraft = caches.findItemDefinition(itemCode)
-                                       .get();
+        ItemSchema itemToCraft = findItemDefinition(itemCode)
+                .get();
 
         if (itemToCraft.getCraft() != null) {
             for (SimpleItemSchema resource : itemToCraft.getCraft()
                                                         .getItems()) {
-                Optional<ItemSchema> itemDefinition = caches.findItemDefinition(resource.getCode());
+                Optional<ItemSchema> itemDefinition = findItemDefinition(resource.getCode());
                 if (itemDefinition.get()
                                   .getCraft() == null) {
                     rc.add(new SimpleItemSchema().code(itemDefinition.get()
@@ -145,6 +145,14 @@ public class ItemHelper {
                    );
 
     }
+
+    public Optional<ItemSchema> findItemDefinition(String code) {
+        return caches.cachedItems.stream()
+                                 .filter(itemSchema -> itemSchema.getCode()
+                                                                 .equals(code))
+                                 .findFirst();
+    }
+
 
     public int getHealAmount(ItemSchema item) {
         if (!isHealingOutOfCombatItem(item)) {

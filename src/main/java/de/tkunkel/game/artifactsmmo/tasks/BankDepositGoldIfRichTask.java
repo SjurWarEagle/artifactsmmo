@@ -1,6 +1,7 @@
 package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.CharHelper;
+import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.game.artifactsmmo.helper.MapHelper;
 import de.tkunkel.games.artifactsmmo.model.*;
@@ -16,13 +17,15 @@ public class BankDepositGoldIfRichTask {
     private final Logger logger = LoggerFactory.getLogger(BankDepositGoldIfRichTask.class.getName());
     private final CharHelper charHelper;
     private final MapHelper mapHelper;
+    private final MyCharactersApiWrapper myCharactersApi;
 
-    public BankDepositGoldIfRichTask(CharHelper charHelper, MapHelper mapHelper) {
+    public BankDepositGoldIfRichTask(CharHelper charHelper, MapHelper mapHelper, MyCharactersApiWrapper myCharactersApi) {
         this.charHelper = charHelper;
         this.mapHelper = mapHelper;
+        this.myCharactersApi = myCharactersApi;
     }
 
-    public void depositInventoryInBankIfInventoryIsFull(CommonBrain brain, CharacterResponseSchema character) {
+    public void depositInventoryInBankIfInventoryIsFull(CharacterResponseSchema character) {
         if (character.getData()
                      .getGold() < 100) {
             return;
@@ -38,8 +41,8 @@ public class BankDepositGoldIfRichTask {
 
         DepositWithdrawGoldSchema goldDeposit = new DepositWithdrawGoldSchema().quantity(character.getData()
                                                                                                   .getGold());
-        brain.apiHolder.myCharactersApi.actionDepositBankGoldMyNameActionBankDepositGoldPost(character.getData()
-                                                                                                      .getName(), goldDeposit
+        myCharactersApi.actionDepositBankGoldMyNameActionBankDepositGoldPost(character.getData()
+                                                                                      .getName(), goldDeposit
         );
         charHelper.waitUntilCooldownDone(character);
     }

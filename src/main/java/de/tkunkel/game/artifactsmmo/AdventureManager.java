@@ -1,16 +1,16 @@
 package de.tkunkel.game.artifactsmmo;
 
-import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
+import de.tkunkel.game.artifactsmmo.api.AccountsApiWrapper;
+import de.tkunkel.game.artifactsmmo.brains.tier01.*;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
-import de.tkunkel.game.artifactsmmo.tasks.HuntForItemTask;
+import de.tkunkel.game.artifactsmmo.tasks.GetBestItemForSlotTask;
+import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
+import de.tkunkel.games.artifactsmmo.model.ItemSlot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -18,22 +18,34 @@ import java.util.concurrent.Executors;
 public class AdventureManager {
     private final Logger logger = LoggerFactory.getLogger(AdventureManager.class.getName());
 
-    private final List<Adventurer> adventurers = new ArrayList<>();
     private final ExecutorService executorService = Executors.newFixedThreadPool(10);
-    private final Set<CommonBrain> brains;
     private final ApiHolder apiHolder;
     private final BankDepositAllTask bankDepositAllTask;
-    private final WishList wishList;
     private final CharHelper charHelper;
-    private final HuntForItemTask huntForItemTask;
+    private final GetBestItemForSlotTask getBestItemForSlotTask;
+    private final MinerT1Brain minerBrain;
+    private final FighterT1Brain fighterBrain;
+    private final FisherT1Brain fisherBrain;
+    private final WoodworkerT1Brain woodworkerBrain;
+    private final AlchemistT1Brain alchemistBrain;
+    private final WishList wishList;
+    private final AccountsApiWrapper accountsApi;
 
-    public AdventureManager(Set<CommonBrain> brains, ApiHolder apiHolder, BankDepositAllTask bankDepositAllTask, WishList wishList, CharHelper charHelper, HuntForItemTask huntForItemTask) {
-        this.brains = brains;
+    public AdventureManager(ApiHolder apiHolder, BankDepositAllTask bankDepositAllTask, CharHelper charHelper,
+                            GetBestItemForSlotTask getBestItemForSlotTask, MinerT1Brain minerBrain, FighterT1Brain fighterBrain,
+                            FisherT1Brain fisherBrain, WoodworkerT1Brain woodworkerBrain, AlchemistT1Brain alchemistBrain,
+                            WishList wishList, AccountsApiWrapper accountsApi) {
         this.apiHolder = apiHolder;
         this.bankDepositAllTask = bankDepositAllTask;
-        this.wishList = wishList;
         this.charHelper = charHelper;
-        this.huntForItemTask = huntForItemTask;
+        this.getBestItemForSlotTask = getBestItemForSlotTask;
+        this.minerBrain = minerBrain;
+        this.fighterBrain = fighterBrain;
+        this.fisherBrain = fisherBrain;
+        this.woodworkerBrain = woodworkerBrain;
+        this.alchemistBrain = alchemistBrain;
+        this.wishList = wishList;
+        this.accountsApi = accountsApi;
     }
 
     public void addAndStartAdventurer(String name, AdventurerClass adventurerClass) {
@@ -41,12 +53,40 @@ public class AdventureManager {
             try {
                 Thread current = Thread.currentThread();
                 current.setName(name + "-" + adventurerClass.name());
-                Adventurer adventurer = new Adventurer(name, adventurerClass, apiHolder, bankDepositAllTask, huntForItemTask, brains, wishList, charHelper);
-                adventurers.add(adventurer);
-                adventurer.startLoop();
+                startLoop(name, adventurerClass);
             } catch (Exception e) {
                 logger.error("Error starting adventurer", e);
             }
         });
+    }
+
+    public void startLoop(String characterName, AdventurerClass adventurerClass) {
+        bankDepositAllTask.depositInventoryInBank(apiHolder.charactersApi.getCharacterCharactersNameGet(characterName));
+        while (true) {
+            // disabled becauase a non-fighter switched between tool and weapon in each loop
+            // brain.equipOrRequestBestWeapon(characterName);
+            getBestItemForSlotTask.equipOrRequestItemArmorForSlot(characterName, ItemSlot.BODY_ARMOR);
+            getBestItemForSlotTask.equipOrRequestItemArmorForSlot(characterName, ItemSlot.HELMET);
+            getBestItemForSlotTask.equipOrRequestItemArmorForSlot(characterName, ItemSlot.SHIELD);
+            getBestItemForSlotTask.equipOrRequestItemArmorForSlot(characterName, ItemSlot.BOOTS);
+            getBestItemForSlotTask.equipOrRequestItemArmorForSlot(characterName, ItemSlot.RING1);
+            getBestItemForSlotTask.equipOrRequestItemArmorForSlot(characterName, ItemSlot.RING2);
+            getBestItemForSlotTask.equipOrRequestItemArmorForSlot(characterName, ItemSlot.AMULET);
+            getBestItemForSlotTask.equipOrRequestItemArmorForSlot(characterName, ItemSlot.LEG_ARMOR);
+
+            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+            if (wishList.isHandlingHuntingWish(character)) {
+            } else if (wishList.isHandlingCraftingWish(character)) {
+            } else {
+                // nothing to craft, so use default
+                switch (adventurerClass) {
+                    case MINER -> minerBrain.runBaseLoop(characterName);
+                    case FIGHTER -> fighterBrain.runBaseLoop(characterName);
+                    case WOODWORKER -> woodworkerBrain.runBaseLoop(characterName);
+                    case ALCHEMIST -> alchemistBrain.runBaseLoop(characterName);
+                    case FISHER -> fisherBrain.runBaseLoop(characterName);
+                }
+            }
+        }
     }
 }

@@ -21,10 +21,13 @@ public class TrainingSkillTask {
     private final BankDepositSingleItemTask bankDepositSingleItemTask;
     private final CharHelper characterHelper;
     private final MyCharactersApiWrapper myCharactersApi;
-    private final CommonTask bankFetchItemsAndCraftTask;
+    private final BankFetchItemTask bankFetchItemsAndCraftTask;
     private final CharactersApiWrapper charactersApi;
 
-    public TrainingSkillTask(Caches caches, ItemHelper itemHelper, CraftItemTask craftItemTask, BankDepositSingleItemTask bankDepositSingleItemTask, CharHelper characterHelper, MyCharactersApiWrapper myCharactersApi, CommonTask bankFetchItemsAndCraftTask, CharactersApiWrapper charactersApi) {
+    public TrainingSkillTask(Caches caches, ItemHelper itemHelper, CraftItemTask craftItemTask,
+                             BankDepositSingleItemTask bankDepositSingleItemTask, CharHelper characterHelper,
+                             MyCharactersApiWrapper myCharactersApi, BankFetchItemTask bankFetchItemsAndCraftTask,
+                             CharactersApiWrapper charactersApi) {
         this.caches = caches;
         this.itemHelper = itemHelper;
         this.craftItemTask = craftItemTask;
@@ -149,8 +152,8 @@ public class TrainingSkillTask {
                                                ;
                                        if (resourceSource.isEmpty()) {
                                            // this is no resource to gather but to craft
-                                           return canCanGatherResources(character, caches.findItemDefinition(simpleItemSchema.getCode())
-                                                                                         .get()
+                                           return canCanGatherResources(character, itemHelper.findItemDefinition(simpleItemSchema.getCode())
+                                                                                             .get()
                                            );
                                        }
                                        var harvestSkill = Skill.fromValue(resourceSource.get()
@@ -239,8 +242,8 @@ public class TrainingSkillTask {
 
     private Optional<String> findFarmableItem(List<SimpleItemSchema> neededForTrainingItem) {
         return neededForTrainingItem.stream()
-                                    .map(simpleItemSchema -> caches.findItemDefinition(simpleItemSchema.getCode())
-                                                                   .get())
+                                    .map(simpleItemSchema -> itemHelper.findItemDefinition(simpleItemSchema.getCode())
+                                                                       .get())
                                     .filter(itemSchema -> itemSchema.getCraft() == null)
                                     .sorted(Comparator.comparing(ItemSchema::getName))
                                     .map(ItemSchema::getCode)
@@ -251,8 +254,8 @@ public class TrainingSkillTask {
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     private Optional<String> findCraftableWithInventory(CharacterSchema character, List<SimpleItemSchema> desiredItems) {
         return desiredItems.stream()
-                           .map(desiredItem -> caches.findItemDefinition(desiredItem.getCode())
-                                                     .get())
+                           .map(desiredItem -> itemHelper.findItemDefinition(desiredItem.getCode())
+                                                         .get())
                            .filter(desiredItem -> desiredItem.getCraft() != null)
                            .filter(desiredItem -> desiredItem.getCraft()
                                                              .getItems()

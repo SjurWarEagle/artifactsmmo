@@ -1,11 +1,9 @@
 package de.tkunkel.game.artifactsmmo.brains.tier01;
 
 
-import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.CharHelper;
-import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
-import de.tkunkel.game.artifactsmmo.helper.MapHelper;
+import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.shopping.Wish;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.*;
@@ -19,34 +17,46 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-public class MinerT1Brain extends CommonBrain {
+public class MinerT1Brain {
     private final Logger logger = LoggerFactory.getLogger(MinerT1Brain.class.getName());
     private final TrainingSkillTask trainingSkillTask;
     private final BankDepositAllTask bankDepositAllTask;
+    private final CharactersApiWrapper charactersApi;
+    private final CharHelper charHelper;
+    private final GetBestItemForSlotTask getBestItemForSlotTask;
+    private final BankFetchItemTask bankFetchItemTask;
+    private final BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask;
+    private final WishList wishList;
+    private final Caches caches;
 
-
-    public MinerT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, FarmHighestResourceTask farmHighestResourceTask,
-                        CraftItemTask craftItemTask, BankDepositAllTask bankDepositAllTask,
-                        BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, TrainingSkillTask trainingSkillTask,
-                        CharHelper charHelper, MapHelper mapHelper) {
-        super(caches, wishList, apiHolder, charHelper, bankFetchItemsAndCraftTask, mapHelper);
+    public MinerT1Brain(Caches caches, WishList wishList,
+                        BankDepositAllTask bankDepositAllTask,
+                        TrainingSkillTask trainingSkillTask,
+                        CharHelper charHelper, CharactersApiWrapper charactersApi,
+                        GetBestItemForSlotTask getBestItemForSlotTask, BankFetchItemTask bankFetchItemTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask) {
         this.bankDepositAllTask = bankDepositAllTask;
         this.trainingSkillTask = trainingSkillTask;
+        this.charactersApi = charactersApi;
+        this.charHelper = charHelper;
+        this.getBestItemForSlotTask = getBestItemForSlotTask;
+        this.bankFetchItemTask = bankFetchItemTask;
+        this.wishList = wishList;
+        this.caches = caches;
+        this.bankFetchItemsAndCraftTask = bankFetchItemsAndCraftTask;
     }
 
-    @Override
     public void runBaseLoop(String characterName) {
-        CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+        CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
         charHelper.waitUntilCooldownDone(character);
-        bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(this, character);
+        bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(character);
         charHelper.waitUntilCooldownDone(character);
-        equipOrRequestBestToolForSkill(character, "mining");
+        getBestItemForSlotTask.equipOrRequestBestToolForSkill(character, "mining");
 
         // TODO farm items for wish
         Optional<Wish> wish = findPossibleItemToCraftFromWishlist(character);
 
         if (wish.isPresent()) {
-            bankFetchItemsAndCraftTask.craftItemWithBankItems(this, character, wish.get().itemCode, wish.get().amount);
+            bankFetchItemsAndCraftTask.craftItemWithBankItems(character.getData(), wish.get().itemCode, wish.get().amount);
             wish.get().reservedBy = null;
             wish.get().fulfilled = true;
         } else {
@@ -58,9 +68,8 @@ public class MinerT1Brain extends CommonBrain {
         return wishList.reserveWishThatCanBeCraftedByMe(character);
     }
 
-    @Override
     public String decideWhatResourceToFarm(String characterName) {
-        CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+        CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
 
         return caches.findHighestFarmableResourceForSkillLevel(character.getData()
                                                                         .getMiningLevel(), GatheringSkill.MINING

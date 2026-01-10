@@ -2,9 +2,9 @@ package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.CharHelper;
+import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyAccountApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
-import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.game.artifactsmmo.helper.MapHelper;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.DataPageSimpleItemSchema;
@@ -17,21 +17,28 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-public class TaskCancelTask extends CommonTask {
+public class TaskCancelTask {
     private final Logger logger = LoggerFactory.getLogger(TaskCancelTask.class.getName());
 
     private final MyAccountApiWrapper myAccountApiWrapper;
     private final MyCharactersApiWrapper myCharactersApiWrapper;
+    private final CharactersApiWrapper charactersApi;
+    private final CharHelper charHelper;
+    private final BankFetchItemTask bankFetchItemTask;
+    private final MapHelper mapHelper;
 
     public TaskCancelTask(ApiHolder apiHolder, MyAccountApiWrapper myAccountApiWrapper, MyCharactersApiWrapper myCharactersApiWrapper,
-                          CharHelper charHelper, MapHelper mapHelper) {
-        super(apiHolder, charHelper, mapHelper, myCharactersApiWrapper);
+                          CharHelper charHelper, MapHelper mapHelper, CharactersApiWrapper charactersApi, CharHelper charHelper1, BankFetchItemTask bankFetchItemTask, MapHelper mapHelper1) {
         this.myAccountApiWrapper = myAccountApiWrapper;
         this.myCharactersApiWrapper = myCharactersApiWrapper;
+        this.charactersApi = charactersApi;
+        this.charHelper = charHelper1;
+        this.bankFetchItemTask = bankFetchItemTask;
+        this.mapHelper = mapHelper1;
     }
 
-    public void perform(CommonBrain brain, String characterName) {
-        CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+    public void perform(String characterName) {
+        CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
 
         DataPageSimpleItemSchema bankItemsMyBankItemsGet = myAccountApiWrapper.getBankItemsMyBankItemsGet(null, 1, 100);
         Optional<SimpleItemSchema> tasksCoin = bankItemsMyBankItemsGet.getData()
@@ -47,21 +54,21 @@ public class TaskCancelTask extends CommonTask {
             logger.warn("Cannot cancel task, because not enough tasks_coin in bank");
             return;
         }
-        waitUntilCooldownDone(characterName);
-        Optional<MapSchema> taskMaster = brain.findClosesTaskMaster(character, "monsters");
+        charHelper.waitUntilCooldownDone(characterName);
+        Optional<MapSchema> taskMaster = mapHelper.findClosesTaskMaster(character, "monsters");
         if (taskMaster.isEmpty()) {
             logger.error("Cannot cancel task, because no task master found");
             return;
 
         }
-        fetchItemFromBank(character.getData(), "tasks_coin", 1);
-        waitUntilCooldownDone(characterName);
-        character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+        bankFetchItemTask.fetchItemFromBank(character.getData(), "tasks_coin", 1);
+        charHelper.waitUntilCooldownDone(characterName);
+        character = charactersApi.getCharacterCharactersNameGet(characterName);
 
         charHelper.moveToLocationSync(character.getData(), taskMaster.get());
-        waitUntilCooldownDone(characterName);
+        charHelper.waitUntilCooldownDone(characterName);
         myCharactersApiWrapper.actionTaskCancelMyNameActionTaskCancelPost(characterName);
-        waitUntilCooldownDone(characterName);
+        charHelper.waitUntilCooldownDone(characterName);
 
     }
 

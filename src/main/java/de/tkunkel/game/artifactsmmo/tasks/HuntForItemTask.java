@@ -9,6 +9,7 @@ import de.tkunkel.game.artifactsmmo.combat.CombatSimulator;
 import de.tkunkel.game.artifactsmmo.combat.CombatStats;
 import de.tkunkel.game.artifactsmmo.helper.ItemHelper;
 import de.tkunkel.game.artifactsmmo.helper.MapHelper;
+import de.tkunkel.game.artifactsmmo.helper.MonsterHelper;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,10 +31,11 @@ public class HuntForItemTask {
     private final ItemHelper itemHelper;
     private final CharHelper charHelper;
     private final MapHelper mapHelper;
+    private final MonsterHelper monsterHelper;
     private final MyCharactersApiWrapper myCharactersApi;
     private final CombatSimulator combatSimulator;
 
-    public HuntForItemTask(CharactersApiWrapper charactersApiWrapper, MyAccountApiWrapper myAccountApiWrapper, Caches caches, ItemHelper itemHelper, CharHelper charHelper, MyCharactersApiWrapper myCharactersApi, MapHelper mapHelper, CombatSimulator combatSimulator) {
+    public HuntForItemTask(CharactersApiWrapper charactersApiWrapper, MyAccountApiWrapper myAccountApiWrapper, Caches caches, ItemHelper itemHelper, CharHelper charHelper, MyCharactersApiWrapper myCharactersApi, MapHelper mapHelper, MonsterHelper monsterHelper, CombatSimulator combatSimulator) {
         this.charactersApiWrapper = charactersApiWrapper;
         this.myAccountApiWrapper = myAccountApiWrapper;
         this.caches = caches;
@@ -41,12 +43,13 @@ public class HuntForItemTask {
         this.charHelper = charHelper;
         this.myCharactersApi = myCharactersApi;
         this.mapHelper = mapHelper;
+        this.monsterHelper = monsterHelper;
         this.combatSimulator = combatSimulator;
     }
 
     public int huntForItem(String characterName, String itemToHunt) {
         CharacterResponseSchema character = charactersApiWrapper.getCharacterCharactersNameGet(characterName);
-        List<MonsterSchema> monstersThatDropThis = caches.findMonstersThatDropThis(itemToHunt);
+        List<MonsterSchema> monstersThatDropThis = monsterHelper.findMonstersThatDropThis(itemToHunt);
         Optional<MonsterSchema> optionalTarget = monstersThatDropThis.stream()
                                                                      .filter(monsterSchema -> {
                                                                          CombatStats attacker = CombatStats.fromCharacter(character.getData());

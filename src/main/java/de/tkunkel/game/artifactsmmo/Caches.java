@@ -2,7 +2,6 @@ package de.tkunkel.game.artifactsmmo;
 
 import de.tkunkel.game.artifactsmmo.api.AccountsApiWrapper;
 import de.tkunkel.game.artifactsmmo.combat.CombatSimulator;
-import de.tkunkel.game.artifactsmmo.combat.CombatStats;
 import de.tkunkel.game.artifactsmmo.combat.CombatStatsEditor;
 import de.tkunkel.games.artifactsmmo.ApiClient;
 import de.tkunkel.games.artifactsmmo.ApiException;
@@ -104,7 +103,7 @@ public class Caches {
         logger.info("Starting cache of monsters");
         try {
             DataPageMonsterSchema allMonstersMonstersGet = monstersApi.getAllMonstersMonstersGet(null, null, null, null, 1, 100);
-            if (allMonstersMonstersGet.getPages()==null){
+            if (allMonstersMonstersGet.getPages() == null) {
                 return;
             }
             int cntPages = allMonstersMonstersGet.getPages();
@@ -123,7 +122,7 @@ public class Caches {
         logger.info("Starting cache of items");
         try {
             DataPageItemSchema allItemsItems = itemsApi.getAllItemsItemsGet(null, null, null, null, null, null, 1, 100);
-            if (allItemsItems.getPages()==null){
+            if (allItemsItems.getPages() == null) {
                 return;
             }
             int cntPages = allItemsItems.getPages();
@@ -142,7 +141,7 @@ public class Caches {
         logger.info("Starting cache of map");
         try {
             DataPageMapSchema allMapsMapsGet = mapsApi.getAllMapsMapsGet(null, null, null, true, 4, 100);
-            if (allMapsMapsGet.getPages()==null){
+            if (allMapsMapsGet.getPages() == null) {
                 return;
             }
             int cntPages = allMapsMapsGet.getPages();
@@ -155,191 +154,6 @@ public class Caches {
         } catch (ApiException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public Optional<ItemSchema> findItemDefinition(String code) {
-        return cachedItems.stream()
-                          .filter(itemSchema -> itemSchema.getCode()
-                                                          .equals(code))
-                          .findFirst();
-    }
-
-    public Optional<ItemSchema> findBestItemForSlotThatCanBeCraftedByAccount(ItemSlot slot, CharacterResponseSchema character) {
-        final CombatStats characterCombatStats = CombatStats.fromCharacter(character.getData());
-
-        final List<CombatStats> monsterCombatStats = cachedMonsters.stream()
-                                                                   .map(monsterSchema -> CombatStats.fromMonster(monsterSchema))
-                                                                   .toList()
-                ;
-        return cachedItems.stream()
-                          .filter(itemSchema -> isCorrectSlot(itemSchema, slot))
-                          .filter(itemSchema -> itemSchema.getCraft() != null)
-                          .filter(itemSchema -> itemSchema.getCraft().getSkill() != null)
-                          .filter(itemSchema -> aCharCanCraftThis(itemSchema.getCraft()
-                                                                            .getSkill()
-                                                                            .name(), itemSchema.getCraft()
-                                                                                               .getLevel()
-                          ))
-                          .filter(itemSchema -> canCharEquipItem(itemSchema, character.getData()
-                                                                                      .getLevel()
-                          ))
-                          .filter(itemSchema -> canAnyCharFarmResourcesForItem(itemSchema.getCode()))
-                          .sorted((item1, item2) -> compareByKillableMonsters(item1, item2, character, characterCombatStats, monsterCombatStats))
-                          // use last of streams
-                          .reduce((o1, o2) -> o2)
-                ;
-    }
-
-    private boolean isCorrectSlot(ItemSchema itemSchema, ItemSlot slot) {
-        String slotName = slot.name();
-        // this is because of items like rings
-        slotName = slotName.replace("1", "");
-        slotName = slotName.replace("2", "");
-        return itemSchema.getType()
-                         .equalsIgnoreCase(slotName);
-    }
-
-    private int compareByKillableMonsters(ItemSchema item1, ItemSchema item2, CharacterResponseSchema character, CombatStats characterCombatStats, List<CombatStats> defenders) {
-        ItemSlot itemSlot = ItemSlot.fromValue(item1.getType());
-        Optional<ItemSchema> oldItem = CharHelper.getEquippedItemOfSlot(cachedItems, character, itemSlot);
-        if (oldItem.isEmpty()) {
-            return -1;
-        }
-        CombatStats manipulatedStats = combatStatsEditor.createManipulatedStats(characterCombatStats, oldItem.get(), item1);
-        int cntMonsters1 = combatSimulator.simulateHowManyMonstersCanBeBeaten(manipulatedStats, defenders);
-
-        itemSlot = ItemSlot.fromValue(item2.getType());
-        oldItem = CharHelper.getEquippedItemOfSlot(cachedItems, character, itemSlot);
-        if (oldItem.isEmpty()) {
-            return -1;
-        }
-        manipulatedStats = combatStatsEditor.createManipulatedStats(characterCombatStats, oldItem.get(), item2);
-        int cntMonsters2 = combatSimulator.simulateHowManyMonstersCanBeBeaten(manipulatedStats, defenders);
-        return cntMonsters1 - cntMonsters2;
-
-    }
-
-    private boolean canCharEquipItem(ItemSchema itemSchema, Integer charLevel) {
-        if (itemSchema.getConditions() == null) {
-            return true;
-        }
-        return itemSchema.getConditions()
-                           .stream()
-                           .allMatch(conditionSchema -> (conditionSchema.getOperator()
-                                                                        .equals(ConditionOperator.GT)
-                                   && conditionSchema.getCode()
-                                                     .equalsIgnoreCase("level")
-                                   && charLevel >= conditionSchema.getValue()
-                           ));
-    }
-
-    private boolean canAnyCharFarmResourcesForItem(String itemCode) {
-        ItemSchema itemSchema = findItemDefinition(itemCode).get();
-        boolean isCraftable = itemSchema.getCraft() != null;
-        boolean hasResources = isCraftable && itemSchema.getCraft()
-                                                        .getItems() != null;
-        return isCraftable
-                && hasResources
-                && itemSchema.getCraft()
-                             .getItems()
-                             .stream()
-                             .allMatch(simpleItemSchema -> {
-                                 ItemSchema resourceItem = findItemDefinition(simpleItemSchema.getCode()).get();
-                                 if (resourceItem.getType()
-                                                 .equalsIgnoreCase("resource")
-                                         && resourceItem.getSubtype()
-                                                        .equalsIgnoreCase("mob")) {
-                                     // it needs a monster drop check if we have a huner
-                                     return canACharHuntMonsterThatDropsThis(resourceItem);
-                                 } else {
-                                     // it needs a farmable resource, do we have a gather for it?
-                                     if (resourceItem.getCraft() == null) {
-                                         return true;
-                                     }
-                                     return anyCharHasEnoughSkill(resourceItem.getCraft()
-                                                                              .getSkill(), resourceItem.getCraft()
-                                                                                                       .getLevel()
-                                     );
-                                 }
-                             })
-                ;
-    }
-
-    private boolean anyCharHasEnoughSkill(CraftSkill skill, Integer level) {
-        return accountsApi.getAccountCharactersAccountsAccountCharactersGet()
-                          .getData()
-                          .stream()
-                          .anyMatch(characterSchema -> CharHelper.charHasRequiredSkillLevel(characterSchema, skill.name(), level));
-    }
-
-    private boolean canACharHuntMonsterThatDropsThis(ItemSchema itemSchema) {
-        List<MonsterSchema> monstersThatDropThis = findMonstersThatDropThis(itemSchema.getCode());
-        final List<CombatStats> characters = new ArrayList<>(accountsApi.getAccountCharactersAccountsAccountCharactersGet()
-                .getData()
-                .stream()
-                .map(CombatStats::fromCharacter)
-                .toList());
-
-        return monstersThatDropThis.stream()
-                                   .anyMatch(monsterSchema -> {
-                                       CombatStats combatStatsMonster = CombatStats.fromMonster(monsterSchema);
-                                       for (CombatStats character : characters) {
-                                           if (combatSimulator.winMoreThanXPercentAgainst(character, combatStatsMonster, 95)) {
-                                               return true;
-                                           }
-                                       }
-                                       return false;
-                                   });
-    }
-
-    public List<MonsterSchema> findMonstersThatDropThis(String code) {
-        return cachedMonsters.stream()
-                             .filter(monsterSchema -> monsterSchema.getDrops()
-                                                                   .stream()
-                                                                   .anyMatch(dropSchema -> dropSchema.getCode()
-                                                                                                     .equals(code)))
-                             .toList();
-    }
-
-    public Optional<ItemSchema> findBestToolForSkillThatCanBeCraftedByAccount(String skill, Integer level) {
-
-        return cachedItems.stream()
-                          .filter(itemSchema -> itemSchema.getEffects() != null)
-                          .filter(itemSchema -> itemSchema.getEffects()
-                                                          .stream()
-                                                          .anyMatch(effectSchema -> effectSchema.getCode()
-                                                                                                .equals(skill)))
-                          .filter(itemSchema -> {
-                              if (itemSchema.getCraft() == null) {
-                                  return true;
-                              } else {
-                                  if (itemSchema.getCraft()
-                                                .getSkill() == null) {
-                                      // can be crated without any skill, so everyone can do it
-                                      return true;
-                                  }
-                                  String requiredSkill = itemSchema.getCraft()
-                                                                   .getSkill()
-                                                                   .getValue()
-                                          ;
-                                  Integer requiredSkillLevel = itemSchema.getCraft()
-                                                                         .getLevel();
-                                  return aCharCanCraftThis(requiredSkill, requiredSkillLevel);
-                              }
-                          })
-                          .filter(itemSchema -> itemSchema.getLevel() <= level)
-                          .max((o1, o2) -> o1.getLevel() - o2.getLevel())
-                ;
-    }
-
-    private boolean aCharCanCraftThis(String requiredSkill, Integer requiredSkillLevel) {
-        CharactersListSchema characters = accountsApi.getAccountCharactersAccountsAccountCharactersGet();
-        for (CharacterSchema characterDatum : characters.getData()) {
-            if (CharHelper.charHasRequiredSkillLevel(characterDatum, requiredSkill, requiredSkillLevel)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public String findHighestFarmableResourceForSkillLevel(Integer skillLevel, GatheringSkill skill) {

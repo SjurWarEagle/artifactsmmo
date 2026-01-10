@@ -75,7 +75,7 @@ public class CraftItemTask {
     }
 
     public boolean hasResourcesInBank(String itemToCraft, int amount) {
-        Optional<ItemSchema> itemDefinition = caches.findItemDefinition(itemToCraft);
+        Optional<ItemSchema> itemDefinition = itemHelper.findItemDefinition(itemToCraft);
         if (itemDefinition.isEmpty()
                 || itemDefinition.get()
                                  .getCraft() == null
@@ -102,7 +102,7 @@ public class CraftItemTask {
 
     public boolean hasResourcesInInventory(String characterName, String itemToCraft) {
         CharacterResponseSchema character = charactersApiWrapper.getCharacterCharactersNameGet(characterName);
-        Optional<ItemSchema> itemDefinition = caches.findItemDefinition(itemToCraft);
+        Optional<ItemSchema> itemDefinition = itemHelper.findItemDefinition(itemToCraft);
         if (itemDefinition.isEmpty()
                 || itemDefinition.get()
                                  .getCraft() == null

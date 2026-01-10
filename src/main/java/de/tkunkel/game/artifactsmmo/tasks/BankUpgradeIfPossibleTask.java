@@ -1,7 +1,8 @@
 package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.CharHelper;
-import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
+import de.tkunkel.game.artifactsmmo.api.MyAccountApiWrapper;
+import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.helper.MapHelper;
 import de.tkunkel.games.artifactsmmo.model.BankResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
@@ -18,16 +19,20 @@ public class BankUpgradeIfPossibleTask {
     private final Logger logger = LoggerFactory.getLogger(BankUpgradeIfPossibleTask.class.getName());
     private final CharHelper charHelper;
     private final MapHelper mapHelper;
+    private final MyAccountApiWrapper myAccountApi;
+    private final MyCharactersApiWrapper myCharactersApi;
 
-    public BankUpgradeIfPossibleTask(CharHelper charHelper, MapHelper mapHelper) {
+    public BankUpgradeIfPossibleTask(CharHelper charHelper, MapHelper mapHelper, MyAccountApiWrapper myAccountApi, MyCharactersApiWrapper myCharactersApi) {
         this.charHelper = charHelper;
         this.mapHelper = mapHelper;
+        this.myAccountApi = myAccountApi;
+        this.myCharactersApi = myCharactersApi;
     }
 
-    public void perform(CommonBrain brain, CharacterResponseSchema character) {
+    public void perform(CharacterResponseSchema character) {
         charHelper.waitUntilCooldownDone(character);
 
-        BankResponseSchema bankDetailsMyBankGet = brain.apiHolder.myAccountApi.getBankDetailsMyBankGet();
+        BankResponseSchema bankDetailsMyBankGet = myAccountApi.getBankDetailsMyBankGet();
         if (bankDetailsMyBankGet.getData()
                                 .getNextExpansionCost() > bankDetailsMyBankGet.getData()
                                                                               .getGold()) {
@@ -48,13 +53,13 @@ public class BankUpgradeIfPossibleTask {
 
         DepositWithdrawGoldSchema transaction = new DepositWithdrawGoldSchema().quantity(bankDetailsMyBankGet.getData()
                                                                                                              .getNextExpansionCost());
-        brain.apiHolder.myCharactersApi.actionWithdrawBankGoldMyNameActionBankWithdrawGoldPost(character.getData()
-                                                                                                        .getName(), transaction
+        myCharactersApi.actionWithdrawBankGoldMyNameActionBankWithdrawGoldPost(character.getData()
+                                                                                        .getName(), transaction
         );
         charHelper.waitUntilCooldownDone(character);
 
-        brain.apiHolder.myCharactersApi.actionBuyBankExpansionMyNameActionBankBuyExpansionPost(character.getData()
-                                                                                                        .getName()
+        myCharactersApi.actionBuyBankExpansionMyNameActionBankBuyExpansionPost(character.getData()
+                                                                                        .getName()
         );
         charHelper.waitUntilCooldownDone(character);
     }

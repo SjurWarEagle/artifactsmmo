@@ -5,19 +5,15 @@ import de.tkunkel.game.artifactsmmo.BrainCompletedException;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.helper.MapHelper;
-import de.tkunkel.game.artifactsmmo.shopping.Wish;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
+import de.tkunkel.game.artifactsmmo.tasks.BankFetchItemTask;
 import de.tkunkel.game.artifactsmmo.tasks.BankFetchItemsAndCraftTask;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 public abstract class CommonBrain implements Brain {
@@ -29,73 +25,17 @@ public abstract class CommonBrain implements Brain {
 
     private final Logger logger = LoggerFactory.getLogger(CommonBrain.class.getName());
     protected final MapHelper mapHelper;
+    private final BankFetchItemTask bankFetchItemTask;
 
-    protected CommonBrain(Caches caches, WishList wishList, ApiHolder apiHolder, CharHelper charHelper, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, MapHelper mapHelper) {
+    protected CommonBrain(Caches caches, WishList wishList, ApiHolder apiHolder, CharHelper charHelper, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, MapHelper mapHelper, BankFetchItemTask bankFetchItemTask) {
         this.caches = caches;
         this.wishList = wishList;
         this.apiHolder = apiHolder;
         this.charHelper = charHelper;
         this.bankFetchItemsAndCraftTask = bankFetchItemsAndCraftTask;
         this.mapHelper = mapHelper;
+        this.bankFetchItemTask = bankFetchItemTask;
     }
-
-    public boolean hasAllItemsInInventory(CharacterResponseSchema character, List<SimpleItemSchema> items) {
-        for (SimpleItemSchema requiredItem : items) {
-            if (cntSpecificItemsInInventory(character, requiredItem.getCode()) < requiredItem.getQuantity()) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * find an item that can be crafted with the items in inventory and skill of the char.
-     * Use  highest level
-     */
-    public Optional<String> findPossibleItemToCraft(CharacterResponseSchema character) {
-        return caches.cachedItems.stream()
-                                 .filter(
-                                         item -> item.getCraft() != null)
-                                 .filter(
-                                         item -> item.getCraft()
-                                                     .getSkill() != null)
-                                 .filter(item -> {
-                                     String requiredSkill = item.getCraft()
-                                                                .getSkill()
-                                                                .getValue()
-                                             ;
-                                     int requiredSkillLevel = item.getCraft()
-                                                                  .getLevel();
-                                     return CharHelper.charHasRequiredSkillLevel(character.getData(), requiredSkill, requiredSkillLevel);
-                                 })
-                                 .sorted(Comparator.comparingInt(o -> o.getCraft()
-                                                                       .getLevel()))
-                                 .filter(item -> hasAllItemsInInventory(character, item.getCraft()
-                                                                                       .getItems()
-                                 ))
-                                 .map(ItemSchema::getCode)
-                                 .findFirst()
-                ;
-    }
-
-    public int cntAllItemsInInventory(CharacterResponseSchema character) {
-        return character.getData()
-                        .getInventory()
-                        .stream()
-                        .mapToInt(InventorySlot::getQuantity)
-                        .sum();
-    }
-
-    public int cntSpecificItemsInInventory(CharacterResponseSchema character, String itemCode) {
-        return character.getData()
-                        .getInventory()
-                        .stream()
-                        .filter(inventorySlot -> inventorySlot.getCode()
-                                                              .equals(itemCode))
-                        .mapToInt(InventorySlot::getQuantity)
-                        .sum();
-    }
-
 
     @Override
     public void runBaseLoop(String characterName) throws BrainCompletedException {
@@ -145,153 +85,6 @@ public abstract class CommonBrain implements Brain {
         return false;
     }
 
-    public Optional<MapSchema> findLocationOfClosestMonster(CharacterResponseSchema character, String monster) {
-        logger.info("Starting findClosestMonster");
-        AtomicReference<Optional<MapSchema>> rc = new AtomicReference<>(Optional.empty());
-
-        int charX = character.getData()
-                             .getX();
-        int charY = character.getData()
-                             .getY();
-        caches.cachedMap.stream()
-                        .filter(mapSchema -> mapSchema.getInteractions()
-                                                      .getContent() != null)
-//                .filter(mapSchema -> mapSchema.getInteractions().getContent().getType().equals(MapContentType.MONSTER))
-                        .filter(mapSchema -> mapSchema.getInteractions()
-                                                      .getContent()
-                                                      .getCode()
-                                                      .equals(monster))
-                        .sorted((mapSchema1, mapSchema2) -> {
-                            int distance1 = Math.abs(mapSchema1.getX() - charX) + Math.abs(mapSchema1.getY() - charY);
-                            int distance2 = Math.abs(mapSchema2.getX() - charX) + Math.abs(mapSchema2.getY() - charY);
-                            return distance2 - distance1;
-                        })
-                        .forEach(mapSchema -> rc.set(Optional.of(mapSchema)))
-        ;
-        return rc.get();
-    }
-
-    public Optional<MapSchema> findClosesTaskMaster(CharacterResponseSchema character, String taskMasterType) {
-        int charX = character.getData()
-                             .getX();
-        int charY = character.getData()
-                             .getY();
-        return caches.cachedMap.stream()
-                               .filter(mapSchema -> mapSchema.getInteractions()
-                                                             .getContent() != null)
-                               .filter(mapSchema -> mapSchema.getInteractions()
-                                                             .getContent()
-                                                             .getType()
-                                                             .getValue()
-                                                             .equals("tasks_master"))
-                               .filter(mapSchema -> mapSchema.getInteractions()
-                                                             .getContent()
-                                                             .getCode()
-                                                             .equals(taskMasterType))
-                               .sorted((mapSchema1, mapSchema2) -> {
-                                   int distance1 = Math.abs(mapSchema1.getX() - charX) + Math.abs(mapSchema1.getY() - charY);
-                                   int distance2 = Math.abs(mapSchema2.getX() - charX) + Math.abs(mapSchema2.getY() - charY);
-                                   return distance2 - distance1;
-                               })
-                               .findFirst()
-                ;
-    }
-
-
-    public void equipGearIfNotEquipped(String characterName, String gear, ItemSlot itemSlot) {
-        EquipSchema equipSchema = new EquipSchema().slot(itemSlot)
-                                                   .code(gear);
-        CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-        charHelper.waitUntilCooldownDone(character);
-        boolean alreadyEquipped = checkIfEquipped(gear, itemSlot, character);
-        if (alreadyEquipped) {
-            return;
-        }
-        boolean hasInInventory = cntSpecificItemsInInventory(character, gear) > 0;
-        if (!hasInInventory) {
-            return;
-        }
-        apiHolder.myCharactersApi.actionEquipItemMyNameActionEquipPost(character.getData()
-                                                                                .getName(), equipSchema
-        );
-    }
-
-    public boolean checkIfEquipped(String characterName, String gear, ItemSlot itemSlot) {
-        CharacterResponseSchema character;
-        character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-        return checkIfEquipped(gear, itemSlot, character);
-    }
-
-    public boolean checkIfEquipped(String gear, ItemSlot itemSlot, CharacterResponseSchema character) {
-        return switch (itemSlot) {
-            case BOOTS -> character.getData()
-                                   .getBootsSlot()
-                                   .equalsIgnoreCase(gear)
-            ;
-            case SHIELD -> character.getData()
-                                    .getShieldSlot()
-                                    .equalsIgnoreCase(gear)
-            ;
-            case HELMET -> character.getData()
-                                    .getHelmetSlot()
-                                    .equalsIgnoreCase(gear)
-            ;
-            case WEAPON -> character.getData()
-                                    .getWeaponSlot()
-                                    .equalsIgnoreCase(gear)
-            ;
-            case BODY_ARMOR -> character.getData()
-                                        .getBodyArmorSlot()
-                                        .equalsIgnoreCase(gear)
-            ;
-            case LEG_ARMOR -> character.getData()
-                                       .getLegArmorSlot()
-                                       .equalsIgnoreCase(gear)
-            ;
-            case RING1 -> character.getData()
-                                   .getRing1Slot()
-                                   .equalsIgnoreCase(gear)
-            ;
-            case RING2 -> character.getData()
-                                   .getRing2Slot()
-                                   .equalsIgnoreCase(gear)
-            ;
-            case AMULET -> character.getData()
-                                    .getAmuletSlot()
-                                    .equalsIgnoreCase(gear)
-            ;
-            case ARTIFACT1 -> character.getData()
-                                       .getArtifact1Slot()
-                                       .equalsIgnoreCase(gear)
-            ;
-            case ARTIFACT2 -> character.getData()
-                                       .getArtifact2Slot()
-                                       .equalsIgnoreCase(gear)
-            ;
-            case ARTIFACT3 -> character.getData()
-                                       .getArtifact3Slot()
-                                       .equalsIgnoreCase(gear)
-            ;
-            case UTILITY1 -> character.getData()
-                                      .getUtility1Slot()
-                                      .equalsIgnoreCase(gear)
-            ;
-            case UTILITY2 -> character.getData()
-                                      .getUtility2Slot()
-                                      .equalsIgnoreCase(gear)
-            ;
-            case BAG -> character.getData()
-                                 .getBagSlot()
-                                 .equalsIgnoreCase(gear)
-            ;
-            case RUNE -> character.getData()
-                                  .getRuneSlot()
-                                  .equalsIgnoreCase(gear)
-            ;
-            default -> throw new RuntimeException("unknown slot " + itemSlot);
-        };
-    }
-
     public void craftGearIfNotAtCharacter(String characterName, String gear, String craftingStation, ItemSlot slot) {
         CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
         boolean enoughResourcesToCraft = character.getData()
@@ -305,7 +98,7 @@ public abstract class CommonBrain implements Brain {
             return;
         }
         charHelper.waitUntilCooldownDone(character);
-        boolean equipped = checkIfEquipped(gear, slot, character);
+        boolean equipped = charHelper.checkIfEquipped(gear, slot, character);
         if (equipped) {
             return;
         }
@@ -329,197 +122,5 @@ public abstract class CommonBrain implements Brain {
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    public void equipOrRequestBestWeapon(String characterName) {
-        CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-        Optional<ItemSchema> bestForSlot = caches.findBestItemForSlotThatCanBeCraftedByAccount(ItemSlot.WEAPON, character);
-        if (bestForSlot.isEmpty()) {
-            return;
-        }
-        ItemSlot itemSlot = ItemSlot.fromValue(bestForSlot.get()
-                                                          .getType());
-        if (checkIfEquipped(character.getData()
-                                     .getName(), bestForSlot.get()
-                                                            .getCode(), itemSlot
-        )) {
-            return;
-        }
-        Optional<InventorySlot> inventorySlot = character.getData()
-                                                         .getInventory()
-                                                         .stream()
-                                                         .filter(innerInventorySlot -> innerInventorySlot.getCode()
-                                                                                                         .equals(bestForSlot.get()
-                                                                                                                            .getCode()))
-                                                         .findFirst()
-                ;
-        boolean itemExistsInBank;
-        itemExistsInBank = !apiHolder.myAccountApi.getBankItemsMyBankItemsGet(bestForSlot.get()
-                                                                                         .getCode(), 1, 100
-                                     )
-                                                  .getData()
-                                                  .isEmpty();
-        boolean itemExistsInInventory = inventorySlot.isPresent();
-
-        boolean alreadyEquipped = checkIfEquipped(bestForSlot.get()
-                                                             .getCode(), itemSlot, character
-        );
-        if (!itemExistsInInventory && !itemExistsInBank && !alreadyEquipped) {
-            logger.info("Best item (%s) for %s not in inventory nor bank nor equipped, requesting"
-                                .formatted(bestForSlot.get()
-                                                      .getCode(), itemSlot.getValue()
-                                ));
-            wishList.addRequest(new Wish(character.getData()
-                                                  .getName(), bestForSlot.get()
-                                                                         .getCode()
-                                        , 1
-                                ), false
-            );
-            return;
-        }
-        if (!alreadyEquipped && itemExistsInBank) {
-            fetchItemFromBank(character, bestForSlot.get()
-                                                    .getCode()
-            );
-        }
-        if (!alreadyEquipped) {
-            equipGearIfNotEquipped(character.getData()
-                                            .getName(), bestForSlot.get()
-                                                                   .getCode(), itemSlot
-            );
-        }
-    }
-
-    public void equipOrRequestItemArmorForSlot(String characterName, ItemSlot slot) {
-        CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-
-        Optional<ItemSchema> bestInSlot = caches.findBestItemForSlotThatCanBeCraftedByAccount(slot, character);
-        if (bestInSlot.isEmpty()) {
-            return;
-        }
-        if (checkIfEquipped(character.getData()
-                                     .getName(), bestInSlot.get()
-                                                           .getCode(), slot
-        )) {
-            return;
-        }
-        Optional<InventorySlot> inventorySlot = character.getData()
-                                                         .getInventory()
-                                                         .stream()
-                                                         .filter(innerInventorySlot -> innerInventorySlot.getCode()
-                                                                                                         .equals(bestInSlot.get()
-                                                                                                                           .getCode()))
-                                                         .findFirst()
-                ;
-        boolean itemExistsInBank;
-        itemExistsInBank = apiHolder.myAccountApi.getBankItemsMyBankItemsGet(bestInSlot.get()
-                                                                                       .getCode(), 1, 100
-                                    )
-                                                 .getData()
-                                                 .size() > 0;
-        boolean itemExistsInInventory = inventorySlot.isPresent();
-
-        boolean alreadyEquipped = checkIfEquipped(bestInSlot.get()
-                                                            .getCode(), slot, character
-        );
-        if (!itemExistsInInventory && !itemExistsInBank && !alreadyEquipped) {
-            logger.info("Best tool (" + bestInSlot.get()
-                                                  .getCode() + ") not in inventory nor bank nor equipped, requesting");
-            wishList.addRequest(new Wish(character.getData()
-                                                  .getName(), bestInSlot.get()
-                                                                        .getCode()
-                                        , 1
-                                ), false
-            );
-            return;
-        }
-        if (!alreadyEquipped && itemExistsInBank) {
-            fetchItemFromBank(character, bestInSlot.get()
-                                                   .getCode()
-            );
-        }
-        if (!alreadyEquipped) {
-            equipGearIfNotEquipped(character.getData()
-                                            .getName(), bestInSlot.get()
-                                                                  .getCode(), slot
-            );
-        }
-    }
-
-    public void equipOrRequestBestToolForSkill(CharacterResponseSchema character, String skillName) {
-        Optional<ItemSchema> bestToolForSkill = caches.findBestToolForSkillThatCanBeCraftedByAccount(skillName, character.getData()
-                                                                                                                         .getMiningLevel()
-        );
-        if (bestToolForSkill.isEmpty()) {
-            return;
-        }
-        ItemSlot itemSlot = ItemSlot.fromValue(bestToolForSkill.get()
-                                                               .getType());
-        if (checkIfEquipped(character.getData()
-                                     .getName(), bestToolForSkill.get()
-                                                                 .getCode(), itemSlot
-        )) {
-            return;
-        }
-
-        Optional<InventorySlot> inventorySlot = character.getData()
-                                                         .getInventory()
-                                                         .stream()
-                                                         .filter(innerInventorySlot -> innerInventorySlot.getCode()
-                                                                                                         .equals(bestToolForSkill.get()
-                                                                                                                                 .getCode()))
-                                                         .findFirst()
-                ;
-        boolean itemExistsInBank = !apiHolder.myAccountApi.getBankItemsMyBankItemsGet(bestToolForSkill.get()
-                                                                                                      .getCode(), 1, 100
-                                             )
-                                                          .getData()
-                                                          .isEmpty();
-        boolean itemExistsInInventory = inventorySlot.isPresent();
-
-        boolean alreadyEquipped = checkIfEquipped(bestToolForSkill.get()
-                                                                  .getCode(), itemSlot, character
-        );
-        if (!itemExistsInInventory && !itemExistsInBank && !alreadyEquipped) {
-            logger.info("Best tool (" + bestToolForSkill.get()
-                                                        .getCode() + ") not in inventory nor bank nor equipped, requesting");
-            wishList.addRequest(new Wish(character.getData()
-                                                  .getName(), bestToolForSkill.get()
-                                                                              .getCode()
-                                        , 1
-                                ), false
-            );
-            return;
-        }
-        if (!alreadyEquipped && itemExistsInBank) {
-            fetchItemFromBank(character, bestToolForSkill.get()
-                                                         .getCode()
-            );
-        }
-        if (!alreadyEquipped) {
-            equipGearIfNotEquipped(character.getData()
-                                            .getName(), bestToolForSkill.get()
-                                                                        .getCode(), itemSlot
-            );
-        }
-    }
-
-    private void fetchItemFromBank(CharacterResponseSchema character, String itemCode) {
-        Optional<MapSchema> bank = mapHelper.findClosestLocation(character.getData(), "bank");
-        if (bank.isEmpty()) {
-            logger.error("Could not find bank for character %s".formatted(character.getData()
-                                                                                   .getName()));
-            throw new RuntimeException("Could not find bank for character " + character.getData()
-                                                                                       .getName());
-        }
-        charHelper.moveToLocationSync(character.getData(), bank.get());
-        charHelper.waitUntilCooldownDone(character);
-
-        SimpleItemSchema simpleItemSchema = new SimpleItemSchema().code(itemCode)
-                                                                  .quantity(1);
-
-        apiHolder.myCharactersApi.actionWithdrawBankItemMyNameActionBankWithdrawItemPost(character.getData()
-                                                                                                  .getName(), Collections.singletonList(simpleItemSchema)
-        );
-        charHelper.waitUntilCooldownDone(character);
-    }
 
 }

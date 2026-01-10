@@ -1,11 +1,11 @@
 package de.tkunkel.game.artifactsmmo.tasks;
 
-import de.tkunkel.game.artifactsmmo.ApiHolder;
+import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.CharHelper;
+import de.tkunkel.game.artifactsmmo.api.MyAccountApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
-import de.tkunkel.game.artifactsmmo.brains.CommonBrain;
 import de.tkunkel.game.artifactsmmo.helper.MapHelper;
-import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
+import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
 import de.tkunkel.games.artifactsmmo.model.DataPageSimpleItemSchema;
 import de.tkunkel.games.artifactsmmo.model.ItemSchema;
 import de.tkunkel.games.artifactsmmo.model.SimpleItemSchema;
@@ -17,32 +17,39 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class BankFetchItemsAndCraftTask extends CommonTask {
+public class BankFetchItemsAndCraftTask {
     private final Logger logger = LoggerFactory.getLogger(BankFetchItemsAndCraftTask.class.getName());
     private final CraftItemTask craftItemTask;
     private final BankDepositSingleItemTask bankDepositSingleItemTask;
     private final MyCharactersApiWrapper myCharactersApi;
+    private final BankFetchItemTask bankFetchItemTask;
+    private final Caches caches;
+    private final MyAccountApiWrapper myAccountApi;
 
-    public BankFetchItemsAndCraftTask(ApiHolder apiHolder, CraftItemTask craftItemTask, BankDepositSingleItemTask bankDepositSingleItemTask, CharHelper charHelper, MapHelper mapHelper, MyCharactersApiWrapper myCharactersApi) {
-        super(apiHolder, charHelper, mapHelper, myCharactersApi);
+    public BankFetchItemsAndCraftTask(CraftItemTask craftItemTask, BankDepositSingleItemTask bankDepositSingleItemTask,
+                                      CharHelper charHelper, MapHelper mapHelper, MyCharactersApiWrapper myCharactersApi,
+                                      BankFetchItemTask bankFetchItemTask, Caches caches, MyAccountApiWrapper myAccountApi) {
         this.craftItemTask = craftItemTask;
         this.bankDepositSingleItemTask = bankDepositSingleItemTask;
         this.myCharactersApi = myCharactersApi;
+        this.bankFetchItemTask = bankFetchItemTask;
+        this.caches = caches;
+        this.myAccountApi = myAccountApi;
     }
 
-    public void craftItemWithBankItems(CommonBrain brain, CharacterResponseSchema character, String itemToCraft, int amount) {
+    public void craftItemWithBankItems(CharacterSchema character, String itemToCraft, int amount) {
         // get resources needed for item
-        Optional<ItemSchema> optionalItemSchema = brain.caches.cachedItems.stream()
-                                                                          .filter(item -> item.getCode()
-                                                                                              .equals(itemToCraft))
-                                                                          .findFirst()
+        Optional<ItemSchema> optionalItemSchema = caches.cachedItems.stream()
+                                                                    .filter(item -> item.getCode()
+                                                                                        .equals(itemToCraft))
+                                                                    .findFirst()
                 ;
         if (optionalItemSchema.isEmpty()) {
             logger.warn("No item found for {}", itemToCraft);
             throw new RuntimeException("No item found for " + itemToCraft);
         }
         // is item already in the bank?
-        DataPageSimpleItemSchema bankItemsMyBankItemsGet = brain.apiHolder.myAccountApi.getBankItemsMyBankItemsGet(null, 1, 100);
+        DataPageSimpleItemSchema bankItemsMyBankItemsGet = myAccountApi.getBankItemsMyBankItemsGet(null, 1, 100);
         Optional<SimpleItemSchema> itemInBank = bankItemsMyBankItemsGet.getData()
                                                                        .stream()
                                                                        .filter(item -> itemToCraft.equals(item.getCode()))
@@ -71,19 +78,17 @@ public class BankFetchItemsAndCraftTask extends CommonTask {
             ) {
                 return;
             }
-            fetchItemFromBank(character.getData(), neededItem.getCode(), neededItem.getQuantity() * amount);
+            bankFetchItemTask.fetchItemFromBank(character, neededItem.getCode(), neededItem.getQuantity() * amount);
         }
 
         // todo after fetching check again if item can be crafted
 
         // craft item
-        craftItemTask.craftItem(character.getData()
-                                         .getName(), itemToCraft, amount
+        craftItemTask.craftItem(character.getName(), itemToCraft, amount
         );
 
         // deposit crafted item into bank
-        bankDepositSingleItemTask.depositInventoryInBank(character.getData()
-                                                                  .getName(), itemToCraft
+        bankDepositSingleItemTask.depositInventoryInBank(character.getName(), itemToCraft
         );
     }
 
