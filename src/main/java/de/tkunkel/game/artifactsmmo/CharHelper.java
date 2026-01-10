@@ -3,6 +3,7 @@ package de.tkunkel.game.artifactsmmo;
 import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyAccountApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
+import de.tkunkel.game.artifactsmmo.helper.ItemHelper;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,12 +23,16 @@ public class CharHelper {
     private final CharactersApiWrapper charactersApi;
     private final MyCharactersApiWrapper myCharactersApi;
     private final MyAccountApiWrapper myAccountApi;
+    private final Caches caches;
+    private final ItemHelper itemHelper;
 
-    public CharHelper(ServerDetailsApiWrapper serverDetailsApi, CharactersApiWrapper charactersApi, MyCharactersApiWrapper myCharactersApi, MyAccountApiWrapper myAccountApi) {
+    public CharHelper(ServerDetailsApiWrapper serverDetailsApi, CharactersApiWrapper charactersApi, MyCharactersApiWrapper myCharactersApi, MyAccountApiWrapper myAccountApi, Caches caches, ItemHelper itemHelper) {
         this.serverDetailsApi = serverDetailsApi;
         this.charactersApi = charactersApi;
         this.myCharactersApi = myCharactersApi;
         this.myAccountApi = myAccountApi;
+        this.caches = caches;
+        this.itemHelper = itemHelper;
     }
 
     public static int getSkillLevelForSkill(CharacterSchema character, Skill requiredSkill) {
@@ -198,8 +203,30 @@ public class CharHelper {
 
 
     public void healIfNeededSync(String characterName) {
-        waitUntilCooldownDone(characterName);
         CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
+        waitUntilCooldownDone(character);
+        int missingHp = character.getData()
+                                 .getMaxHp() - character.getData()
+                                                        .getHp();
+        boolean needsHealing = missingHp > 0;
+        Optional<ItemSchema> healingItem = findLowestHealingOutOfCombatItemInInventory(character.getData(), missingHp);
+        while (needsHealing && healingItem.isPresent()) {
+            character = charactersApi.getCharacterCharactersNameGet(characterName);
+            missingHp = character.getData()
+                                 .getMaxHp() - character.getData()
+                                                        .getHp();
+            needsHealing = missingHp > 0;
+            healingItem = findLowestHealingOutOfCombatItemInInventory(character.getData(), missingHp);
+            if (healingItem.isEmpty()) {
+                break;
+            }
+            SimpleItemSchema useItem = new SimpleItemSchema().code(healingItem.get()
+                                                                              .getCode())
+                                                             .quantity(1);
+            myCharactersApi.actionUseItemMyNameActionUsePost(characterName, useItem);
+            waitUntilCooldownDone(characterName);
+        }
+
         if (character.getData()
                      .getHp() < character.getData()
                                          .getMaxHp()) {
@@ -209,6 +236,26 @@ public class CharHelper {
             waitUntilCooldownDone(characterRestResponseSchema.getData()
                                                              .getCooldown());
         }
+    }
+
+    private Optional<ItemSchema> findLowestHealingOutOfCombatItemInInventory(CharacterSchema character, int maxHealing) {
+        return character.getInventory()
+                        .stream()
+                        .filter(inventorySlot -> inventorySlot.getQuantity() > 0)
+                        .map(inventorySlot -> caches.findItemDefinition(inventorySlot.getCode())
+                                                    .get())
+                        .filter(item -> itemHelper.isHealingOutOfCombatItem(item))
+                        .filter(item -> {
+                                    int heal = itemHelper.getHealAmount(item);
+                                    return heal <= maxHealing;
+                                }
+                        )
+                        .sorted((o1, o2) -> {
+                            int heal1 = itemHelper.getHealAmount(o1);
+                            int heal2 = itemHelper.getHealAmount(o2);
+                            return Integer.compare(heal2, heal1);
+                        })
+                        .findFirst();
     }
 
     public int cntItemsInBank(String itemCode) {

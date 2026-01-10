@@ -137,4 +137,29 @@ public class ItemHelper {
         return map.get();
     }
 
+    public boolean isHealingOutOfCombatItem(ItemSchema item) {
+        return item.getEffects()
+                   .stream()
+                   .anyMatch(effectSchema -> effectSchema.getCode()
+                                                         .equalsIgnoreCase("heal")
+                   );
+
+    }
+
+    public int getHealAmount(ItemSchema item) {
+        if (!isHealingOutOfCombatItem(item)) {
+            // TODO also respect items inside combat
+            return 0;
+        }
+
+        return item.getEffects()
+                   .stream()
+                   .filter(effectSchema -> effectSchema.getCode()
+                                                       .equalsIgnoreCase("restore")
+                           || effectSchema.getCode()
+                                          .equalsIgnoreCase("heal")
+                   )
+                   .mapToInt(effectSchema -> effectSchema.getValue())
+                   .sum();
+    }
 }

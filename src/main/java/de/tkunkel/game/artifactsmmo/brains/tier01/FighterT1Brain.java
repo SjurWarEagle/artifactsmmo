@@ -53,7 +53,8 @@ public class FighterT1Brain extends CommonBrain {
         bankUpgradeIfPossibleTask.perform(this, character);
         depositNonFoodAtBankIfInventoryIsFull(character);
         cookingTask.cookFoodIfHaveSome(this, character);
-        eatFoodOrRestIfNeeded(character);
+        charHelper.healIfNeededSync(character.getData()
+                                             .getName());
         equipOrRequestBestWeapon(characterName);
 
         completeCurrentTaskIfDone(character);
@@ -232,7 +233,8 @@ public class FighterT1Brain extends CommonBrain {
     private String findHighestMonsterToHunt(CharacterResponseSchema character) {
         CombatStats charCombatStats = CombatStats.fromCharacter(character.getData());
 
-        String rc = "chicken";
+        String rc = "green_slime";
+        // String rc = "chicken";
         return rc;
     }
 
