@@ -50,7 +50,7 @@ public class MinerT1Brain {
         charHelper.waitUntilCooldownDone(character);
         bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(character);
         charHelper.waitUntilCooldownDone(character);
-        getBestItemForSlotTask.equipOrRequestBestToolForSkill(character, "mining");
+        // getBestItemForSlotTask.equipOrRequestBestToolForSkill(character, "mining");
 
         // TODO farm items for wish
         Optional<Wish> wish = findPossibleItemToCraftFromWishlist(character);
@@ -60,7 +60,7 @@ public class MinerT1Brain {
             wish.get().reservedBy = null;
             wish.get().fulfilled = true;
         } else {
-            trainingSkillTask.trainSkills(character.getData(), Skill.MINING, Skill.GEARCRAFTING, Skill.WEAPONCRAFTING);
+            trainingSkillTask.trainSkills(character.getData(), Skill.MINING, Skill.GEARCRAFTING);
         }
     }
 

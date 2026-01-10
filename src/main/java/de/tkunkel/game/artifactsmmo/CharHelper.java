@@ -129,7 +129,7 @@ public class CharHelper {
                                  .filter(itemSchema -> itemSchema.getEffects()
                                                                  .stream()
                                                                  .anyMatch(effectSchema -> effectSchema.getCode()
-                                                                                                       .equals(skill)))
+                                                                                                       .equalsIgnoreCase(skill)))
                                  .filter(itemSchema -> {
                                      if (itemSchema.getCraft() == null) {
                                          return true;

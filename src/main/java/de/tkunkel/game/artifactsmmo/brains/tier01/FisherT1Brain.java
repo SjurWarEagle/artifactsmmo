@@ -53,7 +53,7 @@ public class FisherT1Brain {
     public void runBaseLoop(String characterName) {
         CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
         charHelper.waitUntilCooldownDone(character);
-        getBestItemForSlot.equipOrRequestBestToolForSkill(character, "fishing");
+//        getBestItemForSlot.equipOrRequestBestToolForSkill(character, "fishing");
         bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(character);
 
         trainingSkillTask.trainSkills(character.getData(), Skill.FISHING, Skill.JEWELRYCRAFTING);

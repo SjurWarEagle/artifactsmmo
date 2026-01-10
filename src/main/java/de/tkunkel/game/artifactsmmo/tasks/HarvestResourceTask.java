@@ -5,7 +5,10 @@ import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.helper.ItemHelper;
-import de.tkunkel.games.artifactsmmo.model.*;
+import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
+import de.tkunkel.games.artifactsmmo.model.GatheringSkill;
+import de.tkunkel.games.artifactsmmo.model.MapSchema;
+import de.tkunkel.games.artifactsmmo.model.ResourceSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -20,26 +23,28 @@ public class HarvestResourceTask {
     private final Caches caches;
     private final CharactersApiWrapper charactersApi;
     private final MyCharactersApiWrapper myCharactersApi;
+    private final GetBestItemForSlotTask getBestItemForSlotTask;
 
-    public HarvestResourceTask(CharHelper charHelper, ItemHelper itemHelper, Caches caches, CharactersApiWrapper charactersApi, MyCharactersApiWrapper myCharactersApi) {
+    public HarvestResourceTask(CharHelper charHelper, ItemHelper itemHelper, Caches caches, CharactersApiWrapper charactersApi, MyCharactersApiWrapper myCharactersApi, GetBestItemForSlotTask getBestItemForSlotTask) {
         this.charHelper = charHelper;
         this.itemHelper = itemHelper;
         this.caches = caches;
         this.charactersApi = charactersApi;
         this.myCharactersApi = myCharactersApi;
+        this.getBestItemForSlotTask = getBestItemForSlotTask;
     }
 
     public void farmResourceWithTool(String characterName, MapSchema whereToGather) {
         CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
         Optional<GatheringSkill> neededSkill = findSkillNeededToFarm(whereToGather);
         if (neededSkill.isPresent()) {
-            int charSkillLevel = charHelper.getSkillLevelForSkill(character.getData(), neededSkill.get()
-                                                                                                  .getValue()
-            );
-            Optional<ItemSchema> bestTool = charHelper.findBestToolForSkillThatCanBeCraftedByAccount(neededSkill.get()
-                                                                                                                .getValue(), charSkillLevel
+            getBestItemForSlotTask.equipOrRequestBestToolForSkill(character, neededSkill.get()
+                                                                                        .name()
             );
         }
+        charHelper.moveToLocationSync(characterName, whereToGather);
+        charHelper.waitUntilCooldownDone(characterName);
+
 
         charHelper.waitUntilCooldownDone(character);
         charHelper.moveToLocationSync(character.getData(), whereToGather);

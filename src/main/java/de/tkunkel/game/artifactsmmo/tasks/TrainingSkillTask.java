@@ -23,11 +23,12 @@ public class TrainingSkillTask {
     private final MyCharactersApiWrapper myCharactersApi;
     private final BankFetchItemTask bankFetchItemsAndCraftTask;
     private final CharactersApiWrapper charactersApi;
+    private final HarvestResourceTask harvestResourceTask;
 
     public TrainingSkillTask(Caches caches, ItemHelper itemHelper, CraftItemTask craftItemTask,
                              BankDepositSingleItemTask bankDepositSingleItemTask, CharHelper characterHelper,
                              MyCharactersApiWrapper myCharactersApi, BankFetchItemTask bankFetchItemsAndCraftTask,
-                             CharactersApiWrapper charactersApi) {
+                             CharactersApiWrapper charactersApi, HarvestResourceTask harvestResourceTask) {
         this.caches = caches;
         this.itemHelper = itemHelper;
         this.craftItemTask = craftItemTask;
@@ -36,6 +37,7 @@ public class TrainingSkillTask {
         this.myCharactersApi = myCharactersApi;
         this.bankFetchItemsAndCraftTask = bankFetchItemsAndCraftTask;
         this.charactersApi = charactersApi;
+        this.harvestResourceTask = harvestResourceTask;
     }
 
     public Optional<ItemSchema> findHighestItemThatThisCharCanCreateAlone(CharacterSchema character, Skill... skills) {
@@ -219,9 +221,7 @@ public class TrainingSkillTask {
             Optional<String> farmableItemCode = findFarmableItem(neededForTrainingItem);
             if (farmableItemCode.isPresent()) {
                 MapSchema whereToGather = itemHelper.findLocationWhereToFarm(character, farmableItemCode.get());
-                characterHelper.moveToLocationSync(character.getName(), whereToGather);
-                characterHelper.waitUntilCooldownDone(character.getName());
-                myCharactersApi.actionGatheringMyNameActionGatheringPost(character.getName());
+                harvestResourceTask.farmResourceWithTool(character.getName(), whereToGather);
                 characterHelper.waitUntilCooldownDone(character.getName());
             }
         }

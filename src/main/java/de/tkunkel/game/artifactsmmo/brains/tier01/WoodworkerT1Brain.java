@@ -54,7 +54,7 @@ public class WoodworkerT1Brain {
     public void runBaseLoop(String characterName) {
         CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
         charHelper.waitUntilCooldownDone(character);
-        getBestItemForSlot.equipOrRequestBestToolForSkill(character, "woodcutting");
+        // getBestItemForSlot.equipOrRequestBestToolForSkill(character, "woodcutting");
         bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(character);
 
         character = charactersApi.getCharacterCharactersNameGet(characterName);

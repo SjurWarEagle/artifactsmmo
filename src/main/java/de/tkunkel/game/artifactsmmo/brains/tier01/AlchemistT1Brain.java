@@ -53,7 +53,7 @@ public class AlchemistT1Brain {
     public void runBaseLoop(String characterName) {
         CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
         charHelper.waitUntilCooldownDone(character);
-        getBestItemForSlotTask.equipOrRequestBestToolForSkill(character, "alchemy");
+        // getBestItemForSlotTask.equipOrRequestBestToolForSkill(character, "alchemy");
         getBestItemForSlotTask.equipOrRequestItemArmorForSlot(characterName, ItemSlot.BODY_ARMOR);
         bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(character);
 
