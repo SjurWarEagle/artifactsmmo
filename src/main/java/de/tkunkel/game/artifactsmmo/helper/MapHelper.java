@@ -1,7 +1,6 @@
 package de.tkunkel.game.artifactsmmo.helper;
 
 import de.tkunkel.game.artifactsmmo.Caches;
-import de.tkunkel.game.artifactsmmo.api.AccountsApiWrapper;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
 import de.tkunkel.games.artifactsmmo.model.ConditionSchema;
@@ -19,12 +18,10 @@ public class MapHelper {
     private final Logger logger = LoggerFactory.getLogger(MapHelper.class.getName());
 
     private final Caches caches;
-    private final AccountsApiWrapper accountsApiWrapper;
-    private AccountHelper accountHelper;
+    private final AccountHelper accountHelper;
 
-    public MapHelper(Caches caches, AccountsApiWrapper accountsApiWrapper, AccountHelper accountHelper) {
+    public MapHelper(Caches caches, AccountHelper accountHelper) {
         this.caches = caches;
-        this.accountsApiWrapper = accountsApiWrapper;
         this.accountHelper = accountHelper;
     }
 
@@ -76,7 +73,6 @@ public class MapHelper {
         caches.cachedMap.stream()
                         .filter(mapSchema -> mapSchema.getInteractions()
                                                       .getContent() != null)
-//                .filter(mapSchema -> mapSchema.getInteractions().getContent().getType().equals(MapContentType.MONSTER))
                         .filter(mapSchema -> mapSchema.getInteractions()
                                                       .getContent()
                                                       .getCode()
@@ -125,7 +121,7 @@ public class MapHelper {
             return true;
         }
         return conditions.stream()
-                         .allMatch(conditionSchema -> accountHelper.isFullfilled(conditionSchema));
+                         .allMatch(conditionSchema -> accountHelper.isFulfilled(conditionSchema));
     }
 
 

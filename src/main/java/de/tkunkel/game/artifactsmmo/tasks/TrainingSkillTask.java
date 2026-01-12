@@ -3,7 +3,6 @@ package de.tkunkel.game.artifactsmmo.tasks;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
-import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.helper.ItemHelper;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.springframework.stereotype.Service;
@@ -20,22 +19,17 @@ public class TrainingSkillTask {
     private final CraftItemTask craftItemTask;
     private final BankDepositSingleItemTask bankDepositSingleItemTask;
     private final CharHelper characterHelper;
-    private final MyCharactersApiWrapper myCharactersApi;
-    private final BankFetchItemTask bankFetchItemsAndCraftTask;
     private final CharactersApiWrapper charactersApi;
     private final HarvestResourceTask harvestResourceTask;
 
     public TrainingSkillTask(Caches caches, ItemHelper itemHelper, CraftItemTask craftItemTask,
                              BankDepositSingleItemTask bankDepositSingleItemTask, CharHelper characterHelper,
-                             MyCharactersApiWrapper myCharactersApi, BankFetchItemTask bankFetchItemsAndCraftTask,
                              CharactersApiWrapper charactersApi, HarvestResourceTask harvestResourceTask) {
         this.caches = caches;
         this.itemHelper = itemHelper;
         this.craftItemTask = craftItemTask;
         this.bankDepositSingleItemTask = bankDepositSingleItemTask;
         this.characterHelper = characterHelper;
-        this.myCharactersApi = myCharactersApi;
-        this.bankFetchItemsAndCraftTask = bankFetchItemsAndCraftTask;
         this.charactersApi = charactersApi;
         this.harvestResourceTask = harvestResourceTask;
     }

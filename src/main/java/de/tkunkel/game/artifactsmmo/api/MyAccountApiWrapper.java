@@ -15,12 +15,10 @@ import java.net.SocketException;
 
 @Service
 public class MyAccountApiWrapper {
-    private final ApiClient apiClient;
     private final Logger logger = LoggerFactory.getLogger(MyAccountApiWrapper.class.getName());
     private final MyAccountApi myAccountApi;
 
     public MyAccountApiWrapper(ApiClient apiClient) {
-        this.apiClient = apiClient;
         this.myAccountApi = new MyAccountApi(apiClient);
     }
 

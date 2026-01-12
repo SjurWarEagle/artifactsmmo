@@ -1,6 +1,5 @@
 package de.tkunkel.game.artifactsmmo.tasks;
 
-import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyAccountApiWrapper;
@@ -19,15 +18,15 @@ public class CraftItemTask {
     private final Logger logger = LoggerFactory.getLogger(CraftItemTask.class.getName());
     private final CharactersApiWrapper charactersApiWrapper;
     private final MyAccountApiWrapper myAccountApiWrapper;
-    private final Caches caches;
     private final ItemHelper itemHelper;
     private final CharHelper charHelper;
     private final MyCharactersApiWrapper myCharactersApi;
 
-    public CraftItemTask(CharactersApiWrapper charactersApiWrapper, MyAccountApiWrapper myAccountApiWrapper, Caches caches, ItemHelper itemHelper, CharHelper charHelper, MyCharactersApiWrapper myCharactersApi) {
+    public CraftItemTask(CharactersApiWrapper charactersApiWrapper, MyAccountApiWrapper myAccountApiWrapper, ItemHelper itemHelper,
+                         CharHelper charHelper, MyCharactersApiWrapper myCharactersApi
+    ) {
         this.charactersApiWrapper = charactersApiWrapper;
         this.myAccountApiWrapper = myAccountApiWrapper;
-        this.caches = caches;
         this.itemHelper = itemHelper;
         this.charHelper = charHelper;
         this.myCharactersApi = myCharactersApi;

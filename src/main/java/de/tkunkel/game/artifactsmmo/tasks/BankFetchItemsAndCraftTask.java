@@ -1,10 +1,7 @@
 package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.Caches;
-import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.MyAccountApiWrapper;
-import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
-import de.tkunkel.game.artifactsmmo.helper.MapHelper;
 import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
 import de.tkunkel.games.artifactsmmo.model.DataPageSimpleItemSchema;
 import de.tkunkel.games.artifactsmmo.model.ItemSchema;
@@ -21,17 +18,14 @@ public class BankFetchItemsAndCraftTask {
     private final Logger logger = LoggerFactory.getLogger(BankFetchItemsAndCraftTask.class.getName());
     private final CraftItemTask craftItemTask;
     private final BankDepositSingleItemTask bankDepositSingleItemTask;
-    private final MyCharactersApiWrapper myCharactersApi;
     private final BankFetchItemTask bankFetchItemTask;
     private final Caches caches;
     private final MyAccountApiWrapper myAccountApi;
 
     public BankFetchItemsAndCraftTask(CraftItemTask craftItemTask, BankDepositSingleItemTask bankDepositSingleItemTask,
-                                      CharHelper charHelper, MapHelper mapHelper, MyCharactersApiWrapper myCharactersApi,
                                       BankFetchItemTask bankFetchItemTask, Caches caches, MyAccountApiWrapper myAccountApi) {
         this.craftItemTask = craftItemTask;
         this.bankDepositSingleItemTask = bankDepositSingleItemTask;
-        this.myCharactersApi = myCharactersApi;
         this.bankFetchItemTask = bankFetchItemTask;
         this.caches = caches;
         this.myAccountApi = myAccountApi;

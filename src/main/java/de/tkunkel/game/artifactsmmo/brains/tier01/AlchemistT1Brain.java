@@ -16,7 +16,6 @@ import java.util.Optional;
 public class AlchemistT1Brain {
     private final Logger logger = LoggerFactory.getLogger(AlchemistT1Brain.class.getName());
     private final CraftItemTask craftItemTask;
-    private final FarmHighestResourceTask farmHighestResourceTask;
     private final BankDepositAllTask bankDepositAllTask;
     private final TrainingSkillTask trainingSkillTask;
     private final ApiHolder apiHolder;
@@ -25,13 +24,12 @@ public class AlchemistT1Brain {
     private final GetBestItemForSlotTask getBestItemForSlotTask;
     private final TaskAcceptNewItemTask taskAcceptNewItemTask;
 
-    public AlchemistT1Brain(ApiHolder apiHolder, CraftItemTask craftItemTask, FarmHighestResourceTask farmHighestResourceTask,
+    public AlchemistT1Brain(ApiHolder apiHolder, CraftItemTask craftItemTask,
                             BankDepositAllTask bankDepositAllTask,
                             TrainingSkillTask trainingSkillTask, Caches caches1,
                             CharHelper charHelper1, GetBestItemForSlotTask getBestItemForSlotTask,
                             TaskAcceptNewItemTask taskAcceptNewItemTask) {
         this.craftItemTask = craftItemTask;
-        this.farmHighestResourceTask = farmHighestResourceTask;
         this.bankDepositAllTask = bankDepositAllTask;
         this.trainingSkillTask = trainingSkillTask;
         this.apiHolder = apiHolder;
@@ -43,10 +41,10 @@ public class AlchemistT1Brain {
 
     public String decideWhatResourceToFarm(String characterName) {
         CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-        String ressource = caches.findHighestFarmableResourceForSkillLevel(character.getData()
-                                                                                    .getAlchemyLevel(), GatheringSkill.ALCHEMY
+        String resource = caches.findHighestFarmableResourceForSkillLevel(character.getData()
+                                                                                   .getAlchemyLevel(), GatheringSkill.ALCHEMY
         );
-        return ressource;
+        return resource;
     }
 
     public void runBaseLoop(String characterName) {

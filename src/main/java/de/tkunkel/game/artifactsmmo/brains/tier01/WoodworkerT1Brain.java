@@ -4,7 +4,10 @@ package de.tkunkel.game.artifactsmmo.brains.tier01;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
-import de.tkunkel.game.artifactsmmo.tasks.*;
+import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
+import de.tkunkel.game.artifactsmmo.tasks.CraftItemTask;
+import de.tkunkel.game.artifactsmmo.tasks.TaskAcceptNewItemTask;
+import de.tkunkel.game.artifactsmmo.tasks.TrainingSkillTask;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
 import de.tkunkel.games.artifactsmmo.model.GatheringSkill;
@@ -18,28 +21,24 @@ import java.util.Optional;
 @Service
 public class WoodworkerT1Brain {
     private final Logger logger = LoggerFactory.getLogger(WoodworkerT1Brain.class.getName());
-    private final FarmHighestResourceTask farmHighestResourceTask;
     private final CraftItemTask craftItemTask;
     private final BankDepositAllTask bankDepositAllTask;
     private final TrainingSkillTask trainingSkillTask;
     private final CharHelper charHelper;
     private final CharactersApiWrapper charactersApi;
     private final Caches caches;
-    private final GetBestItemForSlotTask getBestItemForSlot;
     private final TaskAcceptNewItemTask taskAcceptNewItemTask;
 
-    public WoodworkerT1Brain(Caches caches, FarmHighestResourceTask farmHighestResourceTask,
+    public WoodworkerT1Brain(Caches caches,
                              CraftItemTask craftItemTask, BankDepositAllTask bankDepositAllTask,
                              CharHelper charHelper, TrainingSkillTask trainingSkillTask, CharactersApiWrapper charactersApi,
-                             GetBestItemForSlotTask getBestItemForSlot, TaskAcceptNewItemTask taskAcceptNewItemTask) {
-        this.farmHighestResourceTask = farmHighestResourceTask;
+                             TaskAcceptNewItemTask taskAcceptNewItemTask) {
         this.craftItemTask = craftItemTask;
         this.bankDepositAllTask = bankDepositAllTask;
         this.trainingSkillTask = trainingSkillTask;
         this.charHelper = charHelper;
         this.charactersApi = charactersApi;
         this.caches = caches;
-        this.getBestItemForSlot = getBestItemForSlot;
         this.taskAcceptNewItemTask = taskAcceptNewItemTask;
     }
 

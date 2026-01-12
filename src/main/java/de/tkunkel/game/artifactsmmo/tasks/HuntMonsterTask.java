@@ -3,13 +3,10 @@ package de.tkunkel.game.artifactsmmo.tasks;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
-import de.tkunkel.game.artifactsmmo.api.MyAccountApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.combat.CombatSimulator;
 import de.tkunkel.game.artifactsmmo.combat.CombatStats;
-import de.tkunkel.game.artifactsmmo.helper.ItemHelper;
 import de.tkunkel.game.artifactsmmo.helper.MapHelper;
-import de.tkunkel.game.artifactsmmo.helper.MonsterHelper;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.springframework.stereotype.Service;
 
@@ -21,24 +18,20 @@ import java.util.Optional;
 @Service
 public class HuntMonsterTask {
     private final CharactersApiWrapper charactersApiWrapper;
-    private final MyAccountApiWrapper myAccountApiWrapper;
     private final Caches caches;
-    private final ItemHelper itemHelper;
     private final CharHelper charHelper;
     private final MapHelper mapHelper;
-    private final MonsterHelper monsterHelper;
     private final MyCharactersApiWrapper myCharactersApi;
     private final CombatSimulator combatSimulator;
 
-    public HuntMonsterTask(CharactersApiWrapper charactersApiWrapper, MyAccountApiWrapper myAccountApiWrapper, Caches caches, ItemHelper itemHelper, CharHelper charHelper, MyCharactersApiWrapper myCharactersApi, MapHelper mapHelper, MonsterHelper monsterHelper, CombatSimulator combatSimulator) {
+    public HuntMonsterTask(CharactersApiWrapper charactersApiWrapper, Caches caches, CharHelper charHelper,
+                           MyCharactersApiWrapper myCharactersApi, MapHelper mapHelper, CombatSimulator combatSimulator
+    ) {
         this.charactersApiWrapper = charactersApiWrapper;
-        this.myAccountApiWrapper = myAccountApiWrapper;
         this.caches = caches;
-        this.itemHelper = itemHelper;
         this.charHelper = charHelper;
         this.myCharactersApi = myCharactersApi;
         this.mapHelper = mapHelper;
-        this.monsterHelper = monsterHelper;
         this.combatSimulator = combatSimulator;
     }
 

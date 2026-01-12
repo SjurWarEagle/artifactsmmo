@@ -1,8 +1,5 @@
 package de.tkunkel.game.artifactsmmo;
 
-import de.tkunkel.game.artifactsmmo.api.AccountsApiWrapper;
-import de.tkunkel.game.artifactsmmo.combat.CombatSimulator;
-import de.tkunkel.game.artifactsmmo.combat.CombatStatsEditor;
 import de.tkunkel.games.artifactsmmo.ApiClient;
 import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.api.ItemsApi;
@@ -31,20 +28,14 @@ public class Caches {
     private ItemsApi itemsApi;
     private MonstersApi monstersApi;
     private ResourcesApi resourcesApi;
-    private final AccountsApiWrapper accountsApi;
-    private final CombatStatsEditor combatStatsEditor;
-    private final CombatSimulator combatSimulator;
 
     public final List<MapSchema> cachedMap = new ArrayList<>();
     public final List<MonsterSchema> cachedMonsters = new ArrayList<>();
     public final List<ItemSchema> cachedItems = new ArrayList<>();
     public final List<ResourceSchema> cachedResources = new ArrayList<>();
 
-    public Caches(Config config, AccountsApiWrapper accountsApi, CombatStatsEditor combatStatsEditor, CombatSimulator combatSimulator) {
+    public Caches(Config config) {
         this.config = config;
-        this.accountsApi = accountsApi;
-        this.combatStatsEditor = combatStatsEditor;
-        this.combatSimulator = combatSimulator;
     }
 
     @PostConstruct

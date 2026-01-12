@@ -3,7 +3,6 @@ package de.tkunkel.game.artifactsmmo.tasks;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
-import de.tkunkel.game.artifactsmmo.api.MyAccountApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.helper.MapHelper;
 import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
@@ -19,15 +18,14 @@ import java.util.Optional;
 public class CookingTask {
     private final Logger logger = LoggerFactory.getLogger(CookingTask.class.getName());
     private final CharactersApiWrapper charactersApiWrapper;
-    private final MyAccountApiWrapper myAccountApiWrapper;
     private final MyCharactersApiWrapper myCharactersApi;
     private final Caches caches;
     private final CharHelper charHelper;
     private final MapHelper mapHelper;
 
-    public CookingTask(CharactersApiWrapper charactersApiWrapper, MyAccountApiWrapper myAccountApiWrapper, MyCharactersApiWrapper myCharactersApi, Caches caches, CharHelper charHelper, MapHelper mapHelper) {
+    public CookingTask(CharactersApiWrapper charactersApiWrapper, MyCharactersApiWrapper myCharactersApi, Caches caches,
+                       CharHelper charHelper, MapHelper mapHelper) {
         this.charactersApiWrapper = charactersApiWrapper;
-        this.myAccountApiWrapper = myAccountApiWrapper;
         this.myCharactersApi = myCharactersApi;
         this.caches = caches;
         this.charHelper = charHelper;

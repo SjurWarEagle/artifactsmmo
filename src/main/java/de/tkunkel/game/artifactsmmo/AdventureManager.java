@@ -61,7 +61,7 @@ public class AdventureManager {
     public void startLoop(String characterName, AdventurerClass adventurerClass) {
         bankDepositAllTask.depositInventoryInBank(apiHolder.charactersApi.getCharacterCharactersNameGet(characterName));
         while (true) {
-            // disabled becauase a non-fighter switched between tool and weapon in each loop
+            // disabled because a non-fighter switched between tool and weapon in each loop
             // brain.equipOrRequestBestWeapon(characterName);
             getBestItemForSlotTask.equipOrRequestItemArmorForSlot(characterName, ItemSlot.BODY_ARMOR);
             getBestItemForSlotTask.equipOrRequestItemArmorForSlot(characterName, ItemSlot.HELMET);
@@ -75,18 +75,25 @@ public class AdventureManager {
             CharacterSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName)
                                                                .getData();
             if (wishList.isHandlingHuntingWish(character)) {
-            } else if (wishList.isHandlingCraftingWish(character)) {
-            } else if (wishList.isHandlingGatheringWish(character)) {
-            } else if (taskHelper.isHandlingTask(character)) {
-            } else {
-                // nothing to craft, so use default
-                switch (adventurerClass) {
-                    case MINER -> minerBrain.runBaseLoop(characterName);
-                    case FIGHTER -> fighterBrain.runBaseLoop(characterName);
-                    case WOODWORKER -> woodworkerBrain.runBaseLoop(characterName);
-                    case ALCHEMIST -> alchemistBrain.runBaseLoop(characterName);
-                    case FISHER -> fisherBrain.runBaseLoop(characterName);
-                }
+                return;
+            }
+            if (wishList.isHandlingCraftingWish(character)) {
+                return;
+            }
+            if (wishList.isHandlingGatheringWish(character)) {
+                return;
+            }
+            if (taskHelper.isHandlingTask(character)) {
+                return;
+            }
+
+            // nothing to craft, so use default
+            switch (adventurerClass) {
+                case MINER -> minerBrain.runBaseLoop(characterName);
+                case FIGHTER -> fighterBrain.runBaseLoop(characterName);
+                case WOODWORKER -> woodworkerBrain.runBaseLoop(characterName);
+                case ALCHEMIST -> alchemistBrain.runBaseLoop(characterName);
+                case FISHER -> fisherBrain.runBaseLoop(characterName);
             }
         }
     }

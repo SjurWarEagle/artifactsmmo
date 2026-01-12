@@ -9,6 +9,7 @@ import de.tkunkel.game.artifactsmmo.tasks.BankFetchItemTask;
 import de.tkunkel.game.artifactsmmo.tasks.HuntMonsterTask;
 import de.tkunkel.game.artifactsmmo.tasks.TaskAcceptNewItemTask;
 import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
+import de.tkunkel.games.artifactsmmo.model.InventorySlot;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -48,7 +49,7 @@ public class TaskHelper {
         if (isMonsterTask) {
             huntMonsterTask.hunt(character.getName(), character.getTask());
         } else if (isItemTask) {
-            // TODO check if it can be fullfilled
+            // TODO check if it can be fulfilled
             int cntItemsInBank = charHelper.cntItemsInBank(character.getTask());
             int needed = character.getTaskTotal() - character.getTaskProgress();
             int missing = needed - cntItemsInBank;
@@ -59,7 +60,7 @@ public class TaskHelper {
             } else {
                 int freeInventory = character.getInventoryMaxItems() - character.getInventory()
                                                                                 .stream()
-                                                                                .mapToInt(slot -> slot.getQuantity())
+                                                                                .mapToInt(InventorySlot::getQuantity)
                                                                                 .sum();
                 bankFetchItemTask.fetchItemFromBank(character, character.getTask(), Math.min(needed, freeInventory));
                 int inInventory = charHelper.cntItemsInInventory(character.getName(), character.getTask());

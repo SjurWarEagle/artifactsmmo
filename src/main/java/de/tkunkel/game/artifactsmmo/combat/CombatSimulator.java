@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Service
 public class CombatSimulator {
 
-    private final int maxRounds = 100;
+    private final int MAX_ROUNDS = 100;
     private final Logger logger = LoggerFactory.getLogger(CombatSimulator.class.getName());
 
     //    @Cacheable(cacheNames = "combatSimulatorWinPercentage")
@@ -42,7 +42,7 @@ public class CombatSimulator {
         int attackerHp = attacker.hp;
         int defenderHp = defender.hp;
         boolean attackerActsFirst = decideWhoGoesFirst(attacker, defender);
-        for (int round = 1; round <= maxRounds; round++) {
+        for (int round = 1; round <= MAX_ROUNDS; round++) {
             int attackerDamage = calculateDamage(attacker, defender);
             int defenderDamage = calculateDamage(defender, attacker);
 

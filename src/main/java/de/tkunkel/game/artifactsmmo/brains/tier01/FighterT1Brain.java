@@ -65,7 +65,6 @@ public class FighterT1Brain {
 
         completeCurrentTaskIfDone(character);
         cancelCurrentTaskIfTooHard(character);
-        // taskAcceptNewTask.getNewTaskIfCurrentTaskIsDone(this, character);
         bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(character);
 
         charHelper.waitUntilCooldownDone(character.getName());
@@ -88,15 +87,12 @@ public class FighterT1Brain {
 
     private void cancelCurrentTaskIfTooHard(CharacterSchema character) {
         var task = character.getTask();
-        if (task == null || "".equalsIgnoreCase(task)) {
+        if ("".equalsIgnoreCase(task)) {
             return;
         }
         if (!"monsters".equalsIgnoreCase(character.getTaskType())) {
             // not a killing task
             return;
-        }
-        if (character.getTaskTotal() <= character.getTaskProgress()) {
-            // already done
         }
         CombatStats attacker = CombatStats.fromCharacter(character);
         MonsterSchema monster = caches.cachedMonsters.stream()
@@ -130,7 +126,7 @@ public class FighterT1Brain {
                                                             .filter(inventorySlot -> {
                                                                 List<ItemSchema> food = caches.cachedItems.stream()
                                                                                                           .filter(itemSchema -> itemSchema.getCode()
-                                                                                                                                          .equals(inventorySlot))
+                                                                                                                                          .equals(inventorySlot.getCode()))
                                                                                                           .filter(itemSchema -> !itemSchema.getSubtype()
                                                                                                                                            .equals("food"))
                                                                                                           .toList()
@@ -146,8 +142,9 @@ public class FighterT1Brain {
     }
 
     private void completeCurrentTaskIfDone(CharacterSchema character) {
-        if (character.getTask() == null || !TaskType.MONSTERS.getValue()
-                                                             .equals(character.getTaskType()) || character.getTaskProgress() < character.getTaskTotal()) {
+        if (!TaskType.MONSTERS.getValue()
+                              .equals(character.getTaskType())
+                || character.getTaskProgress() < character.getTaskTotal()) {
             return;
         }
         Optional<MapSchema> closestLocation = mapHelper.findClosestLocation(character, "monsters");
@@ -164,8 +161,9 @@ public class FighterT1Brain {
 
     private String decideWhatEnemyToHunt(CharacterSchema character) {
         String monsterToHunt = null;
-        if (character.getTask() != null && TaskType.MONSTERS.getValue()
-                                                            .equals(character.getTaskType()) && character.getTaskProgress() < character.getTaskTotal()) {
+        if (TaskType.MONSTERS.getValue()
+                             .equals(character.getTaskType())
+                && character.getTaskProgress() < character.getTaskTotal()) {
             monsterToHunt = character.getTask();
         }
         if (monsterToHunt == null) {
@@ -196,7 +194,7 @@ public class FighterT1Brain {
                                                                    .map(MonsterSchema::getName)
                                                                    .toList()
             );
-            if (monsters.size() == 0) {
+            if (monsters.isEmpty()) {
                 logger.warn("No monsters that can be hunted found for character {}", character.getName()
                 );
                 monsterToHunt = "chicken";

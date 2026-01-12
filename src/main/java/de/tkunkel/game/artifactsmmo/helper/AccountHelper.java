@@ -13,7 +13,7 @@ public class AccountHelper {
         this.accountsApi = accountsApi;
     }
 
-    public boolean isFullfilled(ConditionSchema conditionSchema) {
+    public boolean isFulfilled(ConditionSchema conditionSchema) {
         return switch (conditionSchema.getOperator()) {
             case ACHIEVEMENT_UNLOCKED -> hasAchievement(conditionSchema.getCode());
             default -> throw new IllegalArgumentException("Unsupported operator: " + conditionSchema.getOperator());

@@ -6,7 +6,10 @@ import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.shopping.Wish;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
-import de.tkunkel.game.artifactsmmo.tasks.*;
+import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
+import de.tkunkel.game.artifactsmmo.tasks.BankFetchItemsAndCraftTask;
+import de.tkunkel.game.artifactsmmo.tasks.TaskAcceptNewItemTask;
+import de.tkunkel.game.artifactsmmo.tasks.TrainingSkillTask;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
 import de.tkunkel.games.artifactsmmo.model.GatheringSkill;
@@ -24,8 +27,6 @@ public class MinerT1Brain {
     private final BankDepositAllTask bankDepositAllTask;
     private final CharactersApiWrapper charactersApi;
     private final CharHelper charHelper;
-    private final GetBestItemForSlotTask getBestItemForSlotTask;
-    private final BankFetchItemTask bankFetchItemTask;
     private final BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask;
     private final WishList wishList;
     private final Caches caches;
@@ -35,14 +36,11 @@ public class MinerT1Brain {
                         BankDepositAllTask bankDepositAllTask,
                         TrainingSkillTask trainingSkillTask,
                         CharHelper charHelper, CharactersApiWrapper charactersApi,
-                        GetBestItemForSlotTask getBestItemForSlotTask, BankFetchItemTask bankFetchItemTask,
                         BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, TaskAcceptNewItemTask taskAcceptNewItemTask) {
         this.bankDepositAllTask = bankDepositAllTask;
         this.trainingSkillTask = trainingSkillTask;
         this.charactersApi = charactersApi;
         this.charHelper = charHelper;
-        this.getBestItemForSlotTask = getBestItemForSlotTask;
-        this.bankFetchItemTask = bankFetchItemTask;
         this.wishList = wishList;
         this.caches = caches;
         this.bankFetchItemsAndCraftTask = bankFetchItemsAndCraftTask;

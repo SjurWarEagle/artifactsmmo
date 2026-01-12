@@ -490,7 +490,7 @@ public class CharHelper {
                                                  .equalsIgnoreCase("resource")
                                          && resourceItem.getSubtype()
                                                         .equalsIgnoreCase("mob")) {
-                                     // it needs a monster drop check if we have a huner
+                                     // it needs a monster drop check if we have a hunter
                                      return canACharHuntMonsterThatDropsThis(resourceItem);
                                  } else {
                                      // it needs a farmable resource, do we have a gather for it?
@@ -509,7 +509,7 @@ public class CharHelper {
 
     /**
      * find an item that can be crafted with the items in inventory and skill of the char.
-     * Use  highest level
+     * Use highest level
      */
     public Optional<String> findPossibleItemToCraft(CharacterSchema character) {
         return caches.cachedItems.stream()

@@ -113,11 +113,11 @@ public class GetBestItemForSlotTask {
                                                          .findFirst()
                 ;
         boolean itemExistsInBank;
-        itemExistsInBank = myAccountApi.getBankItemsMyBankItemsGet(bestInSlot.get()
-                                                                             .getCode(), 1, 100
-                                       )
-                                       .getData()
-                                       .size() > 0;
+        itemExistsInBank = !myAccountApi.getBankItemsMyBankItemsGet(bestInSlot.get()
+                                                                              .getCode(), 1, 100
+                                        )
+                                        .getData()
+                                        .isEmpty();
         boolean itemExistsInInventory = inventorySlot.isPresent();
 
         boolean alreadyEquipped = charHelper.checkIfEquipped(bestInSlot.get()

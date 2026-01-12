@@ -1,7 +1,6 @@
 package de.tkunkel.game.artifactsmmo.shopping;
 
 import de.tkunkel.game.artifactsmmo.ApiHolder;
-import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.MyAccountApiWrapper;
 import de.tkunkel.game.artifactsmmo.combat.CombatSimulator;
@@ -28,7 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Service
 public class WishList {
     private final Logger logger = LoggerFactory.getLogger(WishList.class.getName());
-    private final Caches caches;
     private final ApiHolder apiHolder;
     private final ItemHelper itemHelper;
     private final CharHelper charHelper;
@@ -41,8 +39,10 @@ public class WishList {
     private final MyAccountApiWrapper myAccountApi;
     private final MonsterHelper monsterHelper;
 
-    public WishList(Caches caches, ApiHolder apiHolder, ItemHelper itemHelper, CharHelper charHelper, HuntForItemTask huntForItemTask, CombatSimulator combatSimulator, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, FarmResourceTask farmResourceTask, MyAccountApiWrapper myAccountApi, MonsterHelper monsterHelper) {
-        this.caches = caches;
+    public WishList(ApiHolder apiHolder, ItemHelper itemHelper, CharHelper charHelper, HuntForItemTask huntForItemTask,
+                    CombatSimulator combatSimulator, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask,
+                    FarmResourceTask farmResourceTask, MyAccountApiWrapper myAccountApi, MonsterHelper monsterHelper
+    ) {
         this.apiHolder = apiHolder;
         this.itemHelper = itemHelper;
         this.charHelper = charHelper;
@@ -117,10 +117,10 @@ public class WishList {
                                  if (inInventory) {
                                      return true;
                                  }
-                                 boolean inBank = myAccountApi.getBankItemsMyBankItemsGet(resourceItem.getCode(), 1, 100
-                                                              )
-                                                              .getData()
-                                                              .size() > 0;
+                                 boolean inBank = !myAccountApi.getBankItemsMyBankItemsGet(resourceItem.getCode(), 1, 100
+                                                               )
+                                                               .getData()
+                                                               .isEmpty();
                                  return inBank;
                              })
                 ;
