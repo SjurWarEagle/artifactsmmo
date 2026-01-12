@@ -1,15 +1,12 @@
 package de.tkunkel.game.artifactsmmo.brains.tier01;
 
-import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.combat.CombatSimulator;
 import de.tkunkel.game.artifactsmmo.combat.CombatStats;
-import de.tkunkel.game.artifactsmmo.helper.ItemHelper;
 import de.tkunkel.game.artifactsmmo.helper.MapHelper;
-import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.*;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
@@ -29,7 +26,6 @@ public class FighterT1Brain {
     private final CombatSimulator combatSimulator;
     private final TaskCancelTask taskCancelTask;
     private final CookingTask cookingTask;
-    private final TaskAcceptNewTask taskAcceptNewTask;
     private final CharactersApiWrapper charactersApi;
     private final CharHelper charHelper;
     private final GetBestItemForSlotTask getBestItemForSlot;
@@ -37,35 +33,34 @@ public class FighterT1Brain {
     private final Caches caches;
     private final MapHelper mapHelper;
 
-    public FighterT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder,
-                          BankUpgradeIfPossibleTask bankUpgradeIfPossibleTask, BankDepositGoldIfRichTask bankDepositGoldIfRichTask,
-                          BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask,
-                          ItemHelper itemHelper, CombatSimulator combatSimulator, TaskCancelTask taskCancelTask, CookingTask cookingTask,
-                          TaskAcceptNewTask taskAcceptNewTask, CharHelper charHelper, MapHelper mapHelper, CharactersApiWrapper charactersApi, CharHelper charHelper1, GetBestItemForSlotTask getBestItemForSlot, MyCharactersApiWrapper myCharactersApi, Caches caches1, MapHelper mapHelper1) {
+    public FighterT1Brain(BankUpgradeIfPossibleTask bankUpgradeIfPossibleTask, BankDepositGoldIfRichTask bankDepositGoldIfRichTask,
+                          BankDepositAllTask bankDepositAllTask,
+                          CombatSimulator combatSimulator, TaskCancelTask taskCancelTask, CookingTask cookingTask,
+                          CharactersApiWrapper charactersApi, CharHelper charHelper, GetBestItemForSlotTask getBestItemForSlot, MyCharactersApiWrapper myCharactersApi,
+                          Caches caches, MapHelper mapHelper) {
         this.bankUpgradeIfPossibleTask = bankUpgradeIfPossibleTask;
         this.bankDepositGoldIfRichTask = bankDepositGoldIfRichTask;
         this.bankDepositAllTask = bankDepositAllTask;
         this.combatSimulator = combatSimulator;
         this.taskCancelTask = taskCancelTask;
         this.cookingTask = cookingTask;
-        this.taskAcceptNewTask = taskAcceptNewTask;
         this.charactersApi = charactersApi;
-        this.charHelper = charHelper1;
+        this.charHelper = charHelper;
         this.getBestItemForSlot = getBestItemForSlot;
         this.myCharactersApi = myCharactersApi;
-        this.caches = caches1;
-        this.mapHelper = mapHelper1;
+        this.caches = caches;
+        this.mapHelper = mapHelper;
     }
 
     public void runBaseLoop(String characterName) {
-        CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
-        charHelper.waitUntilCooldownDone(character);
+        CharacterSchema character = charactersApi.getCharacterCharactersNameGet(characterName)
+                                                 .getData();
+        charHelper.waitUntilCooldownDone(character.getName());
         bankDepositGoldIfRichTask.depositInventoryInBankIfInventoryIsFull(character);
         bankUpgradeIfPossibleTask.perform(character);
         depositNonFoodAtBankIfInventoryIsFull(character);
         cookingTask.cookFoodIfHaveSome(character);
-        charHelper.healIfNeededSync(character.getData()
-                                             .getName());
+        charHelper.healIfNeededSync(character.getName());
         getBestItemForSlot.equipOrRequestBestWeapon(characterName);
 
         completeCurrentTaskIfDone(character);
@@ -73,45 +68,40 @@ public class FighterT1Brain {
         // taskAcceptNewTask.getNewTaskIfCurrentTaskIsDone(this, character);
         bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(character);
 
-        charHelper.waitUntilCooldownDone(character);
+        charHelper.waitUntilCooldownDone(character.getName());
 
-        character = charactersApi.getCharacterCharactersNameGet(characterName);
+        character = charactersApi.getCharacterCharactersNameGet(characterName)
+                                 .getData();
         String enemyToHunt = decideWhatEnemyToHunt(character);
         Optional<MapSchema> locationOfClosestMonster = mapHelper.findLocationOfClosestMonster(character, enemyToHunt);
         if (locationOfClosestMonster.isEmpty()) {
             logger.error("Could not find location of closest monster ({})", enemyToHunt);
             return;
         }
-        charHelper.moveToLocationSync(character.getData(), locationOfClosestMonster.get());
+        charHelper.moveToLocationSync(character, locationOfClosestMonster.get());
 
-        charHelper.waitUntilCooldownDone(character);
+        charHelper.waitUntilCooldownDone(character.getName());
         FightRequestSchema fightRequest = new FightRequestSchema();
-        myCharactersApi.actionFightMyNameActionFightPost(character.getData()
-                                                                  .getName(), fightRequest
+        myCharactersApi.actionFightMyNameActionFightPost(character.getName(), fightRequest
         );
     }
 
-    private void cancelCurrentTaskIfTooHard(CharacterResponseSchema character) {
-        var task = character.getData()
-                            .getTask();
+    private void cancelCurrentTaskIfTooHard(CharacterSchema character) {
+        var task = character.getTask();
         if (task == null || "".equalsIgnoreCase(task)) {
             return;
         }
-        if (!"monsters".equalsIgnoreCase(character.getData()
-                                                  .getTaskType())) {
+        if (!"monsters".equalsIgnoreCase(character.getTaskType())) {
             // not a killing task
             return;
         }
-        if (character.getData()
-                     .getTaskTotal() <= character.getData()
-                                                 .getTaskProgress()) {
+        if (character.getTaskTotal() <= character.getTaskProgress()) {
             // already done
         }
-        CombatStats attacker = CombatStats.fromCharacter(character.getData());
+        CombatStats attacker = CombatStats.fromCharacter(character);
         MonsterSchema monster = caches.cachedMonsters.stream()
                                                      .filter(monsterSchema -> monsterSchema.getCode()
-                                                                                           .equals(character.getData()
-                                                                                                            .getTask()))
+                                                                                           .equals(character.getTask()))
                                                      .findFirst()
                                                      .get()
                 ;
@@ -120,31 +110,27 @@ public class FighterT1Brain {
             return;
         }
         logger.info("Too hard, canceling task");
-        taskCancelTask.perform(character.getData()
-                                        .getName());
+        taskCancelTask.perform(character.getName());
     }
 
-    private void depositNonFoodAtBankIfInventoryIsFull(CharacterResponseSchema character) {
-        int inventoryUsed = charHelper.cntAllItemsInInventory(character);
+    private void depositNonFoodAtBankIfInventoryIsFull(CharacterSchema character) {
+        int inventoryUsed = charHelper.cntAllItemsInInventory(character.getName());
         // store if more than 75% are used
-        if (inventoryUsed <= character.getData()
-                                      .getInventoryMaxItems() * 0.75) {
+        if (inventoryUsed <= character.getInventoryMaxItems() * 0.75) {
             return;
         }
-        Optional<MapSchema> bank = mapHelper.findClosestLocation(character.getData(), "bank");
+        Optional<MapSchema> bank = mapHelper.findClosestLocation(character, "bank");
         if (bank.isEmpty()) {
-            throw new RuntimeException("Could not find bank for character " + character.getData()
-                                                                                       .getName());
+            throw new RuntimeException("Could not find bank for character " + character.getName());
         }
-        charHelper.moveToLocationSync(character.getData(), bank.get());
-        charHelper.waitUntilCooldownDone(character);
-        List<SimpleItemSchema> bankRequestSchema = character.getData()
-                                                            .getInventory()
+        charHelper.moveToLocationSync(character, bank.get());
+        charHelper.waitUntilCooldownDone(character.getName());
+        List<SimpleItemSchema> bankRequestSchema = character.getInventory()
                                                             .stream()
                                                             .filter(inventorySlot -> {
                                                                 List<ItemSchema> food = caches.cachedItems.stream()
                                                                                                           .filter(itemSchema -> itemSchema.getCode()
-                                                                                                                                          .equals(inventorySlot.getCode()))
+                                                                                                                                          .equals(inventorySlot))
                                                                                                           .filter(itemSchema -> !itemSchema.getSubtype()
                                                                                                                                            .equals("food"))
                                                                                                           .toList()
@@ -155,43 +141,32 @@ public class FighterT1Brain {
                                                                                                         .quantity(inventorySlot.getQuantity()))
                                                             .toList()
                 ;
-        myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
-                                                                                      .getName(), bankRequestSchema
+        myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getName(), bankRequestSchema
         );
     }
 
-    private void completeCurrentTaskIfDone(CharacterResponseSchema character) {
-        if (character.getData()
-                     .getTask() == null || !TaskType.MONSTERS.getValue()
-                                                             .equals(character.getData()
-                                                                              .getTaskType()) || character.getData()
-                                                                                                          .getTaskProgress() < character.getData()
-                                                                                                                                        .getTaskTotal()) {
+    private void completeCurrentTaskIfDone(CharacterSchema character) {
+        if (character.getTask() == null || !TaskType.MONSTERS.getValue()
+                                                             .equals(character.getTaskType()) || character.getTaskProgress() < character.getTaskTotal()) {
             return;
         }
-        Optional<MapSchema> closestLocation = mapHelper.findClosestLocation(character.getData(), "monsters");
+        Optional<MapSchema> closestLocation = mapHelper.findClosestLocation(character, "monsters");
         if (closestLocation.isEmpty()) {
             return;
         }
-        boolean moved = charHelper.moveToLocationSync(character.getData(), closestLocation.get());
+        boolean moved = charHelper.moveToLocationSync(character, closestLocation.get());
         if (moved) {
             return;
         }
-        myCharactersApi.actionCompleteTaskMyNameActionTaskCompletePost(character.getData()
-                                                                                .getName());
+        myCharactersApi.actionCompleteTaskMyNameActionTaskCompletePost(character.getName());
     }
 
 
-    private String decideWhatEnemyToHunt(CharacterResponseSchema character) {
+    private String decideWhatEnemyToHunt(CharacterSchema character) {
         String monsterToHunt = null;
-        if (character.getData()
-                     .getTask() != null && TaskType.MONSTERS.getValue()
-                                                            .equals(character.getData()
-                                                                             .getTaskType()) && character.getData()
-                                                                                                         .getTaskProgress() < character.getData()
-                                                                                                                                       .getTaskTotal()) {
-            monsterToHunt = character.getData()
-                                     .getTask();
+        if (character.getTask() != null && TaskType.MONSTERS.getValue()
+                                                            .equals(character.getTaskType()) && character.getTaskProgress() < character.getTaskTotal()) {
+            monsterToHunt = character.getTask();
         }
         if (monsterToHunt == null) {
             monsterToHunt = findHighestMonsterToHunt(character);
@@ -204,13 +179,12 @@ public class FighterT1Brain {
                                            .findFirst()
                                            .get()
                 ;
-        boolean canBeat = combatSimulator.winMoreThanXPercentAgainst(CombatStats.fromCharacter(character.getData()), CombatStats.fromMonster(monster), 95);
+        boolean canBeat = combatSimulator.winMoreThanXPercentAgainst(CombatStats.fromCharacter(character), CombatStats.fromMonster(monster), 95);
         if (!canBeat) {
-            logger.warn("Monster {} is too strong for character {}, using fallback.", monsterToHunt, character.getData()
-                                                                                                              .getName()
+            logger.warn("Monster {} is too strong for character {}, using fallback.", monsterToHunt, character.getName()
             );
 
-            CombatStats attacker = CombatStats.fromCharacter(character.getData());
+            CombatStats attacker = CombatStats.fromCharacter(character);
             List<MonsterSchema> monsters = caches.cachedMonsters.stream()
                                                                 .filter(monsterSchema -> {
                                                                     CombatStats defender = CombatStats.fromMonster(monsterSchema);
@@ -223,8 +197,7 @@ public class FighterT1Brain {
                                                                    .toList()
             );
             if (monsters.size() == 0) {
-                logger.warn("No monsters that can be hunted found for character {}", character.getData()
-                                                                                              .getName()
+                logger.warn("No monsters that can be hunted found for character {}", character.getName()
                 );
                 monsterToHunt = "chicken";
             } else {
@@ -240,8 +213,8 @@ public class FighterT1Brain {
         return monsterToHunt;
     }
 
-    private String findHighestMonsterToHunt(CharacterResponseSchema character) {
-        CombatStats charCombatStats = CombatStats.fromCharacter(character.getData());
+    private String findHighestMonsterToHunt(CharacterSchema character) {
+        CombatStats charCombatStats = CombatStats.fromCharacter(character);
 
         String rc = "green_slime";
         // String rc = "chicken";

@@ -10,12 +10,12 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-public class TaskAcceptNewTask {
+public class TaskAcceptNewHuntingTask {
 
     private final CharHelper charHelper;
     private final MapHelper mapHelper;
 
-    public TaskAcceptNewTask(CharHelper charHelper, MapHelper mapHelper) {
+    public TaskAcceptNewHuntingTask(CharHelper charHelper, MapHelper mapHelper) {
         this.charHelper = charHelper;
         this.mapHelper = mapHelper;
     }

@@ -10,6 +10,7 @@ import de.tkunkel.game.artifactsmmo.helper.ItemHelper;
 import de.tkunkel.game.artifactsmmo.helper.MonsterHelper;
 import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
 import de.tkunkel.game.artifactsmmo.tasks.BankFetchItemsAndCraftTask;
+import de.tkunkel.game.artifactsmmo.tasks.FarmResourceTask;
 import de.tkunkel.game.artifactsmmo.tasks.HuntForItemTask;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.jetbrains.annotations.UnknownNullability;
@@ -36,10 +37,11 @@ public class WishList {
     private final Set<Wish> allWishes = new CopyOnWriteArraySet<>();
     private final BankDepositAllTask bankDepositAllTask;
     private final BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask;
+    private final FarmResourceTask farmResourceTask;
     private final MyAccountApiWrapper myAccountApi;
     private final MonsterHelper monsterHelper;
 
-    public WishList(Caches caches, ApiHolder apiHolder, ItemHelper itemHelper, CharHelper charHelper, HuntForItemTask huntForItemTask, CombatSimulator combatSimulator, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, MyAccountApiWrapper myAccountApi, MonsterHelper monsterHelper) {
+    public WishList(Caches caches, ApiHolder apiHolder, ItemHelper itemHelper, CharHelper charHelper, HuntForItemTask huntForItemTask, CombatSimulator combatSimulator, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, FarmResourceTask farmResourceTask, MyAccountApiWrapper myAccountApi, MonsterHelper monsterHelper) {
         this.caches = caches;
         this.apiHolder = apiHolder;
         this.itemHelper = itemHelper;
@@ -48,6 +50,7 @@ public class WishList {
         this.combatSimulator = combatSimulator;
         this.bankDepositAllTask = bankDepositAllTask;
         this.bankFetchItemsAndCraftTask = bankFetchItemsAndCraftTask;
+        this.farmResourceTask = farmResourceTask;
         this.myAccountApi = myAccountApi;
         this.monsterHelper = monsterHelper;
     }
@@ -55,25 +58,22 @@ public class WishList {
 
     @Scheduled(fixedRate = 5, timeUnit = TimeUnit.MINUTES)
     public void fillStorage() {
-        requestItemsForStorage("copper_ore", 500);
-        requestItemsForStorage("copper_bar", 100);
+//        requestItemsForStorage("copper_ore", 500);
+//        requestItemsForStorage("copper_bar", 100);
     }
 
-    public boolean isHandlingHuntingWish(CharacterResponseSchema character) {
+    public boolean isHandlingHuntingWish(CharacterSchema character) {
         Optional<Wish> wishThatCanBeHuntedByMe = reserveWishThatCanBeHuntedByMe(character);
         if (wishThatCanBeHuntedByMe.isEmpty()) {
             return false;
         }
         Wish wish = wishThatCanBeHuntedByMe.get();
-        boolean enoughInInventory = charHelper.cntItemsInInventory(character.getData()
-                                                                            .getName(), wish.itemCode
+        boolean enoughInInventory = charHelper.cntItemsInInventory(character.getName(), wish.itemCode
         ) >= wish.amount;
         while (!enoughInInventory) {
-            huntForItemTask.huntForItem(character.getData()
-                                                 .getName(), wish.itemCode
+            huntForItemTask.huntForItem(character.getName(), wish.itemCode
             );
-            enoughInInventory = charHelper.cntItemsInInventory(character.getData()
-                                                                        .getName(), wish.itemCode
+            enoughInInventory = charHelper.cntItemsInInventory(character.getName(), wish.itemCode
             ) >= wish.amount;
         }
 
@@ -96,7 +96,7 @@ public class WishList {
         allWishes.removeAll(toRemove);
     }
 
-    private boolean checkIfAllResourcesAreAvailable(CharacterResponseSchema character, @UnknownNullability Optional<Wish> optionalWish) {
+    private boolean checkIfAllResourcesAreAvailable(CharacterSchema character, @UnknownNullability Optional<Wish> optionalWish) {
         if (optionalWish.isEmpty()) {
             return false;
         }
@@ -107,8 +107,7 @@ public class WishList {
                              .getItems()
                              .stream()
                              .allMatch(resourceItem -> {
-                                 boolean inInventory = character.getData()
-                                                                .getInventory()
+                                 boolean inInventory = character.getInventory()
                                                                 .stream()
                                                                 .filter(inventorySlot -> inventorySlot.getCode()
                                                                                                       .equals(resourceItem.getCode()))
@@ -130,12 +129,26 @@ public class WishList {
     }
 
 
-    public boolean isHandlingCraftingWish(CharacterResponseSchema character) {
+    public boolean isHandlingGatheringWish(CharacterSchema character) {
+        Optional<Wish> wishThatCanBeGatheredByMe = reserveWishThatCanGatheredByMe(character);
+        if (wishThatCanBeGatheredByMe.isPresent()) {
+            Wish wish = wishThatCanBeGatheredByMe.get();
+            farmResourceTask.farmResource(character.getName(), wish.itemCode);
+            bankFetchItemsAndCraftTask.craftItemWithBankItems(character, wish.itemCode, wish.amount);
+            wish.fulfilled = true;
+            wish.reservedBy = null;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public boolean isHandlingCraftingWish(CharacterSchema character) {
         Optional<Wish> wishThatCanBeCraftedByMe = reserveWishThatCanBeCraftedByMe(character);
         boolean allResourcesAvailable = checkIfAllResourcesAreAvailable(character, wishThatCanBeCraftedByMe);
         if (allResourcesAvailable && wishThatCanBeCraftedByMe.isPresent()) {
             Wish wish = wishThatCanBeCraftedByMe.get();
-            bankFetchItemsAndCraftTask.craftItemWithBankItems(character.getData(), wish.itemCode, wish.amount);
+            bankFetchItemsAndCraftTask.craftItemWithBankItems(character, wish.itemCode, wish.amount);
             wish.fulfilled = true;
             wish.reservedBy = null;
             return true;
@@ -206,7 +219,7 @@ public class WishList {
         return Collections.unmodifiableSet(allWishes);
     }
 
-    public synchronized Optional<Wish> reserveWishThatCanBeHuntedByMe(CharacterResponseSchema character) {
+    public synchronized Optional<Wish> reserveWishThatCanBeHuntedByMe(CharacterSchema character) {
         Optional<Wish> existingReservedWish = getAlreadyReservedWish(character);
         if (existingReservedWish.isPresent()) {
             return existingReservedWish;
@@ -225,7 +238,7 @@ public class WishList {
                                .filter(item -> {
                                    List<MonsterSchema> monsterSchemas = monsterHelper.findMonstersThatDropThis(item.itemCode);
                                    for (MonsterSchema monsterSchema : monsterSchemas) {
-                                       CombatStats attacker = CombatStats.fromCharacter(character.getData());
+                                       CombatStats attacker = CombatStats.fromCharacter(character);
                                        CombatStats defender = CombatStats.fromMonster(monsterSchema);
                                        boolean canWin = combatSimulator.winMoreThanXPercentAgainst(attacker, defender, 90);
                                        return canWin;
@@ -237,15 +250,45 @@ public class WishList {
         if (newWish.isEmpty()) {
             return Optional.empty();
         }
-        newWish.get().reservedBy = character.getData()
-                                            .getName();
+        newWish.get().reservedBy = character.getName();
 
         return newWish;
 
 
     }
 
-    public synchronized Optional<Wish> reserveWishThatCanBeCraftedByMe(CharacterResponseSchema character) {
+    public synchronized Optional<Wish> reserveWishThatCanGatheredByMe(CharacterSchema character) {
+        Optional<Wish> existingReservedWish = getAlreadyReservedWish(character);
+        if (existingReservedWish.isPresent()) {
+            return existingReservedWish;
+        }
+
+        for (Wish wish : allWishes) {
+            if (!wish.fulfilled
+                    && wish.reservedBy == null) {
+                Optional<ItemSchema> itemDefinition = itemHelper.findItemDefinition(wish.itemCode);
+                if (itemDefinition.isEmpty()
+                        || itemDefinition.get()
+                                         .getCraft() == null) {
+                    // nothing to craft, this one needs to be gathered
+                    continue;
+                }
+                String requiredSkillName = itemDefinition.get()
+                                                         .getSubtype();
+                int requiredSkillLevel = itemDefinition.get()
+                                                       .getLevel();
+                boolean charHasSkill = charHelper.charHasRequiredSkillLevel(character, requiredSkillName, requiredSkillLevel);
+
+                if (charHasSkill) {
+                    wish.reservedBy = character.getName();
+                    return Optional.of(wish);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    public synchronized Optional<Wish> reserveWishThatCanBeCraftedByMe(CharacterSchema character) {
         Optional<Wish> existingReservedWish = getAlreadyReservedWish(character);
         if (existingReservedWish.isPresent()) {
             return existingReservedWish;
@@ -270,14 +313,13 @@ public class WishList {
                                                        .getCraft()
                                                        .getLevel()
                         ;
-                boolean charHasSkill = charHelper.charHasRequiredSkillLevel(character.getData(), requiredSkillName, requiredSkillLevel);
+                boolean charHasSkill = charHelper.charHasRequiredSkillLevel(character, requiredSkillName, requiredSkillLevel);
 
                 boolean isResourcesAtBank = areAllItemsInBank(itemDefinition.get()
                                                                             .getCraft()
                                                                             .getItems());
                 if (charHasSkill && isResourcesAtBank) {
-                    wish.reservedBy = character.getData()
-                                               .getName();
+                    wish.reservedBy = character.getName();
                     return Optional.of(wish);
                 }
             }
@@ -285,11 +327,10 @@ public class WishList {
         return Optional.empty();
     }
 
-    private @NonNull Optional<Wish> getAlreadyReservedWish(CharacterResponseSchema character) {
+    private @NonNull Optional<Wish> getAlreadyReservedWish(CharacterSchema character) {
         Optional<Wish> existingReservedWish = allWishes.stream()
                                                        .filter(wish -> !wish.fulfilled)
-                                                       .filter(wish -> character.getData()
-                                                                                .getName()
+                                                       .filter(wish -> character.getName()
                                                                                 .equalsIgnoreCase(wish.reservedBy))
                                                        .findFirst()
                 ;

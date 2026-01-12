@@ -1,12 +1,11 @@
 package de.tkunkel.game.artifactsmmo.tasks;
 
-import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyAccountApiWrapper;
 import de.tkunkel.game.artifactsmmo.shopping.Wish;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
-import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
+import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
 import de.tkunkel.games.artifactsmmo.model.InventorySlot;
 import de.tkunkel.games.artifactsmmo.model.ItemSchema;
 import de.tkunkel.games.artifactsmmo.model.ItemSlot;
@@ -21,15 +20,14 @@ public class GetBestItemForSlotTask {
     private final Logger logger = LoggerFactory.getLogger(GetBestItemForSlotTask.class.getName());
 
 
-    private final Caches caches;
     private final CharHelper charHelper;
     private final MyAccountApiWrapper myAccountApi;
     private final WishList wishList;
     private final BankFetchItemTask bankFetchItemTask;
     private final CharactersApiWrapper charactersApi;
 
-    public GetBestItemForSlotTask(Caches caches, CharHelper charHelper, MyAccountApiWrapper myAccountApi, WishList wishList, BankFetchItemTask bankFetchItemTask, CharactersApiWrapper charactersApi) {
-        this.caches = caches;
+    public GetBestItemForSlotTask(CharHelper charHelper, MyAccountApiWrapper myAccountApi, WishList wishList,
+                                  BankFetchItemTask bankFetchItemTask, CharactersApiWrapper charactersApi) {
         this.charHelper = charHelper;
         this.myAccountApi = myAccountApi;
         this.wishList = wishList;
@@ -38,21 +36,20 @@ public class GetBestItemForSlotTask {
     }
 
     public void equipOrRequestBestWeapon(String characterName) {
-        CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
+        CharacterSchema character = charactersApi.getCharacterCharactersNameGet(characterName)
+                                                 .getData();
         Optional<ItemSchema> bestForSlot = charHelper.findBestItemForSlotThatCanBeCraftedByAccount(ItemSlot.WEAPON, character);
         if (bestForSlot.isEmpty()) {
             return;
         }
         ItemSlot itemSlot = ItemSlot.fromValue(bestForSlot.get()
                                                           .getType());
-        if (charHelper.checkIfEquipped(character.getData()
-                                                .getName(), bestForSlot.get()
+        if (charHelper.checkIfEquipped(character.getName(), bestForSlot.get()
                                                                        .getCode(), itemSlot
         )) {
             return;
         }
-        Optional<InventorySlot> inventorySlot = character.getData()
-                                                         .getInventory()
+        Optional<InventorySlot> inventorySlot = character.getInventory()
                                                          .stream()
                                                          .filter(innerInventorySlot -> innerInventorySlot.getCode()
                                                                                                          .equals(bestForSlot.get()
@@ -75,8 +72,7 @@ public class GetBestItemForSlotTask {
                                 .formatted(bestForSlot.get()
                                                       .getCode(), itemSlot.getValue()
                                 ));
-            wishList.addRequest(new Wish(character.getData()
-                                                  .getName(), bestForSlot.get()
+            wishList.addRequest(new Wish(character.getName(), bestForSlot.get()
                                                                          .getCode()
                                         , 1
                                 ), false
@@ -84,34 +80,32 @@ public class GetBestItemForSlotTask {
             return;
         }
         if (!alreadyEquipped && itemExistsInBank) {
-            bankFetchItemTask.fetchItemFromBank(character.getData(), bestForSlot.get()
-                                                                                .getCode()
+            bankFetchItemTask.fetchItemFromBank(character, bestForSlot.get()
+                                                                      .getCode()
                     , 1
             );
         }
         if (!alreadyEquipped) {
-            charHelper.equipGearIfNotEquipped(character.getData()
-                                                       .getName(), bestForSlot.get()
+            charHelper.equipGearIfNotEquipped(character.getName(), bestForSlot.get()
                                                                               .getCode(), itemSlot
             );
         }
     }
 
     public void equipOrRequestItemArmorForSlot(String characterName, ItemSlot slot) {
-        CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
+        CharacterSchema character = charactersApi.getCharacterCharactersNameGet(characterName)
+                                                 .getData();
 
         Optional<ItemSchema> bestInSlot = charHelper.findBestItemForSlotThatCanBeCraftedByAccount(slot, character);
         if (bestInSlot.isEmpty()) {
             return;
         }
-        if (charHelper.checkIfEquipped(character.getData()
-                                                .getName(), bestInSlot.get()
+        if (charHelper.checkIfEquipped(character.getName(), bestInSlot.get()
                                                                       .getCode(), slot
         )) {
             return;
         }
-        Optional<InventorySlot> inventorySlot = character.getData()
-                                                         .getInventory()
+        Optional<InventorySlot> inventorySlot = character.getInventory()
                                                          .stream()
                                                          .filter(innerInventorySlot -> innerInventorySlot.getCode()
                                                                                                          .equals(bestInSlot.get()
@@ -132,8 +126,7 @@ public class GetBestItemForSlotTask {
         if (!itemExistsInInventory && !itemExistsInBank && !alreadyEquipped) {
             logger.info("Best tool (" + bestInSlot.get()
                                                   .getCode() + ") not in inventory nor bank nor equipped, requesting");
-            wishList.addRequest(new Wish(character.getData()
-                                                  .getName(), bestInSlot.get()
+            wishList.addRequest(new Wish(character.getName(), bestInSlot.get()
                                                                         .getCode()
                                         , 1
                                 ), false
@@ -141,37 +134,33 @@ public class GetBestItemForSlotTask {
             return;
         }
         if (!alreadyEquipped && itemExistsInBank) {
-            bankFetchItemTask.fetchItemFromBank(character.getData(), bestInSlot.get()
-                                                                               .getCode()
+            bankFetchItemTask.fetchItemFromBank(character, bestInSlot.get()
+                                                                     .getCode()
                     , 1
             );
         }
         if (!alreadyEquipped) {
-            charHelper.equipGearIfNotEquipped(character.getData()
-                                                       .getName(), bestInSlot.get()
+            charHelper.equipGearIfNotEquipped(character.getName(), bestInSlot.get()
                                                                              .getCode(), slot
             );
         }
     }
 
-    public void equipOrRequestBestToolForSkill(CharacterResponseSchema character, String skillName) {
-        Optional<ItemSchema> bestToolForSkill = charHelper.findBestToolForSkillThatCanBeCraftedByAccount(skillName, character.getData()
-                                                                                                                             .getMiningLevel()
+    public void equipOrRequestBestToolForSkill(CharacterSchema character, String skillName) {
+        Optional<ItemSchema> bestToolForSkill = charHelper.findBestToolForSkillThatCanBeCraftedByAccount(skillName, character.getMiningLevel()
         );
         if (bestToolForSkill.isEmpty()) {
             return;
         }
         ItemSlot itemSlot = ItemSlot.fromValue(bestToolForSkill.get()
                                                                .getType());
-        if (charHelper.checkIfEquipped(character.getData()
-                                                .getName(), bestToolForSkill.get()
+        if (charHelper.checkIfEquipped(character.getName(), bestToolForSkill.get()
                                                                             .getCode(), itemSlot
         )) {
             return;
         }
 
-        Optional<InventorySlot> inventorySlot = character.getData()
-                                                         .getInventory()
+        Optional<InventorySlot> inventorySlot = character.getInventory()
                                                          .stream()
                                                          .filter(innerInventorySlot -> innerInventorySlot.getCode()
                                                                                                          .equals(bestToolForSkill.get()
@@ -191,8 +180,7 @@ public class GetBestItemForSlotTask {
         if (!itemExistsInInventory && !itemExistsInBank && !alreadyEquipped) {
             logger.info("Best tool (" + bestToolForSkill.get()
                                                         .getCode() + ") not in inventory nor bank nor equipped, requesting");
-            wishList.addRequest(new Wish(character.getData()
-                                                  .getName(), bestToolForSkill.get()
+            wishList.addRequest(new Wish(character.getName(), bestToolForSkill.get()
                                                                               .getCode()
                                         , 1
                                 ), false
@@ -200,14 +188,13 @@ public class GetBestItemForSlotTask {
             return;
         }
         if (!alreadyEquipped && itemExistsInBank) {
-            bankFetchItemTask.fetchItemFromBank(character.getData(), bestToolForSkill.get()
-                                                                                     .getCode()
+            bankFetchItemTask.fetchItemFromBank(character, bestToolForSkill.get()
+                                                                           .getCode()
                     , 1
             );
         }
         if (!alreadyEquipped) {
-            charHelper.equipGearIfNotEquipped(character.getData()
-                                                       .getName(), bestToolForSkill.get()
+            charHelper.equipGearIfNotEquipped(character.getName(), bestToolForSkill.get()
                                                                                    .getCode(), itemSlot
             );
         }

@@ -5,7 +5,7 @@ import de.tkunkel.game.artifactsmmo.api.MyAccountApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.helper.MapHelper;
 import de.tkunkel.games.artifactsmmo.model.BankResponseSchema;
-import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
+import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
 import de.tkunkel.games.artifactsmmo.model.DepositWithdrawGoldSchema;
 import de.tkunkel.games.artifactsmmo.model.MapSchema;
 import org.slf4j.Logger;
@@ -29,8 +29,8 @@ public class BankUpgradeIfPossibleTask {
         this.myCharactersApi = myCharactersApi;
     }
 
-    public void perform(CharacterResponseSchema character) {
-        charHelper.waitUntilCooldownDone(character);
+    public void perform(CharacterSchema character) {
+        charHelper.waitUntilCooldownDone(character.getName());
 
         BankResponseSchema bankDetailsMyBankGet = myAccountApi.getBankDetailsMyBankGet();
         if (bankDetailsMyBankGet.getData()
@@ -39,29 +39,25 @@ public class BankUpgradeIfPossibleTask {
             // too expensive
             return;
         }
-        logger.info("Bank upgrade possible for character {}", character.getData()
-                                                                       .getName()
+        logger.info("Bank upgrade possible for character {}", character.getName()
         );
 
-        Optional<MapSchema> bank = mapHelper.findClosestLocation(character.getData(), "bank");
+        Optional<MapSchema> bank = mapHelper.findClosestLocation(character, "bank");
         if (bank.isEmpty()) {
-            throw new RuntimeException("Could not find bank for character " + character.getData()
-                                                                                       .getName());
+            throw new RuntimeException("Could not find bank for character " + character.getName());
         }
-        charHelper.moveToLocationSync(character.getData(), bank.get());
+        charHelper.moveToLocationSync(character, bank.get());
 
 
         DepositWithdrawGoldSchema transaction = new DepositWithdrawGoldSchema().quantity(bankDetailsMyBankGet.getData()
                                                                                                              .getNextExpansionCost());
-        myCharactersApi.actionWithdrawBankGoldMyNameActionBankWithdrawGoldPost(character.getData()
-                                                                                        .getName(), transaction
+        myCharactersApi.actionWithdrawBankGoldMyNameActionBankWithdrawGoldPost(character.getName(), transaction
         );
-        charHelper.waitUntilCooldownDone(character);
+        charHelper.waitUntilCooldownDone(character.getName());
 
-        myCharactersApi.actionBuyBankExpansionMyNameActionBankBuyExpansionPost(character.getData()
-                                                                                        .getName()
+        myCharactersApi.actionBuyBankExpansionMyNameActionBankBuyExpansionPost(character.getName()
         );
-        charHelper.waitUntilCooldownDone(character);
+        charHelper.waitUntilCooldownDone(character.getName());
     }
 
 }

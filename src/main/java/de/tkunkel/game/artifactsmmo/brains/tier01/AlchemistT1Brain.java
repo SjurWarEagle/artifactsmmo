@@ -4,13 +4,8 @@ package de.tkunkel.game.artifactsmmo.brains.tier01;
 import de.tkunkel.game.artifactsmmo.ApiHolder;
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.CharHelper;
-import de.tkunkel.game.artifactsmmo.helper.MapHelper;
-import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.*;
-import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
-import de.tkunkel.games.artifactsmmo.model.GatheringSkill;
-import de.tkunkel.games.artifactsmmo.model.ItemSlot;
-import de.tkunkel.games.artifactsmmo.model.Skill;
+import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -28,18 +23,22 @@ public class AlchemistT1Brain {
     private final Caches caches;
     private final CharHelper charHelper;
     private final GetBestItemForSlotTask getBestItemForSlotTask;
+    private final TaskAcceptNewItemTask taskAcceptNewItemTask;
 
-    public AlchemistT1Brain(Caches caches, WishList wishList, ApiHolder apiHolder, CraftItemTask craftItemTask, FarmHighestResourceTask farmHighestResourceTask,
-                            BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, CharHelper charHelper,
-                            MapHelper mapHelper, TrainingSkillTask trainingSkillTask, ApiHolder apiHolder1, Caches caches1, CharHelper charHelper1, GetBestItemForSlotTask getBestItemForSlotTask) {
+    public AlchemistT1Brain(ApiHolder apiHolder, CraftItemTask craftItemTask, FarmHighestResourceTask farmHighestResourceTask,
+                            BankDepositAllTask bankDepositAllTask,
+                            TrainingSkillTask trainingSkillTask, Caches caches1,
+                            CharHelper charHelper1, GetBestItemForSlotTask getBestItemForSlotTask,
+                            TaskAcceptNewItemTask taskAcceptNewItemTask) {
         this.craftItemTask = craftItemTask;
         this.farmHighestResourceTask = farmHighestResourceTask;
         this.bankDepositAllTask = bankDepositAllTask;
         this.trainingSkillTask = trainingSkillTask;
-        this.apiHolder = apiHolder1;
+        this.apiHolder = apiHolder;
         this.caches = caches1;
         this.charHelper = charHelper1;
         this.getBestItemForSlotTask = getBestItemForSlotTask;
+        this.taskAcceptNewItemTask = taskAcceptNewItemTask;
     }
 
     public String decideWhatResourceToFarm(String characterName) {
@@ -51,18 +50,21 @@ public class AlchemistT1Brain {
     }
 
     public void runBaseLoop(String characterName) {
-        CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
-        charHelper.waitUntilCooldownDone(character);
+        CharacterSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName)
+                                                           .getData();
+        charHelper.waitUntilCooldownDone(character.getName());
         // getBestItemForSlotTask.equipOrRequestBestToolForSkill(character, "alchemy");
         getBestItemForSlotTask.equipOrRequestItemArmorForSlot(characterName, ItemSlot.BODY_ARMOR);
         bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(character);
+        taskAcceptNewItemTask.getNewTaskIfCurrentTaskIsDone(character);
 
-        character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+        character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName)
+                                           .getData();
         Optional<String> itemToCraft = charHelper.findPossibleItemToCraft(character);
         if (itemToCraft.isPresent()) {
             craftItemTask.craftItem(characterName, itemToCraft.get());
         } else {
-            trainingSkillTask.trainSkills(character.getData(), Skill.ALCHEMY);
+            trainingSkillTask.trainSkills(character, Skill.ALCHEMY);
             // farmHighestResourceTask.farmResource(this, characterName);
         }
     }

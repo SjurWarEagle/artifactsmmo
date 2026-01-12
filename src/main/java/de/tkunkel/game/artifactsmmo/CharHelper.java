@@ -56,8 +56,8 @@ public class CharHelper {
         return getSkillLevelForSkill(character, requiredSkill.name());
     }
 
-    public Optional<ItemSchema> findBestItemForSlotThatCanBeCraftedByAccount(ItemSlot slot, CharacterResponseSchema character) {
-        final CombatStats characterCombatStats = CombatStats.fromCharacter(character.getData());
+    public Optional<ItemSchema> findBestItemForSlotThatCanBeCraftedByAccount(ItemSlot slot, CharacterSchema character) {
+        final CombatStats characterCombatStats = CombatStats.fromCharacter(character);
 
         final List<CombatStats> monsterCombatStats = caches.cachedMonsters.stream()
                                                                           .map(monsterSchema -> CombatStats.fromMonster(monsterSchema))
@@ -73,8 +73,7 @@ public class CharHelper {
                                                                                    .name(), itemSchema.getCraft()
                                                                                                       .getLevel()
                                  ))
-                                 .filter(itemSchema -> canCharEquipItem(itemSchema, character.getData()
-                                                                                             .getLevel()
+                                 .filter(itemSchema -> canCharEquipItem(itemSchema, character.getLevel()
                                  ))
                                  .filter(itemSchema -> canAnyCharFarmResourcesForItem(itemSchema.getCode()))
                                  .sorted((item1, item2) -> compareByKillableMonsters(item1, item2, character, characterCombatStats, monsterCombatStats))
@@ -102,7 +101,8 @@ public class CharHelper {
                          .equalsIgnoreCase(slotName);
     }
 
-    private int compareByKillableMonsters(ItemSchema item1, ItemSchema item2, CharacterResponseSchema character, CombatStats characterCombatStats, List<CombatStats> defenders) {
+    private int compareByKillableMonsters(ItemSchema item1, ItemSchema item2, CharacterSchema character, CombatStats characterCombatStats,
+                                          List<CombatStats> defenders) {
         ItemSlot itemSlot = ItemSlot.fromValue(item1.getType());
         Optional<ItemSchema> oldItem = getEquippedItemOfSlot(character, itemSlot);
         if (oldItem.isEmpty()) {
@@ -240,40 +240,24 @@ public class CharHelper {
     }
 
 
-    public Optional<ItemSchema> getEquippedItemOfSlot(CharacterResponseSchema character, ItemSlot itemSlot) {
+    public Optional<ItemSchema> getEquippedItemOfSlot(CharacterSchema character, ItemSlot itemSlot) {
         String itemCodeInSlot = switch (itemSlot) {
-            case WEAPON -> character.getData()
-                                    .getWeaponSlot();
-            case SHIELD -> character.getData()
-                                    .getShieldSlot();
-            case HELMET -> character.getData()
-                                    .getHelmetSlot();
-            case BODY_ARMOR -> character.getData()
-                                        .getBodyArmorSlot();
-            case LEG_ARMOR -> character.getData()
-                                       .getLegArmorSlot();
-            case BOOTS -> character.getData()
-                                   .getBootsSlot();
-            case RING1 -> character.getData()
-                                   .getRing1Slot();
-            case RING2 -> character.getData()
-                                   .getRing2Slot();
-            case AMULET -> character.getData()
-                                    .getAmuletSlot();
-            case ARTIFACT1 -> character.getData()
-                                       .getArtifact1Slot();
-            case ARTIFACT2 -> character.getData()
-                                       .getArtifact2Slot();
-            case ARTIFACT3 -> character.getData()
-                                       .getArtifact3Slot();
-            case UTILITY1 -> character.getData()
-                                      .getUtility1Slot();
-            case UTILITY2 -> character.getData()
-                                      .getUtility2Slot();
-            case BAG -> character.getData()
-                                 .getBagSlot();
-            case RUNE -> character.getData()
-                                  .getRuneSlot();
+            case WEAPON -> character.getWeaponSlot();
+            case SHIELD -> character.getShieldSlot();
+            case HELMET -> character.getHelmetSlot();
+            case BODY_ARMOR -> character.getBodyArmorSlot();
+            case LEG_ARMOR -> character.getLegArmorSlot();
+            case BOOTS -> character.getBootsSlot();
+            case RING1 -> character.getRing1Slot();
+            case RING2 -> character.getRing2Slot();
+            case AMULET -> character.getAmuletSlot();
+            case ARTIFACT1 -> character.getArtifact1Slot();
+            case ARTIFACT2 -> character.getArtifact2Slot();
+            case ARTIFACT3 -> character.getArtifact3Slot();
+            case UTILITY1 -> character.getUtility1Slot();
+            case UTILITY2 -> character.getUtility2Slot();
+            case BAG -> character.getBagSlot();
+            case RUNE -> character.getRuneSlot();
         };
         if (itemCodeInSlot == null) {
             return Optional.empty();
@@ -434,70 +418,54 @@ public class CharHelper {
                         .sum();
     }
 
-    public boolean checkIfEquipped(String gear, ItemSlot itemSlot, CharacterResponseSchema character) {
+    public boolean checkIfEquipped(String gear, ItemSlot itemSlot, CharacterSchema character) {
         return switch (itemSlot) {
-            case BOOTS -> character.getData()
-                                   .getBootsSlot()
+            case BOOTS -> character.getBootsSlot()
                                    .equalsIgnoreCase(gear)
             ;
-            case SHIELD -> character.getData()
-                                    .getShieldSlot()
+            case SHIELD -> character.getShieldSlot()
                                     .equalsIgnoreCase(gear)
             ;
-            case HELMET -> character.getData()
-                                    .getHelmetSlot()
+            case HELMET -> character.getHelmetSlot()
                                     .equalsIgnoreCase(gear)
             ;
-            case WEAPON -> character.getData()
-                                    .getWeaponSlot()
+            case WEAPON -> character.getWeaponSlot()
                                     .equalsIgnoreCase(gear)
             ;
-            case BODY_ARMOR -> character.getData()
-                                        .getBodyArmorSlot()
+            case BODY_ARMOR -> character.getBodyArmorSlot()
                                         .equalsIgnoreCase(gear)
             ;
-            case LEG_ARMOR -> character.getData()
-                                       .getLegArmorSlot()
+            case LEG_ARMOR -> character.getLegArmorSlot()
                                        .equalsIgnoreCase(gear)
             ;
-            case RING1 -> character.getData()
-                                   .getRing1Slot()
+            case RING1 -> character.getRing1Slot()
                                    .equalsIgnoreCase(gear)
             ;
-            case RING2 -> character.getData()
-                                   .getRing2Slot()
+            case RING2 -> character.getRing2Slot()
                                    .equalsIgnoreCase(gear)
             ;
-            case AMULET -> character.getData()
-                                    .getAmuletSlot()
+            case AMULET -> character.getAmuletSlot()
                                     .equalsIgnoreCase(gear)
             ;
-            case ARTIFACT1 -> character.getData()
-                                       .getArtifact1Slot()
+            case ARTIFACT1 -> character.getArtifact1Slot()
                                        .equalsIgnoreCase(gear)
             ;
-            case ARTIFACT2 -> character.getData()
-                                       .getArtifact2Slot()
+            case ARTIFACT2 -> character.getArtifact2Slot()
                                        .equalsIgnoreCase(gear)
             ;
-            case ARTIFACT3 -> character.getData()
-                                       .getArtifact3Slot()
+            case ARTIFACT3 -> character.getArtifact3Slot()
                                        .equalsIgnoreCase(gear)
             ;
-            case UTILITY1 -> character.getData()
-                                      .getUtility1Slot()
+            case UTILITY1 -> character.getUtility1Slot()
                                       .equalsIgnoreCase(gear)
             ;
-            case UTILITY2 -> character.getData()
-                                      .getUtility2Slot()
+            case UTILITY2 -> character.getUtility2Slot()
                                       .equalsIgnoreCase(gear)
             ;
-            case BAG -> character.getData()
-                                 .getBagSlot()
+            case BAG -> character.getBagSlot()
                                  .equalsIgnoreCase(gear)
             ;
-            case RUNE -> character.getData()
-                                  .getRuneSlot()
+            case RUNE -> character.getRuneSlot()
                                   .equalsIgnoreCase(gear)
             ;
             default -> throw new RuntimeException("unknown slot " + itemSlot);
@@ -543,7 +511,7 @@ public class CharHelper {
      * find an item that can be crafted with the items in inventory and skill of the char.
      * Use  highest level
      */
-    public Optional<String> findPossibleItemToCraft(CharacterResponseSchema character) {
+    public Optional<String> findPossibleItemToCraft(CharacterSchema character) {
         return caches.cachedItems.stream()
                                  .filter(
                                          item -> item.getCraft() != null)
@@ -557,7 +525,7 @@ public class CharHelper {
                                              ;
                                      int requiredSkillLevel = item.getCraft()
                                                                   .getLevel();
-                                     return charHasRequiredSkillLevel(character.getData(), requiredSkill, requiredSkillLevel);
+                                     return charHasRequiredSkillLevel(character, requiredSkill, requiredSkillLevel);
                                  })
                                  .sorted(Comparator.comparingInt(o -> o.getCraft()
                                                                        .getLevel()))
@@ -569,7 +537,7 @@ public class CharHelper {
                 ;
     }
 
-    public boolean hasAllItemsInInventory(CharacterResponseSchema character, List<SimpleItemSchema> items) {
+    public boolean hasAllItemsInInventory(CharacterSchema character, List<SimpleItemSchema> items) {
         for (SimpleItemSchema requiredItem : items) {
             if (cntSpecificItemsInInventory(character, requiredItem.getCode()) < requiredItem.getQuantity()) {
                 return false;
@@ -578,19 +546,17 @@ public class CharHelper {
         return true;
     }
 
-    public int cntAllItemsInInventory(CharacterResponseSchema character) {
-        character = charactersApi.getCharacterCharactersNameGet(character.getData()
-                                                                         .getName());
-        return character.getData()
-                        .getInventory()
+    public int cntAllItemsInInventory(String characterName) {
+        CharacterSchema character = charactersApi.getCharacterCharactersNameGet(characterName)
+                                                 .getData();
+        return character.getInventory()
                         .stream()
                         .mapToInt(InventorySlot::getQuantity)
                         .sum();
     }
 
-    public int cntSpecificItemsInInventory(CharacterResponseSchema character, String itemCode) {
-        return character.getData()
-                        .getInventory()
+    public int cntSpecificItemsInInventory(CharacterSchema character, String itemCode) {
+        return character.getInventory()
                         .stream()
                         .filter(inventorySlot -> inventorySlot.getCode()
                                                               .equals(itemCode))
@@ -602,8 +568,9 @@ public class CharHelper {
     public void equipGearIfNotEquipped(String characterName, String gear, ItemSlot itemSlot) {
         EquipSchema equipSchema = new EquipSchema().slot(itemSlot)
                                                    .code(gear);
-        CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
-        waitUntilCooldownDone(character);
+        CharacterSchema character = charactersApi.getCharacterCharactersNameGet(characterName)
+                                                 .getData();
+        waitUntilCooldownDone(characterName);
         boolean alreadyEquipped = checkIfEquipped(gear, itemSlot, character);
         if (alreadyEquipped) {
             return;
@@ -612,14 +579,13 @@ public class CharHelper {
         if (!hasInInventory) {
             return;
         }
-        myCharactersApi.actionEquipItemMyNameActionEquipPost(character.getData()
-                                                                      .getName(), equipSchema
+        myCharactersApi.actionEquipItemMyNameActionEquipPost(character.getName(), equipSchema
         );
     }
 
     public boolean checkIfEquipped(String characterName, String gear, ItemSlot itemSlot) {
-        CharacterResponseSchema character;
-        character = charactersApi.getCharacterCharactersNameGet(characterName);
+        CharacterSchema character = charactersApi.getCharacterCharactersNameGet(characterName)
+                                                 .getData();
         return checkIfEquipped(gear, itemSlot, character);
     }
 

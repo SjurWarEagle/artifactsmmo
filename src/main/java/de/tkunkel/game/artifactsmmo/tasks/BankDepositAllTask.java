@@ -5,10 +5,7 @@ import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.helper.MapHelper;
-import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
-import de.tkunkel.games.artifactsmmo.model.ItemSchema;
-import de.tkunkel.games.artifactsmmo.model.MapSchema;
-import de.tkunkel.games.artifactsmmo.model.SimpleItemSchema;
+import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -34,25 +31,22 @@ public class BankDepositAllTask {
         this.caches = caches;
     }
 
-    public void depositInventoryInBankIfInventoryIsFull(CharacterResponseSchema character) {
-        character = charactersApi.getCharacterCharactersNameGet(character.getData()
-                                                                         .getName());
-        int inventoryUsed = charHelper.cntAllItemsInInventory(character);
+    public void depositInventoryInBankIfInventoryIsFull(CharacterSchema character) {
+        character = charactersApi.getCharacterCharactersNameGet(character.getName())
+                                 .getData();
+        int inventoryUsed = charHelper.cntAllItemsInInventory(character.getName());
         // store if more than 75% are used
-        if (inventoryUsed < character.getData()
-                                     .getInventoryMaxItems() * 0.75) {
+        if (inventoryUsed < character.getInventoryMaxItems() * 0.75) {
             return;
         }
 
-        Optional<MapSchema> bank = mapHelper.findClosestLocation(character.getData(), "bank");
+        Optional<MapSchema> bank = mapHelper.findClosestLocation(character, "bank");
         if (bank.isEmpty()) {
-            throw new RuntimeException("Could not find bank for character " + character.getData()
-                                                                                       .getName());
+            throw new RuntimeException("Could not find bank for character " + character.getName());
         }
-        charHelper.moveToLocationSync(character.getData(), bank.get());
-        charHelper.waitUntilCooldownDone(character);
-        List<SimpleItemSchema> itemsToDeposit = character.getData()
-                                                         .getInventory()
+        charHelper.moveToLocationSync(character, bank.get());
+        charHelper.waitUntilCooldownDone(character.getName());
+        List<SimpleItemSchema> itemsToDeposit = character.getInventory()
                                                          .stream()
                                                          .filter(inventorySlot -> {
                                                              List<ItemSchema> item = caches.cachedItems.stream()
@@ -68,10 +62,9 @@ public class BankDepositAllTask {
                                                                                                      .quantity(inventorySlot.getQuantity()))
                                                          .toList()
                 ;
-        myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
-                                                                                      .getName(), itemsToDeposit
+        myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getName(), itemsToDeposit
         );
-        charHelper.waitUntilCooldownDone(character);
+        charHelper.waitUntilCooldownDone(character.getName());
     }
 
     public void depositInventoryInBank(CharacterResponseSchema character) {
@@ -107,16 +100,15 @@ public class BankDepositAllTask {
         charHelper.waitUntilCooldownDone(character);
     }
 
-    public void depositItemInBank(CharacterResponseSchema character, String itemCode, int amount) {
-        Optional<MapSchema> bank = mapHelper.findClosestLocation(character.getData(), "bank");
-        charHelper.moveToLocationSync(character.getData(), bank.get());
+    public void depositItemInBank(CharacterSchema character, String itemCode, int amount) {
+        Optional<MapSchema> bank = mapHelper.findClosestLocation(character, "bank");
+        charHelper.moveToLocationSync(character, bank.get());
         List<SimpleItemSchema> itemsToDeposit = new ArrayList<>();
         itemsToDeposit.add(new SimpleItemSchema().code(itemCode)
                                                  .quantity(amount));
-        charHelper.waitUntilCooldownDone(character);
-        myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getData()
-                                                                                      .getName(), itemsToDeposit
+        charHelper.waitUntilCooldownDone(character.getName());
+        myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getName(), itemsToDeposit
         );
-        charHelper.waitUntilCooldownDone(character);
+        charHelper.waitUntilCooldownDone(character.getName());
     }
 }

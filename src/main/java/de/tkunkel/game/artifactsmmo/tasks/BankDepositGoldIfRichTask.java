@@ -25,26 +25,22 @@ public class BankDepositGoldIfRichTask {
         this.myCharactersApi = myCharactersApi;
     }
 
-    public void depositInventoryInBankIfInventoryIsFull(CharacterResponseSchema character) {
-        if (character.getData()
-                     .getGold() < 100) {
+    public void depositInventoryInBankIfInventoryIsFull(CharacterSchema character) {
+        if (character.getGold() < 100) {
             return;
         }
 
-        Optional<MapSchema> bank = mapHelper.findClosestLocation(character.getData(), "bank");
+        Optional<MapSchema> bank = mapHelper.findClosestLocation(character, "bank");
         if (bank.isEmpty()) {
-            throw new RuntimeException("Could not find bank for character " + character.getData()
-                                                                                       .getName());
+            throw new RuntimeException("Could not find bank for character " + character.getName());
         }
-        charHelper.moveToLocationSync(character.getData(), bank.get());
-        charHelper.waitUntilCooldownDone(character);
+        charHelper.moveToLocationSync(character, bank.get());
+        charHelper.waitUntilCooldownDone(character.getName());
 
-        DepositWithdrawGoldSchema goldDeposit = new DepositWithdrawGoldSchema().quantity(character.getData()
-                                                                                                  .getGold());
-        myCharactersApi.actionDepositBankGoldMyNameActionBankDepositGoldPost(character.getData()
-                                                                                      .getName(), goldDeposit
+        DepositWithdrawGoldSchema goldDeposit = new DepositWithdrawGoldSchema().quantity(character.getGold());
+        myCharactersApi.actionDepositBankGoldMyNameActionBankDepositGoldPost(character.getName(), goldDeposit
         );
-        charHelper.waitUntilCooldownDone(character);
+        charHelper.waitUntilCooldownDone(character.getName());
     }
 
     public void depositInventoryInBank(CommonBrain brain, CharacterResponseSchema character) {

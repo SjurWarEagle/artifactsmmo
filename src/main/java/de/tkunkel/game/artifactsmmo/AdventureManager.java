@@ -1,11 +1,11 @@
 package de.tkunkel.game.artifactsmmo;
 
-import de.tkunkel.game.artifactsmmo.api.AccountsApiWrapper;
 import de.tkunkel.game.artifactsmmo.brains.tier01.*;
+import de.tkunkel.game.artifactsmmo.helper.TaskHelper;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
 import de.tkunkel.game.artifactsmmo.tasks.GetBestItemForSlotTask;
-import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
+import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
 import de.tkunkel.games.artifactsmmo.model.ItemSlot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +21,6 @@ public class AdventureManager {
     private final ExecutorService executorService = Executors.newFixedThreadPool(10);
     private final ApiHolder apiHolder;
     private final BankDepositAllTask bankDepositAllTask;
-    private final CharHelper charHelper;
     private final GetBestItemForSlotTask getBestItemForSlotTask;
     private final MinerT1Brain minerBrain;
     private final FighterT1Brain fighterBrain;
@@ -29,15 +28,14 @@ public class AdventureManager {
     private final WoodworkerT1Brain woodworkerBrain;
     private final AlchemistT1Brain alchemistBrain;
     private final WishList wishList;
-    private final AccountsApiWrapper accountsApi;
+    private final TaskHelper taskHelper;
 
-    public AdventureManager(ApiHolder apiHolder, BankDepositAllTask bankDepositAllTask, CharHelper charHelper,
+    public AdventureManager(ApiHolder apiHolder, BankDepositAllTask bankDepositAllTask,
                             GetBestItemForSlotTask getBestItemForSlotTask, MinerT1Brain minerBrain, FighterT1Brain fighterBrain,
                             FisherT1Brain fisherBrain, WoodworkerT1Brain woodworkerBrain, AlchemistT1Brain alchemistBrain,
-                            WishList wishList, AccountsApiWrapper accountsApi) {
+                            WishList wishList, TaskHelper taskHelper) {
         this.apiHolder = apiHolder;
         this.bankDepositAllTask = bankDepositAllTask;
-        this.charHelper = charHelper;
         this.getBestItemForSlotTask = getBestItemForSlotTask;
         this.minerBrain = minerBrain;
         this.fighterBrain = fighterBrain;
@@ -45,7 +43,7 @@ public class AdventureManager {
         this.woodworkerBrain = woodworkerBrain;
         this.alchemistBrain = alchemistBrain;
         this.wishList = wishList;
-        this.accountsApi = accountsApi;
+        this.taskHelper = taskHelper;
     }
 
     public void addAndStartAdventurer(String name, AdventurerClass adventurerClass) {
@@ -74,9 +72,12 @@ public class AdventureManager {
             getBestItemForSlotTask.equipOrRequestItemArmorForSlot(characterName, ItemSlot.AMULET);
             getBestItemForSlotTask.equipOrRequestItemArmorForSlot(characterName, ItemSlot.LEG_ARMOR);
 
-            CharacterResponseSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName);
+            CharacterSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName)
+                                                               .getData();
             if (wishList.isHandlingHuntingWish(character)) {
             } else if (wishList.isHandlingCraftingWish(character)) {
+            } else if (wishList.isHandlingGatheringWish(character)) {
+            } else if (taskHelper.isHandlingTask(character)) {
             } else {
                 // nothing to craft, so use default
                 switch (adventurerClass) {

@@ -67,14 +67,12 @@ public class MapHelper {
                 ;
     }
 
-    public Optional<MapSchema> findLocationOfClosestMonster(CharacterResponseSchema character, String monster) {
+    public Optional<MapSchema> findLocationOfClosestMonster(CharacterSchema character, String monster) {
         logger.info("Starting findClosestMonster");
         AtomicReference<Optional<MapSchema>> rc = new AtomicReference<>(Optional.empty());
 
-        int charX = character.getData()
-                             .getX();
-        int charY = character.getData()
-                             .getY();
+        int charX = character.getX();
+        int charY = character.getY();
         caches.cachedMap.stream()
                         .filter(mapSchema -> mapSchema.getInteractions()
                                                       .getContent() != null)

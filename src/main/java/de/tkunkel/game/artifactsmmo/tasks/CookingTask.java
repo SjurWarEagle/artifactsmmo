@@ -6,7 +6,7 @@ import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyAccountApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.helper.MapHelper;
-import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
+import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
 import de.tkunkel.games.artifactsmmo.model.CraftingSchema;
 import de.tkunkel.games.artifactsmmo.model.MapSchema;
 import org.slf4j.Logger;
@@ -34,9 +34,9 @@ public class CookingTask {
         this.mapHelper = mapHelper;
     }
 
-    public void cookFoodIfHaveSome(CharacterResponseSchema givenCharacter) {
-        final CharacterResponseSchema character = charactersApiWrapper.getCharacterCharactersNameGet(givenCharacter.getData()
-                                                                                                                   .getName());
+    public void cookFoodIfHaveSome(CharacterSchema givenCharacter) {
+        final CharacterSchema character = charactersApiWrapper.getCharacterCharactersNameGet(givenCharacter.getName())
+                                                              .getData();
 
         final int MIN_MOUNT_NEEDED = 5;
         var cookableFood = caches.cachedItems.stream()
@@ -49,13 +49,13 @@ public class CookingTask {
                                                              itemSchema.getCraft()
                                                                        .getItems()
                                                                        .stream()
-                                                                       .allMatch(resource -> character.getData()
-                                                                                                      .getInventory()
-                                                                                                      .stream()
-                                                                                                      .anyMatch(inventory -> inventory.getCode()
-                                                                                                                                      .equalsIgnoreCase(resource.getCode())
-                                                                                                              && inventory.getQuantity() >= resource.getQuantity() * MIN_MOUNT_NEEDED
-                                                                                                      )
+                                                                       .allMatch(resource -> character
+                                                                               .getInventory()
+                                                                               .stream()
+                                                                               .anyMatch(inventory -> inventory.getCode()
+                                                                                                               .equalsIgnoreCase(resource.getCode())
+                                                                                       && inventory.getQuantity() >= resource.getQuantity() * MIN_MOUNT_NEEDED
+                                                                               )
                                                                        )
                                              )
                                              .toList()
@@ -63,17 +63,16 @@ public class CookingTask {
         if (cookableFood.isEmpty()) {
             return;
         }
-        Optional<MapSchema> cooking = mapHelper.findClosestLocation(character.getData(), "cooking");
-        charHelper.moveToLocationSync(character.getData(), cooking.get());
-        charHelper.waitUntilCooldownDone(character);
+        Optional<MapSchema> cooking = mapHelper.findClosestLocation(character, "cooking");
+        charHelper.moveToLocationSync(character, cooking.get());
+        charHelper.waitUntilCooldownDone(character.getName());
 
         CraftingSchema craftingSchema = new CraftingSchema().code(cookableFood.get(0)
                                                                               .getCode())
                                                             .quantity(MIN_MOUNT_NEEDED);
-        myCharactersApi.actionCraftingMyNameActionCraftingPost(character.getData()
-                                                                        .getName(), craftingSchema
+        myCharactersApi.actionCraftingMyNameActionCraftingPost(character.getName(), craftingSchema
         );
-        charHelper.waitUntilCooldownDone(character);
+        charHelper.waitUntilCooldownDone(character.getName());
     }
 
 }

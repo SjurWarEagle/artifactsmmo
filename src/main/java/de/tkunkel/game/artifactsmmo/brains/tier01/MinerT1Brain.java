@@ -8,6 +8,7 @@ import de.tkunkel.game.artifactsmmo.shopping.Wish;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.*;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
+import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
 import de.tkunkel.games.artifactsmmo.model.GatheringSkill;
 import de.tkunkel.games.artifactsmmo.model.Skill;
 import org.slf4j.Logger;
@@ -28,12 +29,14 @@ public class MinerT1Brain {
     private final BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask;
     private final WishList wishList;
     private final Caches caches;
+    private final TaskAcceptNewItemTask taskAcceptNewItemTask;
 
     public MinerT1Brain(Caches caches, WishList wishList,
                         BankDepositAllTask bankDepositAllTask,
                         TrainingSkillTask trainingSkillTask,
                         CharHelper charHelper, CharactersApiWrapper charactersApi,
-                        GetBestItemForSlotTask getBestItemForSlotTask, BankFetchItemTask bankFetchItemTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask) {
+                        GetBestItemForSlotTask getBestItemForSlotTask, BankFetchItemTask bankFetchItemTask,
+                        BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, TaskAcceptNewItemTask taskAcceptNewItemTask) {
         this.bankDepositAllTask = bankDepositAllTask;
         this.trainingSkillTask = trainingSkillTask;
         this.charactersApi = charactersApi;
@@ -43,28 +46,32 @@ public class MinerT1Brain {
         this.wishList = wishList;
         this.caches = caches;
         this.bankFetchItemsAndCraftTask = bankFetchItemsAndCraftTask;
+        this.taskAcceptNewItemTask = taskAcceptNewItemTask;
     }
 
     public void runBaseLoop(String characterName) {
-        CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
-        charHelper.waitUntilCooldownDone(character);
+        CharacterSchema character = charactersApi.getCharacterCharactersNameGet(characterName)
+                                                 .getData();
+        charHelper.waitUntilCooldownDone(character.getName());
         bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(character);
-        charHelper.waitUntilCooldownDone(character);
+        charHelper.waitUntilCooldownDone(character.getName());
         // getBestItemForSlotTask.equipOrRequestBestToolForSkill(character, "mining");
+        taskAcceptNewItemTask.getNewTaskIfCurrentTaskIsDone(character);
+
 
         // TODO farm items for wish
         Optional<Wish> wish = findPossibleItemToCraftFromWishlist(character);
 
         if (wish.isPresent()) {
-            bankFetchItemsAndCraftTask.craftItemWithBankItems(character.getData(), wish.get().itemCode, wish.get().amount);
+            bankFetchItemsAndCraftTask.craftItemWithBankItems(character, wish.get().itemCode, wish.get().amount);
             wish.get().reservedBy = null;
             wish.get().fulfilled = true;
         } else {
-            trainingSkillTask.trainSkills(character.getData(), Skill.MINING, Skill.GEARCRAFTING);
+            trainingSkillTask.trainSkills(character, Skill.MINING, Skill.GEARCRAFTING);
         }
     }
 
-    private Optional<Wish> findPossibleItemToCraftFromWishlist(CharacterResponseSchema character) {
+    private Optional<Wish> findPossibleItemToCraftFromWishlist(CharacterSchema character) {
         return wishList.reserveWishThatCanBeCraftedByMe(character);
     }
 

@@ -112,6 +112,15 @@ public class MyCharactersApiWrapper {
     }
 
     @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
+    public void actionTaskTradeMyNameActionTaskTradePost(String charName, SimpleItemSchema tradeRequest) {
+        try {
+            charactersApi.actionTaskTradeMyNameActionTaskTradePost(charName, tradeRequest);
+        } catch (ApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
     public SkillResponseSchema actionGatheringMyNameActionGatheringPost(String name) {
         try {
             var rc = charactersApi.actionGatheringMyNameActionGatheringPost(name);
