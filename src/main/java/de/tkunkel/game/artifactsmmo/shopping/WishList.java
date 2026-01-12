@@ -109,10 +109,8 @@ public class WishList {
                              .allMatch(resourceItem -> {
                                  boolean inInventory = character.getInventory()
                                                                 .stream()
-                                                                .filter(inventorySlot -> inventorySlot.getCode()
-                                                                                                      .equals(resourceItem.getCode()))
-                                                                .findAny()
-                                                                .isPresent()
+                                                                .anyMatch(inventorySlot -> inventorySlot.getCode()
+                                                                                                        .equals(resourceItem.getCode()))
                                          ;
                                  if (inInventory) {
                                      return true;

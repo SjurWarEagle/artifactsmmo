@@ -259,9 +259,7 @@ public class CharHelper {
             case BAG -> character.getBagSlot();
             case RUNE -> character.getRuneSlot();
         };
-        if (itemCodeInSlot == null) {
-            return Optional.empty();
-        }
+
         return caches.cachedItems.stream()
                                  .filter(itemSchema -> itemSchema.getCode()
                                                                  .equalsIgnoreCase(itemCodeInSlot))
