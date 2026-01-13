@@ -185,6 +185,7 @@ public class GetBestItemForSlotTask {
                                         , 1
                                 ), false
             );
+            // TODO shall we pick the second best item?
             return;
         }
         if (!alreadyEquipped && itemExistsInBank) {
