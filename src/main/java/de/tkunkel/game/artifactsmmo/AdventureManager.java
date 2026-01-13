@@ -61,7 +61,7 @@ public class AdventureManager {
     public void startLoop(String characterName, AdventurerClass adventurerClass) {
         CharacterSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName)
                                                            .getData();
-        bankDepositAllTask.depositInventoryInBank(character);
+        bankDepositAllTask.depositInventoryInBank(characterName);
         boolean stopLoop = false;
         while (true) {
             // noinspection ConstantValue

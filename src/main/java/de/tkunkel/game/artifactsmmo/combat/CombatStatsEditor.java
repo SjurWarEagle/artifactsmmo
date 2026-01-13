@@ -43,7 +43,7 @@ public class CombatStatsEditor {
                 case "res_water" -> rc.resWater += effect.getValue() * factor;
                 case "res_earth" -> rc.resEarth += effect.getValue() * factor;
                 case "res_air" -> rc.resAir += effect.getValue() * factor;
-                case "woodcutting", "alchemy", "mining", "fishing" -> {
+                case "taunt", "threat", "wisdom", "woodcutting", "alchemy", "mining", "haste", "fishing" -> {
                 }
                 default -> throw new RuntimeException("unknown effect " + effect.getCode());
             }

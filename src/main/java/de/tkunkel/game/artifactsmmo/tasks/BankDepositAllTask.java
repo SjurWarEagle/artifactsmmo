@@ -70,23 +70,16 @@ public class BankDepositAllTask {
         charHelper.waitUntilCooldownDone(character.getName());
     }
 
-    public void depositInventoryInBank(CharacterSchema character) {
+    public void depositInventoryInBank(String characterName) {
+        CharacterSchema character = charactersApi.getCharacterCharactersNameGet(characterName)
+                                                 .getData();
         Optional<MapSchema> bank = mapHelper.findClosestLocation(character, "bank");
         if (bank.isEmpty()) {
             throw new RuntimeException("Could not find bank for character " + character.getName());
         }
         List<SimpleItemSchema> itemsToDeposit = character.getInventory()
                                                          .stream()
-                                                         .filter(inventorySlot -> {
-                                                             List<ItemSchema> item = caches.cachedItems.stream()
-                                                                                                       .filter(itemSchema -> itemSchema.getCode()
-                                                                                                                                       .equals(inventorySlot.getCode()))
-//                                                                                                          .filter(itemSchema -> !itemSchema.getSubtype()
-//                                                                                                                                           .equals("bar"))
-                                                                                                       .toList()
-                                                                     ;
-                                                             return !item.isEmpty();
-                                                         })
+                                                         .filter(inventorySlot -> inventorySlot.getQuantity() > 0)
                                                          .map(inventorySlot -> new SimpleItemSchema().code(inventorySlot.getCode())
                                                                                                      .quantity(inventorySlot.getQuantity()))
                                                          .toList()
@@ -94,8 +87,8 @@ public class BankDepositAllTask {
         if (!itemsToDeposit.isEmpty()) {
             charHelper.moveToLocationSync(character, bank.get());
             charHelper.waitUntilCooldownDone(character.getName());
-            myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getName(), itemsToDeposit
-            );
+            myCharactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(character.getName(), itemsToDeposit);
+            charHelper.waitUntilCooldownDone(character.getName());
         }
         charHelper.waitUntilCooldownDone(character.getName());
     }

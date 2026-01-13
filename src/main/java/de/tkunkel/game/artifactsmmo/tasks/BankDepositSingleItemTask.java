@@ -41,6 +41,7 @@ public class BankDepositSingleItemTask {
         List<SimpleItemSchema> itemsToDeposit = character.getData()
                                                          .getInventory()
                                                          .stream()
+                                                         .filter(inventorySlot -> inventorySlot.getQuantity() > 0)
                                                          .filter(inventorySlot -> inventorySlot.getCode()
                                                                                                .equals(itemToDeposit))
                                                          .map(inventorySlot -> new SimpleItemSchema().code(inventorySlot.getCode())

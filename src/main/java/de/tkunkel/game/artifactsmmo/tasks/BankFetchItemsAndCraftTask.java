@@ -2,6 +2,7 @@ package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.CharHelper;
+import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyAccountApiWrapper;
 import de.tkunkel.game.artifactsmmo.helper.ItemHelper;
 import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
@@ -26,9 +27,10 @@ public class BankFetchItemsAndCraftTask {
     private final CharHelper charHelper;
     private final BankDepositAllTask bankDepositAllTask;
     private final ItemHelper itemHelper;
+    private final CharactersApiWrapper charactersApi;
 
     public BankFetchItemsAndCraftTask(CraftItemTask craftItemTask, BankDepositSingleItemTask bankDepositSingleItemTask,
-                                      BankFetchItemTask bankFetchItemTask, Caches caches, MyAccountApiWrapper myAccountApi, CharHelper charHelper, BankDepositAllTask bankDepositAllTask, ItemHelper itemHelper) {
+                                      BankFetchItemTask bankFetchItemTask, Caches caches, MyAccountApiWrapper myAccountApi, CharHelper charHelper, BankDepositAllTask bankDepositAllTask, ItemHelper itemHelper, CharactersApiWrapper charactersApi) {
         this.craftItemTask = craftItemTask;
         this.bankDepositSingleItemTask = bankDepositSingleItemTask;
         this.bankFetchItemTask = bankFetchItemTask;
@@ -37,6 +39,7 @@ public class BankFetchItemsAndCraftTask {
         this.charHelper = charHelper;
         this.bankDepositAllTask = bankDepositAllTask;
         this.itemHelper = itemHelper;
+        this.charactersApi = charactersApi;
     }
 
     public void craftItemWithBankItems(CharacterSchema character, String itemToCraft, int amount) {
@@ -67,6 +70,7 @@ public class BankFetchItemsAndCraftTask {
                                                                .getCraft()
                                                                .getItems()
                 ;
+        depositObsoleteItemsToBank(character.getName(), neededItems);
         // fetch resources from bank that are missing from inventory
         // TODO only fetch what is missing in inventory
         for (SimpleItemSchema neededItem : neededItems) {
@@ -80,23 +84,7 @@ public class BankFetchItemsAndCraftTask {
             ) {
                 return;
             }
-            // free Inventory
-            charHelper.waitUntilCooldownDone(character.getName());
-            bankDepositAllTask.depositInventoryInBank(character);
-            charHelper.waitUntilCooldownDone(character.getName());
-
-            int cntInInventory = charHelper.cntAllItemsInInventory(character.getName());
-            // make space in inventory
-            if (character.getInventoryMaxItems() - cntInInventory >= neededItem.getQuantity() * amount) {
-                character.getInventory()
-                         .forEach(itemSchema -> {
-                             if (neededItems.stream()
-                                            .noneMatch(simpleItemSchema -> simpleItemSchema.getCode()
-                                                                                           .equalsIgnoreCase(itemSchema.getCode()))) {
-                                 bankDepositSingleItemTask.depositInventoryInBank(character.getName(), itemSchema.getCode());
-                             }
-                         });
-            }
+            int cntInInventory;
 
             cntInInventory = charHelper.cntAllItemsInInventory(character.getName());
             if (character.getInventoryMaxItems() - cntInInventory >= neededItem.getQuantity() * amount) {
@@ -115,6 +103,25 @@ public class BankFetchItemsAndCraftTask {
         // deposit crafted item into bank
         bankDepositSingleItemTask.depositInventoryInBank(character.getName(), itemToCraft
         );
+    }
+
+    // make space in inventory
+    private void depositObsoleteItemsToBank(String characterName,
+                                            List<SimpleItemSchema> neededItems) {
+        final CharacterSchema character = charactersApi.getCharacterCharactersNameGet(characterName)
+                                                       .getData();
+        charHelper.waitUntilCooldownDone(characterName);
+
+        character.getInventory()
+                 .stream()
+                 .filter(inventorySlot -> inventorySlot.getQuantity() > 0)
+                 .filter(itemSchema -> neededItems.stream()
+                                                  .noneMatch(simpleItemSchema -> simpleItemSchema.getCode()
+                                                                                                 .equalsIgnoreCase(itemSchema.getCode())))
+                 .forEach(itemSchema -> {
+                     bankDepositSingleItemTask.depositInventoryInBank(characterName, itemSchema.getCode());
+                 })
+        ;
     }
 
 }

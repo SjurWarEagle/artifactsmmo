@@ -113,7 +113,7 @@ public class ItemHelper {
                                                                             .findFirst()
                 ;
         if (resourceHavingItem.isEmpty()) {
-            throw new RuntimeException("No place to farm " + resourceToFarm);
+            return Optional.empty();
         }
         Optional<MapSchema> map = caches.cachedMap.stream()
                                                   .filter(mapSchema -> mapSchema.getInteractions()
