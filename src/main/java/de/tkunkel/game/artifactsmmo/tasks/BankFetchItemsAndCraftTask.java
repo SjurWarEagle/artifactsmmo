@@ -112,6 +112,28 @@ public class BankFetchItemsAndCraftTask {
                                                        .getData();
         charHelper.waitUntilCooldownDone(characterName);
 
+        // remove items that are not needed in this amount
+        character.getInventory()
+                 .stream()
+                 .filter(inventorySlot -> inventorySlot.getQuantity() > 0)
+                 .filter(inventoryItem -> neededItems.stream()
+                                                     .anyMatch(simpleItemSchema -> simpleItemSchema.getCode()
+                                                                                                   .equalsIgnoreCase(inventoryItem.getCode())))
+                 .forEach(inventoryItem -> {
+                     Optional<SimpleItemSchema> needed = neededItems.stream()
+                                                                    .filter(simpleItemSchema -> simpleItemSchema.getCode()
+                                                                                                                .equalsIgnoreCase(inventoryItem.getCode()))
+                                                                    .findFirst()
+                             ;
+                     int surplus = inventoryItem.getQuantity() - needed.get()
+                                                                       .getQuantity();
+                     if (surplus > 0) {
+                         bankDepositSingleItemTask.depositInventoryInBank(characterName, inventoryItem.getCode(), surplus);
+                     }
+                 })
+        ;
+
+        // remove items that are not needed at all
         character.getInventory()
                  .stream()
                  .filter(inventorySlot -> inventorySlot.getQuantity() > 0)

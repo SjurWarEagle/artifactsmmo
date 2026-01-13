@@ -5,6 +5,7 @@ import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.shopping.Wish;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
+import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
 import de.tkunkel.game.artifactsmmo.tasks.BankFetchItemTask;
 import de.tkunkel.game.artifactsmmo.tasks.HuntMonsterTask;
 import de.tkunkel.game.artifactsmmo.tasks.TaskAcceptNewItemTask;
@@ -21,6 +22,7 @@ public class TaskHelper {
     private final TaskAcceptNewItemTask taskAcceptNewItemTask;
     private final MyCharactersApiWrapper myCharactersApi;
     private final CharactersApiWrapper charactersApi;
+    private final BankDepositAllTask bankDepositAllTask;
 
     public TaskHelper(HuntMonsterTask huntMonsterTask, CharHelper charHelper, WishList wishList,
                       BankFetchItemTask bankFetchItemTask, TaskAcceptNewItemTask taskAcceptNewItemTask,
@@ -32,6 +34,7 @@ public class TaskHelper {
         this.taskAcceptNewItemTask = taskAcceptNewItemTask;
         this.myCharactersApi = myCharactersApi;
         this.charactersApi = charactersApi;
+        bankDepositAllTask = null;
     }
 
     /**
@@ -41,6 +44,8 @@ public class TaskHelper {
      * @return
      */
     public boolean isHandlingTask(CharacterSchema character) {
+        character = charactersApi.getCharacterCharactersNameGet(character.getName())
+                                 .getData();
         if ("".equalsIgnoreCase(character.getTask())) {
             return false;
         }
@@ -72,6 +77,9 @@ public class TaskHelper {
                                              .getData();
                     if (character.getTaskProgress() >= character.getTaskTotal()) {
                         myCharactersApi.actionCompleteTaskMyNameActionTaskCompletePost(character.getName());
+                        charHelper.waitUntilCooldownDone(character.getName());
+                        bankDepositAllTask.depositInventoryInBank(character.getName());
+                        charHelper.waitUntilCooldownDone(character.getName());
                     }
                 }
             }

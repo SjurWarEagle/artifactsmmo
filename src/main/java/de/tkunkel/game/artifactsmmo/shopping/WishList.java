@@ -139,7 +139,7 @@ public class WishList {
             Wish wish = wishThatCanBeGatheredByMe.get();
             farmResourceTask.farmResource(character.getName(), wish.itemCode, wish.amount);
             charHelper.waitUntilCooldownDone(character.getName());
-            int inInventory = charHelper.cntSpecificItemsInInventory(character, wish.itemCode);
+            int inInventory = charHelper.cntSpecificItemsInInventory(character.getName(), wish.itemCode);
             if (inInventory >= 10) {
                 charHelper.waitUntilCooldownDone(character.getName());
                 bankDepositAllTask.depositItemInBank(character, wish.itemCode, 10);
@@ -163,9 +163,13 @@ public class WishList {
         boolean allResourcesAvailable = checkIfAllResourcesAreAvailable(character, wishThatCanBeCraftedByMe);
         if (allResourcesAvailable && wishThatCanBeCraftedByMe.isPresent()) {
             Wish wish = wishThatCanBeCraftedByMe.get();
-            bankFetchItemsAndCraftTask.craftItemWithBankItems(character, wish.itemCode, wish.amount);
-            wish.fulfilled = true;
-            wish.reservedBy = null;
+            // crafting one by one so that the inventory is big enough
+            bankFetchItemsAndCraftTask.craftItemWithBankItems(character, wish.itemCode, 1);
+            wish.amount -= 1;
+            if (wish.amount <= 0) {
+                wish.fulfilled = true;
+                wish.reservedBy = null;
+            }
             return true;
         } else {
             return false;

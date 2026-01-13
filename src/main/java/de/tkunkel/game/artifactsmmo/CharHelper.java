@@ -537,7 +537,7 @@ public class CharHelper {
 
     public boolean hasAllItemsInInventory(CharacterSchema character, List<SimpleItemSchema> items) {
         for (SimpleItemSchema requiredItem : items) {
-            if (cntSpecificItemsInInventory(character, requiredItem.getCode()) < requiredItem.getQuantity()) {
+            if (cntSpecificItemsInInventory(character.getName(), requiredItem.getCode()) < requiredItem.getQuantity()) {
                 return false;
             }
         }
@@ -553,7 +553,10 @@ public class CharHelper {
                         .sum();
     }
 
-    public int cntSpecificItemsInInventory(CharacterSchema character, String itemCode) {
+    public int cntSpecificItemsInInventory(String characterName, String itemCode) {
+        CharacterSchema character = charactersApi.getCharacterCharactersNameGet(characterName)
+                                                 .getData();
+
         return character.getInventory()
                         .stream()
                         .filter(inventorySlot -> inventorySlot.getCode()
@@ -573,7 +576,7 @@ public class CharHelper {
         if (alreadyEquipped) {
             return;
         }
-        boolean hasInInventory = cntSpecificItemsInInventory(character, gear) > 0;
+        boolean hasInInventory = cntSpecificItemsInInventory(character.getName(), gear) > 0;
         if (!hasInInventory) {
             return;
         }

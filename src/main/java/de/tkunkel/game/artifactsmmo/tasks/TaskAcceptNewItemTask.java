@@ -23,12 +23,12 @@ public class TaskAcceptNewItemTask {
         this.myCharactersApi = myCharactersApi;
     }
 
-    public void giveItemsToTaskMaster(CharacterSchema character, int inInventory) {
+    public void giveItemsToTaskMaster(CharacterSchema character, int amount) {
         if (moveToTaskMaster(character)) {
             return;
         }
         SimpleItemSchema tradeRequest = new SimpleItemSchema().code(character.getTask())
-                                                              .quantity(inInventory);
+                                                              .quantity(amount);
         myCharactersApi.actionTaskTradeMyNameActionTaskTradePost(character.getName(), tradeRequest);
 
     }
