@@ -44,7 +44,7 @@ public class TrainingSkillTask {
         if (skillToTrain.isEmpty()) {
             throw new RuntimeException("No skill to train found");
         }
-        // TODO what to do if it is null?
+
         return caches.cachedItems.stream()
                                  .filter(itemSchema -> itemSchema.getCraft() != null)
                                  .filter(itemSchema -> itemSchema.getCraft()
@@ -214,7 +214,8 @@ public class TrainingSkillTask {
         } else {
             Optional<String> farmableItemCode = findFarmableItem(neededForTrainingItem);
             if (farmableItemCode.isPresent()) {
-                MapSchema whereToGather = itemHelper.findLocationWhereToFarm(character, farmableItemCode.get());
+                MapSchema whereToGather = itemHelper.findLocationWhereToFarm(character, farmableItemCode.get())
+                                                    .get();
                 harvestResourceTask.farmResourceWithTool(character.getName(), whereToGather);
                 characterHelper.waitUntilCooldownDone(character.getName());
             }
@@ -225,13 +226,11 @@ public class TrainingSkillTask {
         return itemSchema.getCraft()
                          .getItems()
                          .stream()
-                         .allMatch(simpleItemSchema -> {
-                             return
-                                     character.getInventory()
-                                              .stream()
-                                              .anyMatch(inventorySlot -> inventorySlot.getCode()
-                                                                                      .equalsIgnoreCase(simpleItemSchema.getCode()) && inventorySlot.getQuantity() >= simpleItemSchema.getQuantity());
-                         });
+                         .filter(simpleItemSchema -> character.getInventory() != null)
+                         .allMatch(simpleItemSchema -> character.getInventory()
+                                                                .stream()
+                                                                .anyMatch(inventorySlot -> inventorySlot.getCode()
+                                                                                                        .equalsIgnoreCase(simpleItemSchema.getCode()) && inventorySlot.getQuantity() >= simpleItemSchema.getQuantity()));
     }
 
     private Optional<String> findFarmableItem(List<SimpleItemSchema> neededForTrainingItem) {

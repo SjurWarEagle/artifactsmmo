@@ -25,10 +25,11 @@ public class FarmResourceTask {
         this.myCharactersApi = myCharactersApi;
     }
 
-    public void farmResource(String characterName, String resourceToFarm) {
+    public void farmResource(String characterName, String resourceToFarm, int amount) {
 
         CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
-        MapSchema whereToGather = itemHelper.findLocationWhereToFarm(character.getData(), resourceToFarm);
+        MapSchema whereToGather = itemHelper.findLocationWhereToFarm(character.getData(), resourceToFarm)
+                                            .get();
         // logger.info("Farming {} at {}", resourceToFarm, whereToGather);
         charHelper.waitUntilCooldownDone(character);
         charHelper.moveToLocationSync(character.getData(), whereToGather);

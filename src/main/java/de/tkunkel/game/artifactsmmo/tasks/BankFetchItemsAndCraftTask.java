@@ -1,7 +1,9 @@
 package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.Caches;
+import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.MyAccountApiWrapper;
+import de.tkunkel.game.artifactsmmo.helper.ItemHelper;
 import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
 import de.tkunkel.games.artifactsmmo.model.DataPageSimpleItemSchema;
 import de.tkunkel.games.artifactsmmo.model.ItemSchema;
@@ -21,14 +23,20 @@ public class BankFetchItemsAndCraftTask {
     private final BankFetchItemTask bankFetchItemTask;
     private final Caches caches;
     private final MyAccountApiWrapper myAccountApi;
+    private final CharHelper charHelper;
+    private final BankDepositAllTask bankDepositAllTask;
+    private final ItemHelper itemHelper;
 
     public BankFetchItemsAndCraftTask(CraftItemTask craftItemTask, BankDepositSingleItemTask bankDepositSingleItemTask,
-                                      BankFetchItemTask bankFetchItemTask, Caches caches, MyAccountApiWrapper myAccountApi) {
+                                      BankFetchItemTask bankFetchItemTask, Caches caches, MyAccountApiWrapper myAccountApi, CharHelper charHelper, BankDepositAllTask bankDepositAllTask, ItemHelper itemHelper) {
         this.craftItemTask = craftItemTask;
         this.bankDepositSingleItemTask = bankDepositSingleItemTask;
         this.bankFetchItemTask = bankFetchItemTask;
         this.caches = caches;
         this.myAccountApi = myAccountApi;
+        this.charHelper = charHelper;
+        this.bankDepositAllTask = bankDepositAllTask;
+        this.itemHelper = itemHelper;
     }
 
     public void craftItemWithBankItems(CharacterSchema character, String itemToCraft, int amount) {
@@ -72,14 +80,37 @@ public class BankFetchItemsAndCraftTask {
             ) {
                 return;
             }
-            bankFetchItemTask.fetchItemFromBank(character, neededItem.getCode(), neededItem.getQuantity() * amount);
+            // free Inventory
+            charHelper.waitUntilCooldownDone(character.getName());
+            bankDepositAllTask.depositInventoryInBank(character);
+            charHelper.waitUntilCooldownDone(character.getName());
+
+            int cntInInventory = charHelper.cntAllItemsInInventory(character.getName());
+            // make space in inventory
+            if (character.getInventoryMaxItems() - cntInInventory >= neededItem.getQuantity() * amount) {
+                character.getInventory()
+                         .forEach(itemSchema -> {
+                             if (neededItems.stream()
+                                            .noneMatch(simpleItemSchema -> simpleItemSchema.getCode()
+                                                                                           .equalsIgnoreCase(itemSchema.getCode()))) {
+                                 bankDepositSingleItemTask.depositInventoryInBank(character.getName(), itemSchema.getCode());
+                             }
+                         });
+            }
+
+            cntInInventory = charHelper.cntAllItemsInInventory(character.getName());
+            if (character.getInventoryMaxItems() - cntInInventory >= neededItem.getQuantity() * amount) {
+                bankFetchItemTask.fetchItemFromBank(character, neededItem.getCode(), neededItem.getQuantity() * amount);
+            } else {
+                logger.error("Shall fetch more items than space in inventory!");
+            }
+
         }
 
         // todo after fetching check again if item can be crafted
 
         // craft item
-        craftItemTask.craftItem(character.getName(), itemToCraft, amount
-        );
+        craftItemTask.craftItem(character.getName(), itemToCraft, amount);
 
         // deposit crafted item into bank
         bankDepositSingleItemTask.depositInventoryInBank(character.getName(), itemToCraft

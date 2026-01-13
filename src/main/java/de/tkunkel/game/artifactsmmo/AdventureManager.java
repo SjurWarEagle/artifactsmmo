@@ -59,10 +59,15 @@ public class AdventureManager {
     }
 
     public void startLoop(String characterName, AdventurerClass adventurerClass) {
-        bankDepositAllTask.depositInventoryInBank(apiHolder.charactersApi.getCharacterCharactersNameGet(characterName));
+        CharacterSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName)
+                                                           .getData();
+        bankDepositAllTask.depositInventoryInBank(character);
+        boolean stopLoop = false;
         while (true) {
-            // disabled because a non-fighter switched between tool and weapon in each loop
-            // brain.equipOrRequestBestWeapon(characterName);
+            // noinspection ConstantValue
+            if (stopLoop) {
+                return;
+            }
             getBestItemForSlotTask.equipOrRequestItemArmorForSlot(characterName, ItemSlot.BODY_ARMOR);
             getBestItemForSlotTask.equipOrRequestItemArmorForSlot(characterName, ItemSlot.HELMET);
             getBestItemForSlotTask.equipOrRequestItemArmorForSlot(characterName, ItemSlot.SHIELD);
@@ -72,19 +77,17 @@ public class AdventureManager {
             getBestItemForSlotTask.equipOrRequestItemArmorForSlot(characterName, ItemSlot.AMULET);
             getBestItemForSlotTask.equipOrRequestItemArmorForSlot(characterName, ItemSlot.LEG_ARMOR);
 
-            CharacterSchema character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName)
-                                                               .getData();
             if (wishList.isHandlingHuntingWish(character)) {
-                return;
+                continue;
             }
             if (wishList.isHandlingCraftingWish(character)) {
-                return;
+                continue;
             }
             if (wishList.isHandlingGatheringWish(character)) {
-                return;
+                continue;
             }
             if (taskHelper.isHandlingTask(character)) {
-                return;
+                continue;
             }
 
             // nothing to craft, so use default

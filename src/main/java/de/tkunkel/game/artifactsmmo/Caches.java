@@ -2,10 +2,7 @@ package de.tkunkel.game.artifactsmmo;
 
 import de.tkunkel.games.artifactsmmo.ApiClient;
 import de.tkunkel.games.artifactsmmo.ApiException;
-import de.tkunkel.games.artifactsmmo.api.ItemsApi;
-import de.tkunkel.games.artifactsmmo.api.MapsApi;
-import de.tkunkel.games.artifactsmmo.api.MonstersApi;
-import de.tkunkel.games.artifactsmmo.api.ResourcesApi;
+import de.tkunkel.games.artifactsmmo.api.*;
 import de.tkunkel.games.artifactsmmo.model.*;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -28,11 +25,14 @@ public class Caches {
     private ItemsApi itemsApi;
     private MonstersApi monstersApi;
     private ResourcesApi resourcesApi;
+    private NpcsApi npcsApi;
 
     public final List<MapSchema> cachedMap = new ArrayList<>();
     public final List<MonsterSchema> cachedMonsters = new ArrayList<>();
     public final List<ItemSchema> cachedItems = new ArrayList<>();
     public final List<ResourceSchema> cachedResources = new ArrayList<>();
+    public final List<NPCSchema> cachedNpcs = new ArrayList<>();
+    public final List<NPCItem> cachedNpcItems = new ArrayList<>();
 
     public Caches(Config config) {
         this.config = config;
@@ -45,6 +45,7 @@ public class Caches {
         itemsApi = new ItemsApi(createApiClient());
         monstersApi = new MonstersApi(createApiClient());
         resourcesApi = new ResourcesApi(createApiClient());
+        npcsApi = new NpcsApi(createApiClient());
         fillCache();
     }
 
@@ -62,6 +63,8 @@ public class Caches {
             executorService.submit(this::cacheItems);
             executorService.submit(this::cacheMonsters);
             executorService.submit(this::cacheResources);
+            executorService.submit(this::cacheNpcs);
+            executorService.submit(this::cacheNpcItems);
 
             executorService.shutdown();
             executorService.awaitTermination(1, TimeUnit.MINUTES);
@@ -69,6 +72,44 @@ public class Caches {
             throw new RuntimeException(e);
         }
 
+    }
+
+    private void cacheNpcs() {
+        logger.info("Starting cache of npcs");
+        try {
+            DataPageNPCSchema all = npcsApi.getAllNpcsNpcsDetailsGet(null, null, 1, 100);
+            if (all == null || all.getPages() == null) {
+                throw new RuntimeException("No npcs found");
+            }
+            int cntPages = all.getPages();
+            logger.info("Caching npcs page count {}", cntPages);
+            for (Integer pageNr = 1; pageNr < cntPages + 1; pageNr++) {
+                logger.info("Caching npcs page {}", pageNr);
+                all = npcsApi.getAllNpcsNpcsDetailsGet(null, null, 1, 100);
+                cachedNpcs.addAll(all.getData());
+            }
+        } catch (ApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void cacheNpcItems() {
+        logger.info("Starting cache of cacheNpcItems");
+        try {
+            DataPageNPCItem all = npcsApi.getAllNpcsItemsNpcsItemsGet(null, null, null, 1, 100);
+            if (all == null || all.getPages() == null) {
+                throw new RuntimeException("No npcitems found");
+            }
+            int cntPages = all.getPages();
+            logger.info("Caching npcitems page count {}", cntPages);
+            for (Integer pageNr = 1; pageNr < cntPages + 1; pageNr++) {
+                logger.info("Caching npcitems page {}", pageNr);
+                all = npcsApi.getAllNpcsItemsNpcsItemsGet(null, null, null, 1, 100);
+                cachedNpcItems.addAll(all.getData());
+            }
+        } catch (ApiException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void cacheResources() {

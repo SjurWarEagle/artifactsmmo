@@ -11,6 +11,7 @@ public class Wish implements Comparable<Wish> {
                 "reservedBy='" + reservedBy + '\'' +
                 ", itemCode='" + itemCode + '\'' +
                 ", amount=" + amount +
+                ", wishType=" + wishType +
                 ", characterName='" + characterName + '\'' +
                 ", fulfilled=" + fulfilled +
                 '}';
@@ -20,6 +21,7 @@ public class Wish implements Comparable<Wish> {
     public int amount;
     public String reservedBy;
     public String characterName;
+    public String wishType;
     public boolean fulfilled;
 
     public Wish(String characterName, String itemCode, int amount) {

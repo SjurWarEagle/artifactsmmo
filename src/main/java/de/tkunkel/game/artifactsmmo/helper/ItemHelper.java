@@ -96,7 +96,7 @@ public class ItemHelper {
         return map.get();
     }
 
-    public MapSchema findLocationWhereToFarm(CharacterSchema character, String resourceToFarm) {
+    public Optional<MapSchema> findLocationWhereToFarm(CharacterSchema character, String resourceToFarm) {
         int charX = character.getX();
         int charY = character.getY();
         Optional<ResourceSchema> resourceHavingItem = caches.cachedResources.stream()
@@ -131,10 +131,7 @@ public class ItemHelper {
 
                                                   .findFirst()
                 ;
-        if (map.isEmpty()) {
-            throw new RuntimeException("No map found for resource " + resourceToFarm);
-        }
-        return map.get();
+        return map;
     }
 
     public boolean isHealingOutOfCombatItem(ItemSchema item) {

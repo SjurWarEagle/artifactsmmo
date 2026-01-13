@@ -33,7 +33,7 @@ public class Starter {
         adventureManager.addAndStartAdventurer("Fin", AdventurerClass.FISHER);
         adventureManager.addAndStartAdventurer("Sjur", AdventurerClass.FIGHTER);
         adventureManager.addAndStartAdventurer("Melanie", AdventurerClass.MINER);
-        adventureManager.addAndStartAdventurer("Albrecht", AdventurerClass.ALCHEMIST);
         adventureManager.addAndStartAdventurer("Wolfgang", AdventurerClass.WOODWORKER);
+        adventureManager.addAndStartAdventurer("Albrecht", AdventurerClass.ALCHEMIST);
     }
 }

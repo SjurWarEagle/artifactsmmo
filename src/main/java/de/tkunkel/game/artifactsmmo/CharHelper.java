@@ -316,10 +316,10 @@ public class CharHelper {
                                        .getCooldownExpiration()
                                        .toEpochSecond() - serverTime.toEpochSecond();
             if (timeToWait > 0) {
-                logger.info("Server time: {}", serverTime);
-                logger.info("Character cooldown expiration: {}", character.getData()
-                                                                          .getCooldownExpiration()
-                );
+                // logger.info("Server time: {}", serverTime);
+                // logger.info("Character cooldown expiration: {}", character.getData()
+                //                                                          .getCooldownExpiration()
+                //);
                 logger.info("Waiting for cooldown: {} seconds", timeToWait);
                 Thread.sleep(timeToWait + 1);
             }
