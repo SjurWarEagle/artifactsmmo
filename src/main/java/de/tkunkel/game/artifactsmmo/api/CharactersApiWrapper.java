@@ -28,7 +28,7 @@ public class CharactersApiWrapper {
         charactersApi = new CharactersApi(apiClient);
     }
 
-    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
+    @Retryable(retryFor = SocketException.class, maxAttempts = 10, backoff = @Backoff(delay = 1000))
     public CharacterResponseSchema getCharacterCharactersNameGet(String name) {
         Instant now = Instant.now();
         CharacterCacheEntry entry = characterCache.get(name);
@@ -50,7 +50,7 @@ public class CharactersApiWrapper {
         }
     }
 
-    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
+    @Retryable(retryFor = SocketException.class, maxAttempts = 10, backoff = @Backoff(delay = 1000))
     private static class CharacterCacheEntry {
         final CharacterResponseSchema response;
         final Instant timestamp;

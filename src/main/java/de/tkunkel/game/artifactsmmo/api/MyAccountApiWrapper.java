@@ -22,7 +22,7 @@ public class MyAccountApiWrapper {
         this.myAccountApi = new MyAccountApi(apiClient);
     }
 
-    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
+    @Retryable(retryFor = SocketException.class, maxAttempts = 10, backoff = @Backoff(delay = 1000))
     // TODO paging! - call all pages
     public DataPageSimpleItemSchema getBankItemsMyBankItemsGet(String itemCode, int page, int size) {
         try {
@@ -33,7 +33,7 @@ public class MyAccountApiWrapper {
         }
     }
 
-    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
+    @Retryable(retryFor = SocketException.class, maxAttempts = 10, backoff = @Backoff(delay = 1000))
     public BankResponseSchema getBankDetailsMyBankGet() {
         try {
             return myAccountApi.getBankDetailsMyBankGet();

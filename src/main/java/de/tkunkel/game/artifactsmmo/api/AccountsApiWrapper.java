@@ -26,7 +26,7 @@ public class AccountsApiWrapper {
         this.config = config;
     }
 
-    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
+    @Retryable(retryFor = SocketException.class, maxAttempts = 10, backoff = @Backoff(delay = 1000))
     @Cacheable(cacheNames = "getAccountCharactersAccountsAccountCharactersGet")
     public CharactersListSchema getAccountCharactersAccountsAccountCharactersGet() {
         try {
@@ -37,7 +37,7 @@ public class AccountsApiWrapper {
         }
     }
 
-    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
+    @Retryable(retryFor = SocketException.class, maxAttempts = 10, backoff = @Backoff(delay = 1000))
     @Cacheable(cacheNames = "getAccountAchievementsAccountsAccountAchievementsGet")
     public DataPageAccountAchievementSchema getAccountAchievementsAccountsAccountAchievementsGet(boolean completed) {
         try {

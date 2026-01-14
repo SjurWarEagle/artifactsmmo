@@ -26,7 +26,7 @@ public class TaskHelper {
 
     public TaskHelper(HuntMonsterTask huntMonsterTask, CharHelper charHelper, WishList wishList,
                       BankFetchItemTask bankFetchItemTask, TaskAcceptNewItemTask taskAcceptNewItemTask,
-                      MyCharactersApiWrapper myCharactersApi, CharactersApiWrapper charactersApi) {
+                      MyCharactersApiWrapper myCharactersApi, CharactersApiWrapper charactersApi, BankDepositAllTask bankDepositAllTask) {
         this.huntMonsterTask = huntMonsterTask;
         this.charHelper = charHelper;
         this.wishList = wishList;
@@ -34,7 +34,7 @@ public class TaskHelper {
         this.taskAcceptNewItemTask = taskAcceptNewItemTask;
         this.myCharactersApi = myCharactersApi;
         this.charactersApi = charactersApi;
-        bankDepositAllTask = null;
+        this.bankDepositAllTask = bankDepositAllTask;
     }
 
     /**
@@ -54,6 +54,8 @@ public class TaskHelper {
         if (isMonsterTask) {
             huntMonsterTask.hunt(character.getName(), character.getTask());
         } else if (isItemTask) {
+            character = charactersApi.getCharacterCharactersNameGet(character.getName())
+                                     .getData();
             // TODO check if it can be fulfilled
             int cntItemsInBank = charHelper.cntItemsInBank(character.getTask());
             int needed = character.getTaskTotal() - character.getTaskProgress();

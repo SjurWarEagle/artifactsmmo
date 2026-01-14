@@ -22,7 +22,7 @@ public class MyCharactersApiWrapper {
         charactersApi = new MyCharactersApi(apiClient);
     }
 
-    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
+    @Retryable(retryFor = SocketException.class, maxAttempts = 10, backoff = @Backoff(delay = 1000))
     public CharacterRestResponseSchema actionRestMyNameActionRestPost(String name) {
         try {
             return charactersApi.actionRestMyNameActionRestPost(name);
@@ -31,7 +31,7 @@ public class MyCharactersApiWrapper {
         }
     }
 
-    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
+    @Retryable(retryFor = SocketException.class, maxAttempts = 10, backoff = @Backoff(delay = 1000))
     public UseItemResponseSchema actionUseItemMyNameActionUsePost(String name, SimpleItemSchema simpleItemSchema) {
         try {
             return charactersApi.actionUseItemMyNameActionUsePost(name, simpleItemSchema);
@@ -40,7 +40,7 @@ public class MyCharactersApiWrapper {
         }
     }
 
-    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
+    @Retryable(retryFor = SocketException.class, maxAttempts = 10, backoff = @Backoff(delay = 1000))
     public EquipmentResponseSchema actionEquipItemMyNameActionEquipPost(String name, EquipSchema equipSchema) {
         try {
             return this.charactersApi.actionEquipItemMyNameActionEquipPost(name, equipSchema);
@@ -49,7 +49,7 @@ public class MyCharactersApiWrapper {
         }
     }
 
-    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
+    @Retryable(retryFor = SocketException.class, maxAttempts = 10, backoff = @Backoff(delay = 1000))
     public SkillResponseSchema actionCraftingMyNameActionCraftingPost(String name, CraftingSchema craftingSchema) {
         try {
             var rc = charactersApi.actionCraftingMyNameActionCraftingPost(name, craftingSchema);
@@ -63,7 +63,7 @@ public class MyCharactersApiWrapper {
         }
     }
 
-    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
+    @Retryable(retryFor = SocketException.class, maxAttempts = 10, backoff = @Backoff(delay = 1000))
     public CharacterMovementResponseSchema actionMoveMyNameActionMovePost(String name, DestinationSchema destinationSchema) {
         try {
             return charactersApi.actionMoveMyNameActionMovePost(name, destinationSchema);
@@ -72,7 +72,7 @@ public class MyCharactersApiWrapper {
         }
     }
 
-    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
+    @Retryable(retryFor = SocketException.class, maxAttempts = 10, backoff = @Backoff(delay = 1000))
     public BankItemTransactionResponseSchema actionWithdrawBankItemMyNameActionBankWithdrawItemPost(String name, List<SimpleItemSchema> simpleItemSchemas) {
         try {
             return charactersApi.actionWithdrawBankItemMyNameActionBankWithdrawItemPost(name, simpleItemSchemas);
@@ -83,7 +83,7 @@ public class MyCharactersApiWrapper {
         return null;
     }
 
-    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
+    @Retryable(retryFor = SocketException.class, maxAttempts = 10, backoff = @Backoff(delay = 1000))
     public CharacterFightResponseSchema actionFightMyNameActionFightPost(String name, FightRequestSchema fightRequest) {
         try {
             var rc = charactersApi.actionFightMyNameActionFightPost(name, fightRequest);
@@ -102,7 +102,7 @@ public class MyCharactersApiWrapper {
         }
     }
 
-    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
+    @Retryable(retryFor = SocketException.class, maxAttempts = 10, backoff = @Backoff(delay = 1000))
     public TaskResponseSchema actionAcceptNewTaskMyNameActionTaskNewPost(String name) {
         try {
             return charactersApi.actionAcceptNewTaskMyNameActionTaskNewPost(name);
@@ -111,7 +111,7 @@ public class MyCharactersApiWrapper {
         }
     }
 
-    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
+    @Retryable(retryFor = SocketException.class, maxAttempts = 10, backoff = @Backoff(delay = 1000))
     public void actionTaskTradeMyNameActionTaskTradePost(String charName, SimpleItemSchema tradeRequest) {
         try {
             charactersApi.actionTaskTradeMyNameActionTaskTradePost(charName, tradeRequest);
@@ -120,7 +120,7 @@ public class MyCharactersApiWrapper {
         }
     }
 
-    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
+    @Retryable(retryFor = SocketException.class, maxAttempts = 10, backoff = @Backoff(delay = 1000))
     public SkillResponseSchema actionGatheringMyNameActionGatheringPost(String name) {
         try {
             var rc = charactersApi.actionGatheringMyNameActionGatheringPost(name);
@@ -135,7 +135,7 @@ public class MyCharactersApiWrapper {
         }
     }
 
-    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
+    @Retryable(retryFor = SocketException.class, maxAttempts = 10, backoff = @Backoff(delay = 1000))
     public BankItemTransactionResponseSchema actionDepositBankItemMyNameActionBankDepositItemPost(String name, List<SimpleItemSchema> itemsToDeposit) {
         try {
             return charactersApi.actionDepositBankItemMyNameActionBankDepositItemPost(name, itemsToDeposit);
@@ -144,7 +144,7 @@ public class MyCharactersApiWrapper {
         }
     }
 
-    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
+    @Retryable(retryFor = SocketException.class, maxAttempts = 10, backoff = @Backoff(delay = 1000))
     public RewardDataResponseSchema actionCompleteTaskMyNameActionTaskCompletePost(String name) {
         try {
             return charactersApi.actionCompleteTaskMyNameActionTaskCompletePost(name);
@@ -153,7 +153,7 @@ public class MyCharactersApiWrapper {
         }
     }
 
-    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
+    @Retryable(retryFor = SocketException.class, maxAttempts = 10, backoff = @Backoff(delay = 1000))
     public BankGoldTransactionResponseSchema actionWithdrawBankGoldMyNameActionBankWithdrawGoldPost(String name, DepositWithdrawGoldSchema depositWithdrawGoldSchema) {
         try {
             return charactersApi.actionWithdrawBankGoldMyNameActionBankWithdrawGoldPost(name, depositWithdrawGoldSchema);
@@ -162,7 +162,7 @@ public class MyCharactersApiWrapper {
         }
     }
 
-    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
+    @Retryable(retryFor = SocketException.class, maxAttempts = 10, backoff = @Backoff(delay = 1000))
     public BankExtensionTransactionResponseSchema actionBuyBankExpansionMyNameActionBankBuyExpansionPost(String name) {
         try {
             return charactersApi.actionBuyBankExpansionMyNameActionBankBuyExpansionPost(name);
@@ -171,7 +171,7 @@ public class MyCharactersApiWrapper {
         }
     }
 
-    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
+    @Retryable(retryFor = SocketException.class, maxAttempts = 10, backoff = @Backoff(delay = 1000))
     public BankGoldTransactionResponseSchema actionDepositBankGoldMyNameActionBankDepositGoldPost(String name, DepositWithdrawGoldSchema depositWithdrawGoldSchema) {
         try {
             return charactersApi.actionDepositBankGoldMyNameActionBankDepositGoldPost(name, depositWithdrawGoldSchema);
@@ -180,7 +180,7 @@ public class MyCharactersApiWrapper {
         }
     }
 
-    @Retryable(retryFor = SocketException.class, maxAttempts = 4, backoff = @Backoff(delay = 1000))
+    @Retryable(retryFor = SocketException.class, maxAttempts = 10, backoff = @Backoff(delay = 1000))
     public TaskCancelledResponseSchema actionTaskCancelMyNameActionTaskCancelPost(String name) {
         try {
             return charactersApi.actionTaskCancelMyNameActionTaskCancelPost(name);

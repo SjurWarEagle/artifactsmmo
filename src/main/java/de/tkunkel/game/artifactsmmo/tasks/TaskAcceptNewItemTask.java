@@ -27,6 +27,10 @@ public class TaskAcceptNewItemTask {
         if (moveToTaskMaster(character)) {
             return;
         }
+        if ("".equalsIgnoreCase(character.getTask())
+                || character.getTaskTotal() <= character.getTaskProgress()) {
+            return;
+        }
         SimpleItemSchema tradeRequest = new SimpleItemSchema().code(character.getTask())
                                                               .quantity(amount);
         myCharactersApi.actionTaskTradeMyNameActionTaskTradePost(character.getName(), tradeRequest);
