@@ -62,10 +62,17 @@ public class WishList {
     }
 
 
+    @SuppressWarnings("unused")
     @Scheduled(fixedRate = 5, timeUnit = TimeUnit.MINUTES)
     public void fillStorage() {
-//        requestItemsForStorage("copper_ore", 500);
-//        requestItemsForStorage("copper_bar", 100);
+        this.allWishes.stream();
+        var cleanedWishes = allWishes.stream()
+                                     .filter(wish -> !wish.fulfilled)
+                                     .filter(wish -> wish.amount <= 0)
+                                     .toList()
+                ;
+        allWishes.clear();
+        allWishes.addAll(cleanedWishes);
     }
 
     public boolean isHandlingHuntingWish(CharacterSchema character) {
@@ -146,12 +153,11 @@ public class WishList {
                 charHelper.waitUntilCooldownDone(character.getName());
                 wish.amount -= 10;
                 if (wish.amount <= 0) {
+                    wish.amount = 0;
                     wish.fulfilled = true;
                     wish.reservedBy = null;
                 }
             }
-// TODO            wish.fulfilled = true;
-// TODO            wish.reservedBy = null;
             return true;
         } else {
             return false;

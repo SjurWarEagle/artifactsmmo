@@ -65,8 +65,8 @@ public class MinerT1Brain {
             bankFetchItemsAndCraftTask.craftItemWithBankItems(character, wish.get().itemCode, 1);
             wish.get().amount -= 1;
             if (wish.get().amount <= 0) {
-                wish.get().reservedBy = null;
                 wish.get().fulfilled = true;
+                wish.get().reservedBy = null;
             }
         } else {
             trainingSkillTask.trainSkills(character, Skill.MINING, Skill.GEARCRAFTING);
