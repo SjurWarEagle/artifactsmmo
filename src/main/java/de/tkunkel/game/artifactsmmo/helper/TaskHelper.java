@@ -73,7 +73,7 @@ public class TaskHelper {
                 int inInventory = charHelper.cntItemsInInventory(character.getName(), character.getTask());
                 if (inInventory > 0) {
                     // give them to task giver
-                    taskAcceptNewItemTask.giveItemsToTaskMaster(character, inInventory);
+                    taskAcceptNewItemTask.giveItemsToTaskMaster(character);
                     charHelper.waitUntilCooldownDone(character.getName());
                     character = charactersApi.getCharacterCharactersNameGet(character.getName())
                                              .getData();

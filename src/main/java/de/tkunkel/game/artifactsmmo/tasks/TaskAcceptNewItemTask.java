@@ -23,7 +23,7 @@ public class TaskAcceptNewItemTask {
         this.myCharactersApi = myCharactersApi;
     }
 
-    public void giveItemsToTaskMaster(CharacterSchema character, int amount) {
+    public void giveItemsToTaskMaster(CharacterSchema character) {
         if (moveToTaskMaster(character)) {
             return;
         }
@@ -31,6 +31,9 @@ public class TaskAcceptNewItemTask {
                 || character.getTaskTotal() <= character.getTaskProgress()) {
             return;
         }
+        int amount = character.getTaskTotal() - character.getTaskProgress();
+        int inInventory = charHelper.cntItemsInInventory(character.getName(), character.getTask());
+        amount = Math.min(amount, inInventory);
         SimpleItemSchema tradeRequest = new SimpleItemSchema().code(character.getTask())
                                                               .quantity(amount);
         myCharactersApi.actionTaskTradeMyNameActionTaskTradePost(character.getName(), tradeRequest);

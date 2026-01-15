@@ -103,6 +103,13 @@ public class CharHelper {
 
     private int compareByKillableMonsters(ItemSchema item1, ItemSchema item2, CharacterSchema character, CombatStats characterCombatStats,
                                           List<CombatStats> defenders) {
+        if (item1.getType()
+                 .equalsIgnoreCase("ring")
+                || item2.getType()
+                        .equalsIgnoreCase("ring")) {
+            // TODO how to handle rings?
+            return -2;
+        }
         ItemSlot itemSlot = ItemSlot.fromValue(item1.getType());
         Optional<ItemSchema> oldItem = getEquippedItemOfSlot(character, itemSlot);
         if (oldItem.isEmpty()) {
