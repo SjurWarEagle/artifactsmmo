@@ -45,6 +45,11 @@ public class TaskAcceptNewItemTask {
             // still has task
             return;
         }
+        if (charHelper.cntItemsInBank("tasks_coin") >= 50) {
+            // enough token in bank
+            return;
+        }
+
         if (moveToTaskMaster(character)) {
             return;
         }
