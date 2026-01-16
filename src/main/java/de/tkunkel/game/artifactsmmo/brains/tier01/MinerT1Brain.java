@@ -61,7 +61,7 @@ public class MinerT1Brain {
         Optional<Wish> wish = findPossibleItemToCraftFromWishlist(character);
 
         if (wish.isPresent()) {
-            // crafrt one by one to not overfill inventory with resources
+            // crafted one by one to not overfill inventory with resources
             bankFetchItemsAndCraftTask.craftItemWithBankItems(character, wish.get().itemCode, 1);
             wish.get().amount -= 1;
             if (wish.get().amount <= 0) {

@@ -347,7 +347,6 @@ public class CharHelper {
         }
     }
 
-
     public void healIfNeededSync(String characterName) {
         CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
         waitUntilCooldownDone(character);

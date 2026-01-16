@@ -62,10 +62,10 @@ public class BankFetchItemsAndCraftTask {
                                                                        .filter(item -> item.getQuantity() >= 1)
                                                                        .findFirst()
                 ;
-        if (itemInBank.isPresent()) {
-            // item already exists, no need to build it again
-            return;
-        }
+//        if (itemInBank.isPresent()) {
+//            // item already exists, no need to build it again
+//            return;
+//        }
         List<SimpleItemSchema> neededItems = optionalItemSchema.get()
                                                                .getCraft()
                                                                .getItems()
