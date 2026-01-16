@@ -89,20 +89,13 @@ public class BankFetchItemsAndCraftTask {
             cntInInventory = charHelper.cntAllItemsInInventory(character.getName());
             if (character.getInventoryMaxItems() - cntInInventory >= neededItem.getQuantity() * amount) {
                 bankFetchItemTask.fetchItemFromBank(character, neededItem.getCode(), neededItem.getQuantity() * amount);
+                craftItemTask.craftItem(character.getName(), itemToCraft, amount);
+                // deposit crafted item into bank
+                bankDepositSingleItemTask.depositInventoryInBank(character.getName(), itemToCraft);
             } else {
                 logger.error("Shall fetch more items than space in inventory!");
             }
-
         }
-
-        // todo after fetching check again if item can be crafted
-
-        // craft item
-        craftItemTask.craftItem(character.getName(), itemToCraft, amount);
-
-        // deposit crafted item into bank
-        bankDepositSingleItemTask.depositInventoryInBank(character.getName(), itemToCraft
-        );
     }
 
     // make space in inventory
