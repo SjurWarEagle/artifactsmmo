@@ -34,6 +34,44 @@ public class TrainingSkillTask {
         this.harvestResourceTask = harvestResourceTask;
     }
 
+    public Optional<ItemSchema> findHighestItemCraftableByCharWithBank(CharacterSchema character, Skill... skills) {
+        Optional<Skill> skillToTrain = Arrays.stream(skills)
+                                             .min((o1, o2) -> {
+                                                 int skillLevel1 = CharHelper.getSkillLevelForSkill(character, o1);
+                                                 int skillLevel2 = CharHelper.getSkillLevelForSkill(character, o2);
+                                                 return skillLevel1 - skillLevel2;
+                                             });
+        if (skillToTrain.isEmpty()) {
+            throw new RuntimeException("No skill to train found");
+        }
+
+        return caches.cachedItems.stream()
+                                 .filter(itemSchema -> itemSchema.getCraft() != null)
+                                 .filter(itemSchema -> itemSchema.getCraft()
+                                                                 .getSkill()
+                                                                 .getValue()
+                                                                 .equalsIgnoreCase(skillToTrain.get()
+                                                                                               .getValue()))
+                                 .filter(itemSchema -> {
+                                     Integer neededLevel = itemSchema.getCraft()
+                                                                     .getLevel();
+
+                                     boolean isRelevantSkill = itemSchema.getCraft()
+                                                                         .getSkill()
+                                                                         .name()
+                                                                         .equalsIgnoreCase(skillToTrain.get()
+                                                                                                       .name())
+                                             ;
+                                     boolean charHasEnoughSkill = charHasEnoughSkill(character, skillToTrain.get(), neededLevel);
+                                     return isRelevantSkill && charHasEnoughSkill;
+
+                                 })
+                                 .filter(itemSchema -> resouresAreInBank(character, itemSchema))
+                                 .sorted(this::sortByNeededResource)
+                                 .findFirst()
+                ;
+    }
+
     public Optional<ItemSchema> findHighestItemThatThisCharCanCreateAlone(CharacterSchema character, Skill... skills) {
         Optional<Skill> skillToTrain = Arrays.stream(skills)
                                              .min((o1, o2) -> {
@@ -120,6 +158,31 @@ public class TrainingSkillTask {
                  .compareTo(o2.getName());
     }
 
+    private boolean resouresAreInBank(CharacterSchema character, ItemSchema itemSchema) {
+        if (itemSchema.getCraft() == null ||
+                itemSchema.getCraft()
+                          .getItems() == null) {
+            // TODO check if returning false here is correct
+            return false;
+        }
+
+        return itemSchema.getCraft()
+                         .getItems()
+                         .stream()
+                         .allMatch(simpleItemSchema -> {
+                                       boolean canGatherItem = canCanGatherItem(simpleItemSchema.getCode());
+
+                                       int cntInBank = characterHelper.cntItemsInBank(simpleItemSchema.getCode());
+                                       return cntInBank >= simpleItemSchema.getQuantity();
+                                   }
+                         )
+                ;
+    }
+
+    private boolean canCanGatherItem(String code) {
+        return false;
+    }
+
     private boolean canCanGatherResources(CharacterSchema character, ItemSchema itemSchema) {
         if (itemSchema.getCraft() == null ||
                 itemSchema.getCraft()
@@ -181,6 +244,45 @@ public class TrainingSkillTask {
             // noinspection UnnecessaryDefault
             default -> throw new RuntimeException("unknown skill " + skill.name());
         };
+    }
+
+    public void trainSkillsWithBankItems(CharacterSchema character, Skill... skills) {
+        Optional<ItemSchema> itemToTrain = findHighestItemCraftableByCharWithBank(character, skills);
+        if (itemToTrain.isEmpty()) {
+            return;
+        }
+        // This is needed to have a loop, if we do not get rid of the item it is detected as "already crafted" and therefore skipped, no training would be done.
+        bankDepositSingleItemTask.depositInventoryInBank(character.getName(), itemToTrain.get()
+                                                                                         .getCode()
+        );
+
+        List<SimpleItemSchema> neededForTrainingItem = itemHelper.getRecursiveResourcesToCraft(itemToTrain.get()
+                                                                                                          .getCode(), 1
+        );
+        neededForTrainingItem = CharHelper.removeWhatIsAlreadyInInventory(character, neededForTrainingItem);
+        //       bankFetchItemsAndCraftTask.fetchItemFromBank(character, "copper_bar", 6);
+
+        character = charactersApi.getCharacterCharactersNameGet(character.getName())
+                                 .getData();
+
+        Optional<String> itemCodeCraftableWithInventory;
+        if (canCraftItem(character, itemToTrain.get())) {
+            itemCodeCraftableWithInventory = Optional.of(itemToTrain.get()
+                                                                    .getCode());
+        } else {
+            itemCodeCraftableWithInventory = findCraftableWithInventory(character, neededForTrainingItem);
+        }
+        if (itemCodeCraftableWithInventory.isPresent()) {
+            craftItemTask.craftItem(character.getName(), itemCodeCraftableWithInventory.get());
+        } else {
+            Optional<String> farmableItemCode = findFarmableItem(neededForTrainingItem);
+            if (farmableItemCode.isPresent()) {
+                MapSchema whereToGather = itemHelper.findLocationWhereToFarm(character, farmableItemCode.get())
+                                                    .get();
+                harvestResourceTask.farmResourceWithTool(character.getName(), whereToGather);
+                characterHelper.waitUntilCooldownDone(character.getName());
+            }
+        }
     }
 
     public void trainSkills(CharacterSchema character, Skill... skills) {

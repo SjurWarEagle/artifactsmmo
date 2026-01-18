@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Artifacts MMO - Charatersheets</title>
+</head>
+
+<style>
+    .icon {
+        max-width: 52px;
+        max-height: 25px;
+    }
+
+    tr:nth-child(even) {
+        background-color: #f2f2f2;
+    }
+
+    .equipment {
+        max-width: 50px;
+        width: 50px;
+        max-height: 50px;
+        height: 50px;
+    }
+
+    .character-sheet {
+        width: 90%;
+        height: 90%;
+        display: grid;
+        grid-gap: 2em;
+        grid-template-columns: auto auto 20% 15% auto;
+        grid-template-areas:
+                "baseinfo gear levelsinfo inventory";
+    }
+</style>
+
+<body style="width: 100%;height: 100%;        overflow: hidden;">
+
+<div style="width: 100%;height: 100%;">
+    <div th:each="character : ${characters}" class="character-sheet" style="margin-bottom: 2em;">
+        <div style="grid-area: baseinfo">
+            <span th:text="${character.getName()}"></span>
+            <br/>
+            🧠<span th:text="${character.getLevel()}"></span> (<span
+                th:text="${(character.getXp()*100)/character.getMaxXp()}"></span>%)
+            <br/>
+            💓<span
+                th:text="${(character.getHp()*100)/character.getMaxHp()}"></span>%
+        </div>
+        <div style="grid-area: levelsinfo">skills</div>
+        <div style="grid-area: gear;">
+            <span th:if="${!#strings.isEmpty(character.getWeaponSlot())}">
+                <img th:src="@{'https://www.artifactsmmo.com/images/items/' + ${character.getWeaponSlot()} + '.png'}"
+                     class="equipment" th:alt="${character.getWeaponSlot()}"/>
+            </span>
+            <span th:if="${!#strings.isEmpty(character.getHelmetSlot())}">
+                <img th:src="@{'https://www.artifactsmmo.com/images/items/' + ${character.getHelmetSlot()} + '.png'}"
+                     class="equipment" th:alt="${character.getHelmetSlot()}"/>
+            </span>
+            <span th:if="${#strings.isEmpty(character.getShieldSlot())}">
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAIAAAABc2X6AAACZklEQVR4nO3au2sqQRTA4TO7i61gJSsIgs36aCIYEiuLaGGhWFj5Ir29paX/gpWFhV0ghCCawkLRVgtfrIWotagootHdWyxYXC6kmcTLyfmqZWaYnR+jYCErFArwmwi3PsBPo2DsKBg7CsaOgrGjYOwoGDsKxo6CsaNg7CgYOwrGjoKxo2DsKBg7CsaOgrGjYOwo+Kba7fZ3v+LXBUsc9zocDrVabbfbXS6XUChks9kAoFgsKooym80CgcB8Pl8sFn6//+HhwZi6u7tbLpeMsVgs1uv1TqdTpVLZ7/eJRMJisRyPx1KplMvlGGO8Dsnzhj8+Pvx+fzqdjsfjb29vxuD5fPb5fNls9v39/f7+PpPJdDqd65Qsy8/Pzz6fr16vB4NBk8mUSqW8Xu94PAYAVVUVReFYC3xveDqdrlYr4/l0OmmaJggCY0yWZUEQRFGUZZkx9vn5aaxhjCmKAgAul6vRaFz38Xg8Ly8vj4+Pk8kkEAhwPCHwDdY0LZlMSpKk6/p8PhcEAQBEUTQeJEn6664YY9cRURSv42azmTG23W7X67XVauV4QuD7kbbb7aPRCABUVW21Wl+u1zRNVVUAGA6HDocDAHRd13UdANxud71edzqdHI9n4BkcDof7/X65XO52u5FI5Mv1kiSNRqNyuTwYDJ6engDAbrdXq1UAcLvd4/HY6/VyPJ6B3fDPpcViMZ/P/3Nqs9m8vr6m02nuL+X5HeZlMpk0m81oNPodm9/yhm/i//ql9QMoGDsKxo6CsaNg7CgYOwrGjoKxo2DsKBg7CsaOgrGjYOwoGDsKxo6Csft1wX8A3c3Af4HjOXcAAAAASUVORK5CYII="
+                     class="equipment" alt="empty icon"/>
+            </span>
+            <span th:if="${!#strings.isEmpty(character.getShieldSlot())}">
+                <img th:src="@{'https://www.artifactsmmo.com/images/items/' + ${character.getShieldSlot()} + '.png'}"
+                     class="equipment" th:alt="${character.getShieldSlot()}"/>
+            </span>
+            <br/>
+            <span th:if="${#strings.isEmpty(character.getBodyArmorSlot())}">
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAIAAAABc2X6AAACZklEQVR4nO3au2sqQRTA4TO7i61gJSsIgs36aCIYEiuLaGGhWFj5Ir29paX/gpWFhV0ghCCawkLRVgtfrIWotagootHdWyxYXC6kmcTLyfmqZWaYnR+jYCErFArwmwi3PsBPo2DsKBg7CsaOgrGjYOwoGDsKxo6CsaNg7CgYOwrGjoKxo2DsKBg7CsaOgrGjYOwo+Kba7fZ3v+LXBUsc9zocDrVabbfbXS6XUChks9kAoFgsKooym80CgcB8Pl8sFn6//+HhwZi6u7tbLpeMsVgs1uv1TqdTpVLZ7/eJRMJisRyPx1KplMvlGGO8Dsnzhj8+Pvx+fzqdjsfjb29vxuD5fPb5fNls9v39/f7+PpPJdDqd65Qsy8/Pzz6fr16vB4NBk8mUSqW8Xu94PAYAVVUVReFYC3xveDqdrlYr4/l0OmmaJggCY0yWZUEQRFGUZZkx9vn5aaxhjCmKAgAul6vRaFz38Xg8Ly8vj4+Pk8kkEAhwPCHwDdY0LZlMSpKk6/p8PhcEAQBEUTQeJEn6664YY9cRURSv42azmTG23W7X67XVauV4QuD7kbbb7aPRCABUVW21Wl+u1zRNVVUAGA6HDocDAHRd13UdANxud71edzqdHI9n4BkcDof7/X65XO52u5FI5Mv1kiSNRqNyuTwYDJ6engDAbrdXq1UAcLvd4/HY6/VyPJ6B3fDPpcViMZ/P/3Nqs9m8vr6m02nuL+X5HeZlMpk0m81oNPodm9/yhm/i//ql9QMoGDsKxo6CsaNg7CgYOwrGjoKxo2DsKBg7CsaOgrGjYOwoGDsKxo6Csft1wX8A3c3Af4HjOXcAAAAASUVORK5CYII="
+                     class="equipment" alt="empty icon" width="80" height="80"/>
+            </span>
+            <span th:if="${!#strings.isEmpty(character.getBodyArmorSlot())}">
+                <img th:src="@{'https://www.artifactsmmo.com/images/items/' + ${character.getBodyArmorSlot()} + '.png'}"
+                     class="equipment" th:alt="${character.getBodyArmorSlot()}"/>
+            </span>
+            <!-- CHAR -->
+            <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAIAAAABc2X6AAACZklEQVR4nO3au2sqQRTA4TO7i61gJSsIgs36aCIYEiuLaGGhWFj5Ir29paX/gpWFhV0ghCCawkLRVgtfrIWotagootHdWyxYXC6kmcTLyfmqZWaYnR+jYCErFArwmwi3PsBPo2DsKBg7CsaOgrGjYOwoGDsKxo6CsaNg7CgYOwrGjoKxo2DsKBg7CsaOgrGjYOwo+Kba7fZ3v+LXBUsc9zocDrVabbfbXS6XUChks9kAoFgsKooym80CgcB8Pl8sFn6//+HhwZi6u7tbLpeMsVgs1uv1TqdTpVLZ7/eJRMJisRyPx1KplMvlGGO8Dsnzhj8+Pvx+fzqdjsfjb29vxuD5fPb5fNls9v39/f7+PpPJdDqd65Qsy8/Pzz6fr16vB4NBk8mUSqW8Xu94PAYAVVUVReFYC3xveDqdrlYr4/l0OmmaJggCY0yWZUEQRFGUZZkx9vn5aaxhjCmKAgAul6vRaFz38Xg8Ly8vj4+Pk8kkEAhwPCHwDdY0LZlMSpKk6/p8PhcEAQBEUTQeJEn6664YY9cRURSv42azmTG23W7X67XVauV4QuD7kbbb7aPRCABUVW21Wl+u1zRNVVUAGA6HDocDAHRd13UdANxud71edzqdHI9n4BkcDof7/X65XO52u5FI5Mv1kiSNRqNyuTwYDJ6engDAbrdXq1UAcLvd4/HY6/VyPJ6B3fDPpcViMZ/P/3Nqs9m8vr6m02nuL+X5HeZlMpk0m81oNPodm9/yhm/i//ql9QMoGDsKxo6CsaNg7CgYOwrGjoKxo2DsKBg7CsaOgrGjYOwoGDsKxo6Csft1wX8A3c3Af4HjOXcAAAAASUVORK5CYII="
+                 class="equipment" alt="empty icon" width="80" height="80"/>
+            <span th:if="${#strings.isEmpty(character.getAmuletSlot())}">
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAIAAAABc2X6AAACZklEQVR4nO3au2sqQRTA4TO7i61gJSsIgs36aCIYEiuLaGGhWFj5Ir29paX/gpWFhV0ghCCawkLRVgtfrIWotagootHdWyxYXC6kmcTLyfmqZWaYnR+jYCErFArwmwi3PsBPo2DsKBg7CsaOgrGjYOwoGDsKxo6CsaNg7CgYOwrGjoKxo2DsKBg7CsaOgrGjYOwo+Kba7fZ3v+LXBUsc9zocDrVabbfbXS6XUChks9kAoFgsKooym80CgcB8Pl8sFn6//+HhwZi6u7tbLpeMsVgs1uv1TqdTpVLZ7/eJRMJisRyPx1KplMvlGGO8Dsnzhj8+Pvx+fzqdjsfjb29vxuD5fPb5fNls9v39/f7+PpPJdDqd65Qsy8/Pzz6fr16vB4NBk8mUSqW8Xu94PAYAVVUVReFYC3xveDqdrlYr4/l0OmmaJggCY0yWZUEQRFGUZZkx9vn5aaxhjCmKAgAul6vRaFz38Xg8Ly8vj4+Pk8kkEAhwPCHwDdY0LZlMSpKk6/p8PhcEAQBEUTQeJEn6664YY9cRURSv42azmTG23W7X67XVauV4QuD7kbbb7aPRCABUVW21Wl+u1zRNVVUAGA6HDocDAHRd13UdANxud71edzqdHI9n4BkcDof7/X65XO52u5FI5Mv1kiSNRqNyuTwYDJ6engDAbrdXq1UAcLvd4/HY6/VyPJ6B3fDPpcViMZ/P/3Nqs9m8vr6m02nuL+X5HeZlMpk0m81oNPodm9/yhm/i//ql9QMoGDsKxo6CsaNg7CgYOwrGjoKxo2DsKBg7CsaOgrGjYOwoGDsKxo6Csft1wX8A3c3Af4HjOXcAAAAASUVORK5CYII="
+                     class="equipment" alt="empty icon" width="80" height="80"/>
+            </span>
+            <span th:if="${!#strings.isEmpty(character.getAmuletSlot())}">
+                <img th:src="@{'https://www.artifactsmmo.com/images/items/' + ${character.getAmuletSlot()} + '.png'}"
+                     class="equipment" th:alt="${character.getAmuletSlot()}"/>
+            </span>
+            <br/>
+            <span th:if="${#strings.isEmpty(character.getLegArmorSlot())}">
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAIAAAABc2X6AAACZklEQVR4nO3au2sqQRTA4TO7i61gJSsIgs36aCIYEiuLaGGhWFj5Ir29paX/gpWFhV0ghCCawkLRVgtfrIWotagootHdWyxYXC6kmcTLyfmqZWaYnR+jYCErFArwmwi3PsBPo2DsKBg7CsaOgrGjYOwoGDsKxo6CsaNg7CgYOwrGjoKxo2DsKBg7CsaOgrGjYOwo+Kba7fZ3v+LXBUsc9zocDrVabbfbXS6XUChks9kAoFgsKooym80CgcB8Pl8sFn6//+HhwZi6u7tbLpeMsVgs1uv1TqdTpVLZ7/eJRMJisRyPx1KplMvlGGO8Dsnzhj8+Pvx+fzqdjsfjb29vxuD5fPb5fNls9v39/f7+PpPJdDqd65Qsy8/Pzz6fr16vB4NBk8mUSqW8Xu94PAYAVVUVReFYC3xveDqdrlYr4/l0OmmaJggCY0yWZUEQRFGUZZkx9vn5aaxhjCmKAgAul6vRaFz38Xg8Ly8vj4+Pk8kkEAhwPCHwDdY0LZlMSpKk6/p8PhcEAQBEUTQeJEn6664YY9cRURSv42azmTG23W7X67XVauV4QuD7kbbb7aPRCABUVW21Wl+u1zRNVVUAGA6HDocDAHRd13UdANxud71edzqdHI9n4BkcDof7/X65XO52u5FI5Mv1kiSNRqNyuTwYDJ6engDAbrdXq1UAcLvd4/HY6/VyPJ6B3fDPpcViMZ/P/3Nqs9m8vr6m02nuL+X5HeZlMpk0m81oNPodm9/yhm/i//ql9QMoGDsKxo6CsaNg7CgYOwrGjoKxo2DsKBg7CsaOgrGjYOwoGDsKxo6Csft1wX8A3c3Af4HjOXcAAAAASUVORK5CYII="
+                     class="equipment" alt="empty icon" width="80" height="80"/>
+            </span>
+            <span th:if="${!#strings.isEmpty(character.getLegArmorSlot())}">
+                <img th:src="@{'https://www.artifactsmmo.com/images/items/' + ${character.getLegArmorSlot()} + '.png'}"
+                     class="equipment" th:alt="${character.getLegArmorSlot()}"/>
+            </span>
+            <span th:if="${#strings.isEmpty(character.getBootsSlot())}">
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAIAAAABc2X6AAACZklEQVR4nO3au2sqQRTA4TO7i61gJSsIgs36aCIYEiuLaGGhWFj5Ir29paX/gpWFhV0ghCCawkLRVgtfrIWotagootHdWyxYXC6kmcTLyfmqZWaYnR+jYCErFArwmwi3PsBPo2DsKBg7CsaOgrGjYOwoGDsKxo6CsaNg7CgYOwrGjoKxo2DsKBg7CsaOgrGjYOwo+Kba7fZ3v+LXBUsc9zocDrVabbfbXS6XUChks9kAoFgsKooym80CgcB8Pl8sFn6//+HhwZi6u7tbLpeMsVgs1uv1TqdTpVLZ7/eJRMJisRyPx1KplMvlGGO8Dsnzhj8+Pvx+fzqdjsfjb29vxuD5fPb5fNls9v39/f7+PpPJdDqd65Qsy8/Pzz6fr16vB4NBk8mUSqW8Xu94PAYAVVUVReFYC3xveDqdrlYr4/l0OmmaJggCY0yWZUEQRFGUZZkx9vn5aaxhjCmKAgAul6vRaFz38Xg8Ly8vj4+Pk8kkEAhwPCHwDdY0LZlMSpKk6/p8PhcEAQBEUTQeJEn6664YY9cRURSv42azmTG23W7X67XVauV4QuD7kbbb7aPRCABUVW21Wl+u1zRNVVUAGA6HDocDAHRd13UdANxud71edzqdHI9n4BkcDof7/X65XO52u5FI5Mv1kiSNRqNyuTwYDJ6engDAbrdXq1UAcLvd4/HY6/VyPJ6B3fDPpcViMZ/P/3Nqs9m8vr6m02nuL+X5HeZlMpk0m81oNPodm9/yhm/i//ql9QMoGDsKxo6CsaNg7CgYOwrGjoKxo2DsKBg7CsaOgrGjYOwoGDsKxo6Csft1wX8A3c3Af4HjOXcAAAAASUVORK5CYII="
+                     class="equipment" alt="empty icon" width="80" height="80"/>
+            </span>
+            <span th:if="${!#strings.isEmpty(character.getBootsSlot())}">
+                <img th:src="@{'https://www.artifactsmmo.com/images/items/' + ${character.getBootsSlot()} + '.png'}"
+                     class="equipment" th:alt="${character.getBootsSlot()}"/>
+            </span>
+            <span th:if="${#strings.isEmpty(character.getRing1Slot())}">
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAIAAAABc2X6AAACZklEQVR4nO3au2sqQRTA4TO7i61gJSsIgs36aCIYEiuLaGGhWFj5Ir29paX/gpWFhV0ghCCawkLRVgtfrIWotagootHdWyxYXC6kmcTLyfmqZWaYnR+jYCErFArwmwi3PsBPo2DsKBg7CsaOgrGjYOwoGDsKxo6CsaNg7CgYOwrGjoKxo2DsKBg7CsaOgrGjYOwo+Kba7fZ3v+LXBUsc9zocDrVabbfbXS6XUChks9kAoFgsKooym80CgcB8Pl8sFn6//+HhwZi6u7tbLpeMsVgs1uv1TqdTpVLZ7/eJRMJisRyPx1KplMvlGGO8Dsnzhj8+Pvx+fzqdjsfjb29vxuD5fPb5fNls9v39/f7+PpPJdDqd65Qsy8/Pzz6fr16vB4NBk8mUSqW8Xu94PAYAVVUVReFYC3xveDqdrlYr4/l0OmmaJggCY0yWZUEQRFGUZZkx9vn5aaxhjCmKAgAul6vRaFz38Xg8Ly8vj4+Pk8kkEAhwPCHwDdY0LZlMSpKk6/p8PhcEAQBEUTQeJEn6664YY9cRURSv42azmTG23W7X67XVauV4QuD7kbbb7aPRCABUVW21Wl+u1zRNVVUAGA6HDocDAHRd13UdANxud71edzqdHI9n4BkcDof7/X65XO52u5FI5Mv1kiSNRqNyuTwYDJ6engDAbrdXq1UAcLvd4/HY6/VyPJ6B3fDPpcViMZ/P/3Nqs9m8vr6m02nuL+X5HeZlMpk0m81oNPodm9/yhm/i//ql9QMoGDsKxo6CsaNg7CgYOwrGjoKxo2DsKBg7CsaOgrGjYOwoGDsKxo6Csft1wX8A3c3Af4HjOXcAAAAASUVORK5CYII="
+                     class="equipment" alt="empty icon" width="80" height="80"/>
+            </span>
+            <span th:if="${!#strings.isEmpty(character.getRing1Slot())}">
+                <img th:src="@{'https://www.artifactsmmo.com/images/items/' + ${character.getRing1Slot()} + '.png'}"
+                     class="equipment" th:alt="${character.getRing1Slot()}"/>
+            </span>
+            <br/>
+            <span th:if="${#strings.isEmpty(character.getBagSlot())}">
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAIAAAABc2X6AAACZklEQVR4nO3au2sqQRTA4TO7i61gJSsIgs36aCIYEiuLaGGhWFj5Ir29paX/gpWFhV0ghCCawkLRVgtfrIWotagootHdWyxYXC6kmcTLyfmqZWaYnR+jYCErFArwmwi3PsBPo2DsKBg7CsaOgrGjYOwoGDsKxo6CsaNg7CgYOwrGjoKxo2DsKBg7CsaOgrGjYOwo+Kba7fZ3v+LXBUsc9zocDrVabbfbXS6XUChks9kAoFgsKooym80CgcB8Pl8sFn6//+HhwZi6u7tbLpeMsVgs1uv1TqdTpVLZ7/eJRMJisRyPx1KplMvlGGO8Dsnzhj8+Pvx+fzqdjsfjb29vxuD5fPb5fNls9v39/f7+PpPJdDqd65Qsy8/Pzz6fr16vB4NBk8mUSqW8Xu94PAYAVVUVReFYC3xveDqdrlYr4/l0OmmaJggCY0yWZUEQRFGUZZkx9vn5aaxhjCmKAgAul6vRaFz38Xg8Ly8vj4+Pk8kkEAhwPCHwDdY0LZlMSpKk6/p8PhcEAQBEUTQeJEn6664YY9cRURSv42azmTG23W7X67XVauV4QuD7kbbb7aPRCABUVW21Wl+u1zRNVVUAGA6HDocDAHRd13UdANxud71edzqdHI9n4BkcDof7/X65XO52u5FI5Mv1kiSNRqNyuTwYDJ6engDAbrdXq1UAcLvd4/HY6/VyPJ6B3fDPpcViMZ/P/3Nqs9m8vr6m02nuL+X5HeZlMpk0m81oNPodm9/yhm/i//ql9QMoGDsKxo6CsaNg7CgYOwrGjoKxo2DsKBg7CsaOgrGjYOwoGDsKxo6Csft1wX8A3c3Af4HjOXcAAAAASUVORK5CYII="
+                     class="equipment" alt="empty icon" width="80" height="80"/>
+            </span>
+            <span th:if="${!#strings.isEmpty(character.getBagSlot())}">
+                <img th:src="@{'https://www.artifactsmmo.com/images/items/' + ${character.getBagSlot()} + '.png'}"
+                     class="equipment" th:alt="${character.getBagSlot()}"/>
+            </span>
+            <span th:if="${#strings.isEmpty(character.getRing2Slot())}">
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAIAAAABc2X6AAACZklEQVR4nO3au2sqQRTA4TO7i61gJSsIgs36aCIYEiuLaGGhWFj5Ir29paX/gpWFhV0ghCCawkLRVgtfrIWotagootHdWyxYXC6kmcTLyfmqZWaYnR+jYCErFArwmwi3PsBPo2DsKBg7CsaOgrGjYOwoGDsKxo6CsaNg7CgYOwrGjoKxo2DsKBg7CsaOgrGjYOwo+Kba7fZ3v+LXBUsc9zocDrVabbfbXS6XUChks9kAoFgsKooym80CgcB8Pl8sFn6//+HhwZi6u7tbLpeMsVgs1uv1TqdTpVLZ7/eJRMJisRyPx1KplMvlGGO8Dsnzhj8+Pvx+fzqdjsfjb29vxuD5fPb5fNls9v39/f7+PpPJdDqd65Qsy8/Pzz6fr16vB4NBk8mUSqW8Xu94PAYAVVUVReFYC3xveDqdrlYr4/l0OmmaJggCY0yWZUEQRFGUZZkx9vn5aaxhjCmKAgAul6vRaFz38Xg8Ly8vj4+Pk8kkEAhwPCHwDdY0LZlMSpKk6/p8PhcEAQBEUTQeJEn6664YY9cRURSv42azmTG23W7X67XVauV4QuD7kbbb7aPRCABUVW21Wl+u1zRNVVUAGA6HDocDAHRd13UdANxud71edzqdHI9n4BkcDof7/X65XO52u5FI5Mv1kiSNRqNyuTwYDJ6engDAbrdXq1UAcLvd4/HY6/VyPJ6B3fDPpcViMZ/P/3Nqs9m8vr6m02nuL+X5HeZlMpk0m81oNPodm9/yhm/i//ql9QMoGDsKxo6CsaNg7CgYOwrGjoKxo2DsKBg7CsaOgrGjYOwoGDsKxo6Csft1wX8A3c3Af4HjOXcAAAAASUVORK5CYII="
+                     class="equipment" alt="empty icon" width="80" height="80"/>
+            </span>
+            <span th:if="${#strings.isEmpty(character.getRing2Slot())}">
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAIAAAABc2X6AAACZklEQVR4nO3au2sqQRTA4TO7i61gJSsIgs36aCIYEiuLaGGhWFj5Ir29paX/gpWFhV0ghCCawkLRVgtfrIWotagootHdWyxYXC6kmcTLyfmqZWaYnR+jYCErFArwmwi3PsBPo2DsKBg7CsaOgrGjYOwoGDsKxo6CsaNg7CgYOwrGjoKxo2DsKBg7CsaOgrGjYOwo+Kba7fZ3v+LXBUsc9zocDrVabbfbXS6XUChks9kAoFgsKooym80CgcB8Pl8sFn6//+HhwZi6u7tbLpeMsVgs1uv1TqdTpVLZ7/eJRMJisRyPx1KplMvlGGO8Dsnzhj8+Pvx+fzqdjsfjb29vxuD5fPb5fNls9v39/f7+PpPJdDqd65Qsy8/Pzz6fr16vB4NBk8mUSqW8Xu94PAYAVVUVReFYC3xveDqdrlYr4/l0OmmaJggCY0yWZUEQRFGUZZkx9vn5aaxhjCmKAgAul6vRaFz38Xg8Ly8vj4+Pk8kkEAhwPCHwDdY0LZlMSpKk6/p8PhcEAQBEUTQeJEn6664YY9cRURSv42azmTG23W7X67XVauV4QuD7kbbb7aPRCABUVW21Wl+u1zRNVVUAGA6HDocDAHRd13UdANxud71edzqdHI9n4BkcDof7/X65XO52u5FI5Mv1kiSNRqNyuTwYDJ6engDAbrdXq1UAcLvd4/HY6/VyPJ6B3fDPpcViMZ/P/3Nqs9m8vr6m02nuL+X5HeZlMpk0m81oNPodm9/yhm/i//ql9QMoGDsKxo6CsaNg7CgYOwrGjoKxo2DsKBg7CsaOgrGjYOwoGDsKxo6Csft1wX8A3c3Af4HjOXcAAAAASUVORK5CYII="
+                     class="equipment" alt="empty icon" width="80" height="80">
+            </span>
+            <span th:if="${!#strings.isEmpty(character.getRing2Slot())}">
+                <img th:src="@{'https://www.artifactsmmo.com/images/items/' + ${character.getRing2Slot()} + '.png'}"
+                     class="equipment" th:alt="${character.getRing2Slot()}"/>
+             </span>
+        </div>
+
+        <div style="grid-area: inventory; display: flex">
+            <div th:each="inventorySlot:${character.getInventory()}">
+                <div th:if="${inventorySlot.quantity >= 1}">
+                    <span th:text="${inventorySlot.quantity}"></span>x
+                    <img th:src="@{'https://www.artifactsmmo.com/images/items/' + ${inventorySlot.code} + '.png'}"
+                         class="equipment" th:alt="${inventorySlot.code}"/>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<p th:if="${#lists.isEmpty(characters)}">No characters found</p>
+</body>
+</html>

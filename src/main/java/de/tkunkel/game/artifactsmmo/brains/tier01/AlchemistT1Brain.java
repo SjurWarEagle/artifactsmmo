@@ -62,7 +62,7 @@ public class AlchemistT1Brain {
         if (itemToCraft.isPresent()) {
             craftItemTask.craftItem(characterName, itemToCraft.get());
         } else {
-            trainingSkillTask.trainSkills(character, Skill.ALCHEMY);
+            trainingSkillTask.trainSkillsWithBankItems(character, Skill.ALCHEMY);
             // farmHighestResourceTask.farmResource(this, characterName);
         }
     }
