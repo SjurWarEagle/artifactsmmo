@@ -1,16 +1,13 @@
 package de.tkunkel.game.artifactsmmo.brains.tier01;
 
 
-import de.tkunkel.game.artifactsmmo.Caches;
 import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
 import de.tkunkel.game.artifactsmmo.tasks.CraftItemTask;
 import de.tkunkel.game.artifactsmmo.tasks.TaskAcceptNewItemTask;
 import de.tkunkel.game.artifactsmmo.tasks.TrainingSkillTask;
-import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
-import de.tkunkel.games.artifactsmmo.model.GatheringSkill;
 import de.tkunkel.games.artifactsmmo.model.Skill;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,11 +23,9 @@ public class WoodworkerT1Brain {
     private final TrainingSkillTask trainingSkillTask;
     private final CharHelper charHelper;
     private final CharactersApiWrapper charactersApi;
-    private final Caches caches;
     private final TaskAcceptNewItemTask taskAcceptNewItemTask;
 
-    public WoodworkerT1Brain(Caches caches,
-                             CraftItemTask craftItemTask, BankDepositAllTask bankDepositAllTask,
+    public WoodworkerT1Brain(CraftItemTask craftItemTask, BankDepositAllTask bankDepositAllTask,
                              CharHelper charHelper, TrainingSkillTask trainingSkillTask, CharactersApiWrapper charactersApi,
                              TaskAcceptNewItemTask taskAcceptNewItemTask) {
         this.craftItemTask = craftItemTask;
@@ -38,24 +33,13 @@ public class WoodworkerT1Brain {
         this.trainingSkillTask = trainingSkillTask;
         this.charHelper = charHelper;
         this.charactersApi = charactersApi;
-        this.caches = caches;
         this.taskAcceptNewItemTask = taskAcceptNewItemTask;
-    }
-
-    public String decideWhatResourceToFarm(String characterName) {
-        CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
-
-        String resource = caches.findHighestFarmableResourceForSkillLevel(character.getData()
-                                                                                   .getWoodcuttingLevel(), GatheringSkill.WOODCUTTING
-        );
-        return resource;
     }
 
     public void runBaseLoop(String characterName) {
         CharacterSchema character = charactersApi.getCharacterCharactersNameGet(characterName)
                                                  .getData();
         charHelper.waitUntilCooldownDone(character.getName());
-        // getBestItemForSlot.equipOrRequestBestToolForSkill(character, "woodcutting");
         bankDepositAllTask.depositInventoryInBankIfInventoryIsFull(character);
 
         taskAcceptNewItemTask.getNewTaskIfCurrentTaskIsDone(character);

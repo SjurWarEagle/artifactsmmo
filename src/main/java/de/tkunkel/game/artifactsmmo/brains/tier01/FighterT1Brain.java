@@ -215,7 +215,6 @@ public class FighterT1Brain {
         CombatStats charCombatStats = CombatStats.fromCharacter(character);
 
         String rc = "green_slime";
-        // String rc = "chicken";
         return rc;
     }
 
