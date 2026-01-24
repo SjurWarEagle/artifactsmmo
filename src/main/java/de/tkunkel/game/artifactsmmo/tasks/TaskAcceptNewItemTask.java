@@ -2,6 +2,7 @@ package de.tkunkel.game.artifactsmmo.tasks;
 
 import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.MyCharactersApiWrapper;
+import de.tkunkel.game.artifactsmmo.helper.AccountHelper;
 import de.tkunkel.game.artifactsmmo.helper.MapHelper;
 import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
 import de.tkunkel.games.artifactsmmo.model.MapSchema;
@@ -16,11 +17,13 @@ public class TaskAcceptNewItemTask {
     private final CharHelper charHelper;
     private final MapHelper mapHelper;
     private final MyCharactersApiWrapper myCharactersApi;
+    private final AccountHelper accountHelper;
 
-    public TaskAcceptNewItemTask(CharHelper charHelper, MapHelper mapHelper, MyCharactersApiWrapper myCharactersApi) {
+    public TaskAcceptNewItemTask(CharHelper charHelper, MapHelper mapHelper, MyCharactersApiWrapper myCharactersApi, AccountHelper accountHelper) {
         this.charHelper = charHelper;
         this.mapHelper = mapHelper;
         this.myCharactersApi = myCharactersApi;
+        this.accountHelper = accountHelper;
     }
 
     public void giveItemsToTaskMaster(CharacterSchema character) {
@@ -45,7 +48,8 @@ public class TaskAcceptNewItemTask {
             // still has task
             return;
         }
-        if (charHelper.cntItemsInBank("tasks_coin") >= 50) {
+        if (charHelper.cntItemsInBank("tasks_coin") >= 50
+                && accountHelper.hasAchievement("tasks_farmer")) {
             // enough token in bank
             return;
         }

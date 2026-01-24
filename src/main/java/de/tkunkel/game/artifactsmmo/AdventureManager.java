@@ -1,9 +1,11 @@
 package de.tkunkel.game.artifactsmmo;
 
+import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.brains.tier01.*;
 import de.tkunkel.game.artifactsmmo.helper.TaskHelper;
 import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
+import de.tkunkel.game.artifactsmmo.tasks.BankDepositGoldIfRichTask;
 import de.tkunkel.game.artifactsmmo.tasks.GetBestItemForSlotTask;
 import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
 import de.tkunkel.games.artifactsmmo.model.ItemSlot;
@@ -29,11 +31,13 @@ public class AdventureManager {
     private final AlchemistT1Brain alchemistBrain;
     private final WishList wishList;
     private final TaskHelper taskHelper;
+    private final BankDepositGoldIfRichTask bankDepositGoldIfRichTask;
+    private final CharactersApiWrapper charactersApi;
 
     public AdventureManager(ApiHolder apiHolder, BankDepositAllTask bankDepositAllTask,
                             GetBestItemForSlotTask getBestItemForSlotTask, MinerT1Brain minerBrain, FighterT1Brain fighterBrain,
                             FisherT1Brain fisherBrain, WoodworkerT1Brain woodworkerBrain, AlchemistT1Brain alchemistBrain,
-                            WishList wishList, TaskHelper taskHelper) {
+                            WishList wishList, TaskHelper taskHelper, BankDepositGoldIfRichTask bankDepositGoldIfRichTask, CharactersApiWrapper charactersApi) {
         this.apiHolder = apiHolder;
         this.bankDepositAllTask = bankDepositAllTask;
         this.getBestItemForSlotTask = getBestItemForSlotTask;
@@ -44,6 +48,8 @@ public class AdventureManager {
         this.alchemistBrain = alchemistBrain;
         this.wishList = wishList;
         this.taskHelper = taskHelper;
+        this.bankDepositGoldIfRichTask = bankDepositGoldIfRichTask;
+        this.charactersApi = charactersApi;
     }
 
     public void addAndStartAdventurer(String name, AdventurerClass adventurerClass) {
@@ -83,6 +89,9 @@ public class AdventureManager {
             if (wishList.isHandlingCraftingWish(character)) {
                 continue;
             }
+            if (wishList.isHandlingCraftingWithBankWish(character)) {
+                continue;
+            }
             if (wishList.isHandlingGatheringWish(character)) {
                 continue;
             }
@@ -90,6 +99,8 @@ public class AdventureManager {
                 continue;
             }
 
+
+            bankDepositGoldIfRichTask.depositGoldInBank(character);
             // nothing to craft, so use default
             switch (adventurerClass) {
                 case MINER -> minerBrain.runBaseLoop(characterName);

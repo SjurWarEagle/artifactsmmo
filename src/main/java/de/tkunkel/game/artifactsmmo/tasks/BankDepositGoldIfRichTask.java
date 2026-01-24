@@ -25,7 +25,7 @@ public class BankDepositGoldIfRichTask {
         this.myCharactersApi = myCharactersApi;
     }
 
-    public void depositInventoryInBankIfInventoryIsFull(CharacterSchema character) {
+    public void depositGoldInBank(CharacterSchema character) {
         if (character.getGold() < 100) {
             return;
         }

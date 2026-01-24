@@ -17,6 +17,7 @@ public class ApiConfig {
     @Bean
     public ApiClient createApiClient() {
         ApiClient apiClient = new ApiClient();
+        // apiClient.setDebugging(true);
         apiClient.setBearerToken(config.token());
         apiClient.setBasePath("https://api.artifactsmmo.com");
         return apiClient;

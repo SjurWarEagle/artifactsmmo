@@ -62,7 +62,7 @@ public class TrainingSkillTask {
                                                                          .equalsIgnoreCase(skillToTrain.get()
                                                                                                        .name())
                                              ;
-                                     boolean charHasEnoughSkill = charHasEnoughSkill(character, skillToTrain.get(), neededLevel);
+                                     boolean charHasEnoughSkill = characterHelper.charHasEnoughSkill(character, skillToTrain.get(), neededLevel);
                                      return isRelevantSkill && charHasEnoughSkill;
 
                                  })
@@ -100,11 +100,11 @@ public class TrainingSkillTask {
                                                                          .equalsIgnoreCase(skillToTrain.get()
                                                                                                        .name())
                                              ;
-                                     boolean charHasEnoughSkill = charHasEnoughSkill(character, skillToTrain.get(), neededLevel);
+                                     boolean charHasEnoughSkill = characterHelper.charHasEnoughSkill(character, skillToTrain.get(), neededLevel);
                                      return isRelevantSkill && charHasEnoughSkill;
 
                                  })
-                                 .filter(itemSchema -> canCanGatherResources(character, itemSchema))
+                                 .filter(itemSchema -> characterHelper.canCanGatherResources(character, itemSchema))
                                  .sorted(this::sortByNeededResource)
                                  .findFirst()
                 ;
@@ -181,69 +181,6 @@ public class TrainingSkillTask {
 
     private boolean canCanGatherItem(String code) {
         return false;
-    }
-
-    private boolean canCanGatherResources(CharacterSchema character, ItemSchema itemSchema) {
-        if (itemSchema.getCraft() == null ||
-                itemSchema.getCraft()
-                          .getItems() == null) {
-            // TODO check if returning false here is correct
-            return false;
-        }
-
-        return itemSchema.getCraft()
-                         .getItems()
-                         .stream()
-                         .allMatch(simpleItemSchema -> {
-                                       ItemSchema resource = caches.cachedItems.stream()
-                                                                               .filter(itemDef -> itemDef.getCode()
-                                                                                                         .equalsIgnoreCase(simpleItemSchema.getCode())
-                                                                               )
-                                                                               .findFirst()
-                                                                               .get()
-                                               ;
-                                       var resourceSource = caches.cachedResources.stream()
-                                                                                  .filter(resourceSchema -> resourceSchema.getDrops()
-                                                                                                                          .stream()
-                                                                                                                          .anyMatch(dropRateSchema -> dropRateSchema.getCode()
-                                                                                                                                                                    .equalsIgnoreCase(resource.getCode())))
-                                                                                  .findFirst()
-                                               ;
-                                       if (resourceSource.isEmpty()) {
-                                           // this is no resource to gather but to craft
-                                           return canCanGatherResources(character, itemHelper.findItemDefinition(simpleItemSchema.getCode())
-                                                                                             .get()
-                                           );
-                                       }
-                                       var harvestSkill = Skill.fromValue(resourceSource.get()
-                                                                                        .getSkill()
-                                                                                        .getValue());
-                                       return charHasEnoughSkill(character, harvestSkill, resourceSource.get()
-                                                                                                        .getLevel()
-                                       );
-                                   }
-                         )
-                ;
-    }
-
-    private boolean charHasEnoughSkill(CharacterSchema character, Skill skill, Integer skillLevel) {
-        int skillOfChar = getSkillOfCharToCreate(character, skill);
-        return skillOfChar >= skillLevel;
-    }
-
-    private int getSkillOfCharToCreate(CharacterSchema character, Skill skill) {
-        return switch (skill) {
-            case WEAPONCRAFTING -> character.getWeaponcraftingLevel();
-            case GEARCRAFTING -> character.getGearcraftingLevel();
-            case JEWELRYCRAFTING -> character.getJewelrycraftingLevel();
-            case COOKING -> character.getCookingLevel();
-            case WOODCUTTING -> character.getWoodcuttingLevel();
-            case MINING -> character.getMiningLevel();
-            case ALCHEMY -> character.getAlchemyLevel();
-            case FISHING -> character.getFishingLevel();
-            // noinspection UnnecessaryDefault
-            default -> throw new RuntimeException("unknown skill " + skill.name());
-        };
     }
 
     public void trainSkillsWithBankItems(CharacterSchema character, Skill... skills) {

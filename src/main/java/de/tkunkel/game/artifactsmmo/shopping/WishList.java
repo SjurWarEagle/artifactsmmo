@@ -164,6 +164,33 @@ public class WishList {
         }
     }
 
+    public boolean isHandlingCraftingWithBankWish(CharacterSchema character) {
+        Optional<Wish> wishThatCanBeCraftedByMe = reserveWishThatCanBeCraftedByMeWithBankSupport(character);
+        boolean allResourcesAvailable = checkIfAllResourcesAreAvailable(character, wishThatCanBeCraftedByMe);
+        if (allResourcesAvailable && wishThatCanBeCraftedByMe.isPresent()) {
+            Wish wish = wishThatCanBeCraftedByMe.get();
+            // crafting one by one so that the inventory is big enough
+            bankFetchItemsAndCraftTask.craftItemWithBankItems(character, wish.itemCode, 1);
+            wish.amount -= 1;
+            if (wish.amount <= 0) {
+                wish.fulfilled = true;
+                wish.reservedBy = null;
+            }
+            return true;
+        } else if (wishThatCanBeCraftedByMe.isPresent()) {
+            List<SimpleItemSchema> neededItems = itemHelper.getRecursiveResourcesToCraft(wishThatCanBeCraftedByMe.get().itemCode, wishThatCanBeCraftedByMe.get().amount);
+            return neededItems.stream()
+                              .allMatch(neededItem -> {
+                                  boolean canCraft = charHelper.couldCraft(character, neededItem.getCode());
+                                  boolean canHarvest = charHelper.canCanGatherResources(character, neededItem.getCode());
+                                  boolean itemAlreadyInBank = charHelper.cntItemsInBank(neededItem.getCode()) >= neededItem.getQuantity();
+                                  return canCraft || canHarvest || itemAlreadyInBank;
+                              });
+        } else {
+            return false;
+        }
+    }
+
     public boolean isHandlingCraftingWish(CharacterSchema character) {
         Optional<Wish> wishThatCanBeCraftedByMe = reserveWishThatCanBeCraftedByMe(character);
         boolean allResourcesAvailable = checkIfAllResourcesAreAvailable(character, wishThatCanBeCraftedByMe);
@@ -231,13 +258,8 @@ public class WishList {
                           .getCraft() == null) {
             return;
         }
-        itemDefinition.get()
-                      .getCraft()
-                      .getItems()
-                      .forEach(component -> addRequest(new Wish(wish.characterName, component.getCode(), component.getQuantity())
-                              , false
-                      ))
-        ;
+        List<SimpleItemSchema> neededItems = itemHelper.getRecursiveResourcesToCraft(wish.itemCode, wish.amount);
+        neededItems.forEach(component -> addRequest(new Wish(wish.characterName, component.getCode(), component.getQuantity()), false));
     }
 
     public Set<Wish> getAllWishes() {
@@ -324,6 +346,41 @@ public class WishList {
                 if (charHasSkill) {
                     wish.reservedBy = character.getName();
                     wish.wishType = "gathering";
+                    return Optional.of(wish);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    public synchronized Optional<Wish> reserveWishThatCanBeCraftedByMeWithBankSupport(CharacterSchema character) {
+        Optional<Wish> existingReservedWish = getAlreadyReservedWish(character, "crafting");
+        if (existingReservedWish.isPresent()) {
+            return existingReservedWish;
+        }
+
+        for (Wish wish : allWishes) {
+            if (!wish.fulfilled
+                    && wish.reservedBy == null) {
+                Optional<ItemSchema> itemDefinition = itemHelper.findItemDefinition(wish.itemCode);
+                if (itemDefinition.isEmpty()
+                        || itemDefinition.get()
+                                         .getCraft() == null) {
+                    // nothing to craft, this one needs to be gathered
+                    continue;
+                }
+
+                List<SimpleItemSchema> neededItems = itemHelper.getRecursiveResourcesToCraft(wish.itemCode, wish.amount);
+                boolean canHandle = neededItems.stream()
+                                               .allMatch(neededItem -> {
+                                                   boolean canCraft = charHelper.couldCraft(character, neededItem.getCode());
+                                                   boolean canHarvest = charHelper.canCanGatherResources(character, neededItem.getCode());
+                                                   boolean itemAlreadyInBank = charHelper.cntItemsInBank(neededItem.getCode()) >= neededItem.getQuantity();
+                                                   return canCraft || canHarvest || itemAlreadyInBank;
+                                               });
+                if (canHandle) {
+                    wish.reservedBy = character.getName();
+                    wish.wishType = "crafting";
                     return Optional.of(wish);
                 }
             }

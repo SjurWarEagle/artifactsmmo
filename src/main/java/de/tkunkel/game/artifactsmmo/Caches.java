@@ -51,6 +51,7 @@ public class Caches {
 
     private ApiClient createApiClient() {
         ApiClient rc = new ApiClient();
+        // rc.setDebugging(true);
         rc.setBearerToken(config.token());
         rc.setBasePath("https://api.artifactsmmo.com");
         return rc;

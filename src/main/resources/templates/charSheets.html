@@ -32,7 +32,7 @@
     }
 </style>
 
-<body style="width: 100%;height: 100%;        overflow: hidden;">
+<body style="width: 100%;height: 100%;">
 
 <div style="width: 100%;height: 100%;">
     <div th:each="character : ${characters}" class="character-sheet" style="margin-bottom: 2em;">
@@ -144,5 +144,22 @@
 </div>
 
 <p th:if="${#lists.isEmpty(characters)}">No characters found</p>
+
+<table>
+    <tr>
+        <th>name</th>
+        <th>type</th>
+        <th>total</th>
+        <th>current</th>
+        <th>completed</th>
+    </tr>
+    <tr th:each="achievement: ${achievements}">
+        <td th:text="${achievement.name}"></td>
+        <td th:text="${achievement.type}"></td>
+        <td th:text="${achievement.total}"></td>
+        <td th:text="${achievement.current}"></td>
+        <td th:text="${achievement.completedAt}"></td>
+    <tr/>
+</table>
 </body>
 </html>

@@ -99,6 +99,13 @@
     </build>
 
     <dependencies>
+        <!-- Source: https://mvnrepository.com/artifact/de.siegmar/logback-gelf -->
+        <dependency>
+            <groupId>de.siegmar</groupId>
+            <artifactId>logback-gelf</artifactId>
+            <version>6.1.2</version>
+        </dependency>
+
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>logging-interceptor</artifactId>

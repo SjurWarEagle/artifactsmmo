@@ -56,7 +56,7 @@ public class FighterT1Brain {
         CharacterSchema character = charactersApi.getCharacterCharactersNameGet(characterName)
                                                  .getData();
         charHelper.waitUntilCooldownDone(character.getName());
-        bankDepositGoldIfRichTask.depositInventoryInBankIfInventoryIsFull(character);
+        bankDepositGoldIfRichTask.depositGoldInBank(character);
         bankUpgradeIfPossibleTask.perform(character);
         depositNonFoodAtBankIfInventoryIsFull(character);
         cookingTask.cookFoodIfHaveSome(character);

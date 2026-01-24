@@ -1,6 +1,7 @@
 package de.tkunkel.game.artifactsmmo.web;
 
 import de.tkunkel.game.artifactsmmo.api.AccountsApiWrapper;
+import de.tkunkel.games.artifactsmmo.model.AccountAchievementSchema;
 import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,9 +22,12 @@ public class CharsController {
 
     @GetMapping("/charSheets")
     public String showCharacterSheets(Model model) {
+        List<AccountAchievementSchema> achievements = accountsApiWrapper.getAccountAchievementsAccountsAccountAchievementsGet(false)
+                                                                        .getData();
         List<CharacterSchema> characters = accountsApiWrapper.getAccountCharactersAccountsAccountCharactersGet()
                                                              .getData();
         model.addAttribute("characters", characters);
+        model.addAttribute("achievements", achievements);
         return "charSheets";
     }
 }
