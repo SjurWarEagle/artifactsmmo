@@ -95,6 +95,9 @@ public class AdventureManager {
             if (wishList.isHandlingGatheringWish(character)) {
                 continue;
             }
+            if (wishList.isHandlingBuyingWish(character)) {
+                continue;
+            }
             if (taskHelper.isHandlingTask(character)) {
                 continue;
             }

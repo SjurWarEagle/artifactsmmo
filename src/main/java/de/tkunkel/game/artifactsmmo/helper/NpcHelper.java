@@ -33,10 +33,10 @@ public class NpcHelper {
     }
 
     // TODO I'm not sure about this one. it was created to exclude farmable items from buyable items, but I do not like the way I did it.
-    public Optional<NPCSchema> findNpcThatSellsExcludeGold(String code) {
+    public Optional<NPCSchema> findNpcThatSellsExcludeGold(String itemCode) {
         Optional<NPCItem> optionalNPCItem = caches.cachedNpcItems.stream()
                                                                  .filter(npcItem -> npcItem.getCode()
-                                                                                           .equals(code))
+                                                                                           .equals(itemCode))
                                                                  .filter(npcItem -> !npcItem.getCurrency()
                                                                                             .equalsIgnoreCase("gold"))
                                                                  .findFirst()
@@ -51,4 +51,12 @@ public class NpcHelper {
                                 .findFirst();
     }
 
+    public Optional<NPCItem> findNpcItemFromSeller(String neededItemCode, NPCSchema npcSchema) {
+        return caches.cachedNpcItems.stream()
+                                    .filter(npcItem -> npcItem.getCode()
+                                                              .equalsIgnoreCase(neededItemCode))
+                                    .filter(npcItem -> npcItem.getNpc()
+                                                              .equalsIgnoreCase(npcSchema.getCode()))
+                                    .findFirst();
+    }
 }

@@ -9,10 +9,7 @@ import de.tkunkel.game.artifactsmmo.helper.ItemHelper;
 import de.tkunkel.game.artifactsmmo.helper.MapHelper;
 import de.tkunkel.game.artifactsmmo.helper.MonsterHelper;
 import de.tkunkel.game.artifactsmmo.helper.NpcHelper;
-import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
-import de.tkunkel.game.artifactsmmo.tasks.BankFetchItemsAndCraftTask;
-import de.tkunkel.game.artifactsmmo.tasks.FarmResourceTask;
-import de.tkunkel.game.artifactsmmo.tasks.HuntForItemTask;
+import de.tkunkel.game.artifactsmmo.tasks.*;
 import de.tkunkel.games.artifactsmmo.model.*;
 import org.jetbrains.annotations.UnknownNullability;
 import org.jspecify.annotations.NonNull;
@@ -39,13 +36,14 @@ public class WishList {
     private final BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask;
     private final FarmResourceTask farmResourceTask;
     private final MyAccountApiWrapper myAccountApi;
+    private final BuyItemForTokenTask buyItemForTokenTask;
     private final MonsterHelper monsterHelper;
     private final NpcHelper npcHelper;
     private final MapHelper mapHelper;
 
     public WishList(ApiHolder apiHolder, ItemHelper itemHelper, CharHelper charHelper, HuntForItemTask huntForItemTask,
                     CombatSimulator combatSimulator, BankDepositAllTask bankDepositAllTask, BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask,
-                    FarmResourceTask farmResourceTask, MyAccountApiWrapper myAccountApi, MonsterHelper monsterHelper, NpcHelper npcHelper, MapHelper mapHelper
+                    FarmResourceTask farmResourceTask, MyAccountApiWrapper myAccountApi, BuyItemForTokenTask buyItemForTokenTask, MonsterHelper monsterHelper, NpcHelper npcHelper, MapHelper mapHelper
     ) {
         this.apiHolder = apiHolder;
         this.itemHelper = itemHelper;
@@ -56,6 +54,7 @@ public class WishList {
         this.bankFetchItemsAndCraftTask = bankFetchItemsAndCraftTask;
         this.farmResourceTask = farmResourceTask;
         this.myAccountApi = myAccountApi;
+        this.buyItemForTokenTask = buyItemForTokenTask;
         this.monsterHelper = monsterHelper;
         this.npcHelper = npcHelper;
         this.mapHelper = mapHelper;
@@ -139,6 +138,18 @@ public class WishList {
 
     }
 
+
+    public boolean isHandlingBuyingWish(CharacterSchema character) {
+        Optional<Wish> wishThatCanBeGatheredByMe = reserveWishThatCanBoughtByMe(character);
+        if (wishThatCanBeGatheredByMe.isPresent()) {
+            buyItemForTokenTask.buyItem(character.getName(), wishThatCanBeGatheredByMe.get().itemCode, wishThatCanBeGatheredByMe.get().amount);
+            wishThatCanBeGatheredByMe.get().fulfilled = true;
+            wishThatCanBeGatheredByMe.get().reservedBy = null;
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     public boolean isHandlingGatheringWish(CharacterSchema character) {
         Optional<Wish> wishThatCanBeGatheredByMe = reserveWishThatCanGatheredByMe(character);
@@ -308,6 +319,33 @@ public class WishList {
         return false;
     }
 
+    public synchronized Optional<Wish> reserveWishThatCanBoughtByMe(CharacterSchema character) {
+        Optional<Wish> existingReservedWish = getAlreadyReservedWish(character, "buying");
+        if (existingReservedWish.isPresent()) {
+            return existingReservedWish;
+        }
+
+        for (Wish wish : allWishes) {
+            if (!wish.fulfilled
+                    && wish.reservedBy == null) {
+                Optional<ItemSchema> itemDefinition = itemHelper.findItemDefinition(wish.itemCode);
+                if (itemDefinition.isEmpty()) {
+                    continue;
+                }
+                boolean isCraftable = itemDefinition.get()
+                                                    .getCraft() != null;
+                if (isCraftable) {
+                    continue;
+                }
+                boolean isBuyable = buyItemForTokenTask.canBuyItem(character.getName(), wish.itemCode, wish.amount);
+                if (isBuyable) {
+                    return Optional.of(wish);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
     public synchronized Optional<Wish> reserveWishThatCanGatheredByMe(CharacterSchema character) {
         Optional<Wish> existingReservedWish = getAlreadyReservedWish(character, "gathering");
         if (existingReservedWish.isPresent()) {
@@ -326,9 +364,7 @@ public class WishList {
                 if (isCraftable) {
                     continue;
                 }
-                // FIXME better cange logic to check resorufes on map if farming place is available
-                boolean isBuyable = npcHelper.findNpcThatSellsExcludeGold(wish.itemCode)
-                                             .isPresent();
+                boolean isBuyable = buyItemForTokenTask.canBuyItem(character.getName(), wish.itemCode, wish.amount);
                 if (isBuyable) {
                     continue;
                 }
@@ -369,7 +405,17 @@ public class WishList {
                     // nothing to craft, this one needs to be gathered
                     continue;
                 }
-
+                var neededSkill = Skill.fromValue(itemDefinition.get()
+                                                                .getCraft()
+                                                                .getSkill()
+                                                                .getValue());
+                var neededSkillLevel = itemDefinition.get()
+                                                     .getCraft()
+                                                     .getLevel()
+                        ;
+                if (!charHelper.charHasEnoughSkill(character, neededSkill, neededSkillLevel)) {
+                    continue;
+                }
                 List<SimpleItemSchema> neededItems = itemHelper.getRecursiveResourcesToCraft(wish.itemCode, wish.amount);
                 boolean canHandle = neededItems.stream()
                                                .allMatch(neededItem -> {

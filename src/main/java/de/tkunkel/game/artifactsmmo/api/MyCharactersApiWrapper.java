@@ -188,4 +188,15 @@ public class MyCharactersApiWrapper {
             throw new RuntimeException(e);
         }
     }
+
+    @Retryable(retryFor = SocketException.class, maxAttempts = 10, backoff = @Backoff(delay = 1000))
+    public NpcMerchantTransactionResponseSchema actionNpcBuyItemMyNameActionNpcBuyPost(String charName, String itemCode, Integer quantity) {
+        try {
+            NpcMerchantBuySchema npcMerchantBuySchema = new NpcMerchantBuySchema().code(itemCode)
+                                                                                  .quantity(quantity);
+            return charactersApi.actionNpcBuyItemMyNameActionNpcBuyPost(charName, npcMerchantBuySchema);
+        } catch (ApiException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
