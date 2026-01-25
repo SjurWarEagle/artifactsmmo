@@ -5,10 +5,13 @@ import de.tkunkel.games.artifactsmmo.ApiException;
 import de.tkunkel.games.artifactsmmo.api.*;
 import de.tkunkel.games.artifactsmmo.model.*;
 import jakarta.annotation.PostConstruct;
+import okhttp3.OkHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.lang.reflect.Method;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -54,7 +57,46 @@ public class Caches {
         // rc.setDebugging(true);
         rc.setBearerToken(config.token());
         rc.setBasePath("https://api.artifactsmmo.com");
+        configureTimeouts(rc);
         return rc;
+    }
+
+    private static void configureTimeouts(ApiClient apiClient) {
+        OkHttpClient httpClient = null;
+        Method setter = null;
+
+        for (Method method : apiClient.getClass()
+                                      .getMethods()) {
+            if (method.getParameterCount() == 0 && method.getReturnType()
+                                                         .equals(OkHttpClient.class)) {
+                try {
+                    httpClient = (OkHttpClient) method.invoke(apiClient);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            if (method.getParameterCount() == 1 && method.getParameterTypes()[0].equals(OkHttpClient.class)) {
+                setter = method;
+            }
+        }
+
+        if (httpClient == null || setter == null) {
+            throw new IllegalStateException("Unable to configure OkHttp timeouts for ApiClient");
+        }
+
+        OkHttpClient tunedClient = httpClient.newBuilder()
+                                             .connectTimeout(Duration.ofSeconds(300))
+                                             .readTimeout(Duration.ofSeconds(300))
+                                             .writeTimeout(Duration.ofSeconds(3000))
+                                             .callTimeout(Duration.ofSeconds(300))
+                                             .build()
+                ;
+
+        try {
+            setter.invoke(apiClient, tunedClient);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void fillCache() {
