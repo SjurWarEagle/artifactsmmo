@@ -18,20 +18,24 @@ public class TrainingSkillTask {
     private final ItemHelper itemHelper;
     private final CraftItemTask craftItemTask;
     private final BankDepositSingleItemTask bankDepositSingleItemTask;
+    private final BankDepositAllTask bankDepositAllTask;
     private final CharHelper characterHelper;
     private final CharactersApiWrapper charactersApi;
     private final HarvestResourceTask harvestResourceTask;
+    private final BankFetchItemTask bankFetchItemTask;
 
     public TrainingSkillTask(Caches caches, ItemHelper itemHelper, CraftItemTask craftItemTask,
-                             BankDepositSingleItemTask bankDepositSingleItemTask, CharHelper characterHelper,
-                             CharactersApiWrapper charactersApi, HarvestResourceTask harvestResourceTask) {
+                             BankDepositSingleItemTask bankDepositSingleItemTask, BankDepositAllTask bankDepositAllTask, CharHelper characterHelper,
+                             CharactersApiWrapper charactersApi, HarvestResourceTask harvestResourceTask, BankFetchItemTask bankFetchItemTask) {
         this.caches = caches;
         this.itemHelper = itemHelper;
         this.craftItemTask = craftItemTask;
         this.bankDepositSingleItemTask = bankDepositSingleItemTask;
+        this.bankDepositAllTask = bankDepositAllTask;
         this.characterHelper = characterHelper;
         this.charactersApi = charactersApi;
         this.harvestResourceTask = harvestResourceTask;
+        this.bankFetchItemTask = bankFetchItemTask;
     }
 
     public Optional<ItemSchema> findHighestItemCraftableByCharWithBank(CharacterSchema character, Skill... skills) {
@@ -67,7 +71,11 @@ public class TrainingSkillTask {
 
                                  })
                                  .filter(itemSchema -> resouresAreInBank(character, itemSchema))
-                                 .sorted(this::sortByNeededResource)
+                                 .sorted((itemSchema1, itemSchema2) -> {
+                                     int level1 = itemSchema1.getLevel();
+                                     int level2 = itemSchema2.getLevel();
+                                     return Integer.compare(level2, level1);
+                                 })
                                  .findFirst()
                 ;
     }
@@ -223,7 +231,8 @@ public class TrainingSkillTask {
     }
 
     public void trainSkills(CharacterSchema character, Skill... skills) {
-        Optional<ItemSchema> itemToTrain = findHighestItemThatThisCharCanCreateAlone(character, skills);
+        Optional<ItemSchema> itemToTrain = findHighestItemCraftableByCharWithBank(character, skills);
+        // Optional<ItemSchema> itemToTrain = findHighestItemThatThisCharCanCreateAlone(character, skills);
         if (itemToTrain.isEmpty()) {
             return;
         }
@@ -235,27 +244,50 @@ public class TrainingSkillTask {
         List<SimpleItemSchema> neededForTrainingItem = itemHelper.getRecursiveResourcesToCraft(itemToTrain.get()
                                                                                                           .getCode(), 1
         );
+        // FIXME neededForTrainingItem contains all items, so also the ore if you need bars, this is not needed, we need it to craft butnot for the final item. maybe filter them ojut.
+        // FIXME also I forgot to add logic to fetch the items that the char cannot gather from bank!
         neededForTrainingItem = CharHelper.removeWhatIsAlreadyInInventory(character, neededForTrainingItem);
+        var itemsNotInInventory = CharHelper.removeWhatIsAlreadyInInventory(character, neededForTrainingItem);
         //       bankFetchItemsAndCraftTask.fetchItemFromBank(character, "copper_bar", 6);
 
         character = charactersApi.getCharacterCharactersNameGet(character.getName())
                                  .getData();
+
+        fetchItemsThatAreMissingFromInventory(character, itemsNotInInventory, itemToTrain.get());
 
         Optional<String> itemCodeCraftableWithInventory;
         if (canCraftItem(character, itemToTrain.get())) {
             itemCodeCraftableWithInventory = Optional.of(itemToTrain.get()
                                                                     .getCode());
         } else {
-            itemCodeCraftableWithInventory = findCraftableWithInventory(character, neededForTrainingItem);
+            itemCodeCraftableWithInventory = findCraftableWithInventory(character, itemsNotInInventory);
         }
         if (itemCodeCraftableWithInventory.isPresent()) {
             craftItemTask.craftItem(character.getName(), itemCodeCraftableWithInventory.get());
+            characterHelper.waitUntilCooldownDone(character.getName());
+            bankDepositAllTask.depositInventoryInBank(character.getName());
+            characterHelper.waitUntilCooldownDone(character.getName());
         } else {
-            Optional<String> farmableItemCode = findFarmableItem(neededForTrainingItem);
+            Optional<String> farmableItemCode = findFarmableItem(itemsNotInInventory);
             if (farmableItemCode.isPresent()) {
-                MapSchema whereToGather = itemHelper.findLocationWhereToFarm(character, farmableItemCode.get())
-                                                    .get();
-                harvestResourceTask.farmResourceWithTool(character.getName(), whereToGather);
+                Optional<MapSchema> whereToGather = itemHelper.findLocationWhereToFarm(character, farmableItemCode.get());
+                if (whereToGather.isEmpty()) {
+                    throw new RuntimeException("Could not find location to farm " + farmableItemCode.get());
+                }
+                harvestResourceTask.farmResourceWithTool(character.getName(), whereToGather.get());
+                characterHelper.waitUntilCooldownDone(character.getName());
+            }
+        }
+    }
+
+    private void fetchItemsThatAreMissingFromInventory(CharacterSchema character, List<SimpleItemSchema> itemsNotInInventory, ItemSchema itemToTrain) {
+        for (SimpleItemSchema simpleItemSchema : itemsNotInInventory) {
+            if (simpleItemSchema.getCode()
+                                .equalsIgnoreCase(itemToTrain.getCode())) {
+                continue;
+            }
+            if (characterHelper.cntItemsInBank(simpleItemSchema.getCode()) >= simpleItemSchema.getQuantity()) {
+                bankFetchItemTask.fetchItemFromBank(character, simpleItemSchema.getCode(), simpleItemSchema.getQuantity());
                 characterHelper.waitUntilCooldownDone(character.getName());
             }
         }
@@ -277,6 +309,8 @@ public class TrainingSkillTask {
                                     .map(simpleItemSchema -> itemHelper.findItemDefinition(simpleItemSchema.getCode())
                                                                        .get())
                                     .filter(itemSchema -> itemSchema.getCraft() == null)
+                                    .filter(itemSchema -> !itemSchema.getSubtype()
+                                                                     .equalsIgnoreCase("mob"))
                                     .sorted(Comparator.comparing(ItemSchema::getName))
                                     .map(ItemSchema::getCode)
                                     .findFirst()

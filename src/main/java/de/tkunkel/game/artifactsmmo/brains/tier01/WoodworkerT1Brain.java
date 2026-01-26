@@ -13,8 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-
 @Service
 public class WoodworkerT1Brain {
     private final Logger logger = LoggerFactory.getLogger(WoodworkerT1Brain.class.getName());
@@ -46,12 +44,6 @@ public class WoodworkerT1Brain {
 
         character = charactersApi.getCharacterCharactersNameGet(characterName)
                                  .getData();
-        Optional<String> itemToCraft = charHelper.findPossibleItemToCraft(character);
-        if (itemToCraft.isPresent()) {
-            craftItemTask.craftItem(characterName, itemToCraft.get());
-        } else {
-            trainingSkillTask.trainSkills(character, Skill.WOODCUTTING, Skill.WEAPONCRAFTING);
-            // farmHighestResourceTask.farmResource(this, characterName);
-        }
+        trainingSkillTask.trainSkills(character, Skill.WOODCUTTING, Skill.WEAPONCRAFTING);
     }
 }
