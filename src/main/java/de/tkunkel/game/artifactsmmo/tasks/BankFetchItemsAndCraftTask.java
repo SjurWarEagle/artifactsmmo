@@ -53,19 +53,9 @@ public class BankFetchItemsAndCraftTask {
             logger.warn("No item found for {}", itemToCraft);
             throw new RuntimeException("No item found for " + itemToCraft);
         }
-        // is item already in the bank?
+
         DataPageSimpleItemSchema bankItemsMyBankItemsGet = myAccountApi.getBankItemsMyBankItemsGet(null, 1, 100);
-        Optional<SimpleItemSchema> itemInBank = bankItemsMyBankItemsGet.getData()
-                                                                       .stream()
-                                                                       .filter(item -> itemToCraft.equals(item.getCode()))
-                                                                       .filter(item -> item.getQuantity() >= amount)
-                                                                       .filter(item -> item.getQuantity() >= 1)
-                                                                       .findFirst()
-                ;
-//        if (itemInBank.isPresent()) {
-//            // item already exists, no need to build it again
-//            return;
-//        }
+
         List<SimpleItemSchema> neededItems = optionalItemSchema.get()
                                                                .getCraft()
                                                                .getItems()
@@ -89,6 +79,7 @@ public class BankFetchItemsAndCraftTask {
             cntInInventory = charHelper.cntAllItemsInInventory(character.getName());
             if (character.getInventoryMaxItems() - cntInInventory >= neededItem.getQuantity() * amount) {
                 bankFetchItemTask.fetchItemFromBank(character, neededItem.getCode(), neededItem.getQuantity() * amount);
+                charHelper.waitUntilCooldownDone(character.getName());
                 craftItemTask.craftItem(character.getName(), itemToCraft, amount);
                 // deposit crafted item into bank
                 bankDepositSingleItemTask.depositInventoryInBank(character.getName(), itemToCraft);

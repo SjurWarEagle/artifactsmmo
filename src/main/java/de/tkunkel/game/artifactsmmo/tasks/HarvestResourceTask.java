@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
+@Deprecated(forRemoval = true)
 @Service
 public class HarvestResourceTask {
     private final Logger logger = LoggerFactory.getLogger(HarvestResourceTask.class.getName());

@@ -11,8 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-
 @Service
 public class AlchemistT1Brain {
     private final Logger logger = LoggerFactory.getLogger(AlchemistT1Brain.class.getName());
@@ -48,12 +46,6 @@ public class AlchemistT1Brain {
 
         character = apiHolder.charactersApi.getCharacterCharactersNameGet(characterName)
                                            .getData();
-        Optional<String> itemToCraft = charHelper.findPossibleItemToCraft(character);
-        if (itemToCraft.isPresent()) {
-            craftItemTask.craftItem(characterName, itemToCraft.get());
-        } else {
-            trainingSkillTask.trainSkillsWithBankItems(character, Skill.ALCHEMY);
-            // farmHighestResourceTask.farmResource(this, characterName);
-        }
+        trainingSkillTask.trainSkillsWithBankItems(character, Skill.ALCHEMY);
     }
 }

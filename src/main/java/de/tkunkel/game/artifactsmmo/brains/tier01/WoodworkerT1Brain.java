@@ -8,7 +8,6 @@ import de.tkunkel.game.artifactsmmo.tasks.CraftItemTask;
 import de.tkunkel.game.artifactsmmo.tasks.TaskAcceptNewItemTask;
 import de.tkunkel.game.artifactsmmo.tasks.TrainingSkillTask;
 import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
-import de.tkunkel.games.artifactsmmo.model.Skill;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -44,6 +43,5 @@ public class WoodworkerT1Brain {
 
         character = charactersApi.getCharacterCharactersNameGet(characterName)
                                  .getData();
-        trainingSkillTask.trainSkills(character, Skill.WOODCUTTING, Skill.WEAPONCRAFTING);
     }
 }

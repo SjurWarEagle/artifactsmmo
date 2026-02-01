@@ -19,7 +19,6 @@ import java.util.Optional;
 public class GetBestItemForSlotTask {
     private final Logger logger = LoggerFactory.getLogger(GetBestItemForSlotTask.class.getName());
 
-
     private final CharHelper charHelper;
     private final MyAccountApiWrapper myAccountApi;
     private final WishList wishList;

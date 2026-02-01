@@ -1,10 +1,9 @@
 package de.tkunkel.game.artifactsmmo.brains.tier01;
 
-
 import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.shopping.Wish;
-import de.tkunkel.game.artifactsmmo.shopping.WishList;
+import de.tkunkel.game.artifactsmmo.shopping.WishListWorker;
 import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
 import de.tkunkel.game.artifactsmmo.tasks.BankFetchItemsAndCraftTask;
 import de.tkunkel.game.artifactsmmo.tasks.TaskAcceptNewItemTask;
@@ -25,19 +24,18 @@ public class MinerT1Brain {
     private final CharactersApiWrapper charactersApi;
     private final CharHelper charHelper;
     private final BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask;
-    private final WishList wishList;
+    private final WishListWorker wishListWorker;
     private final TaskAcceptNewItemTask taskAcceptNewItemTask;
 
-    public MinerT1Brain(WishList wishList,
-                        BankDepositAllTask bankDepositAllTask,
+    public MinerT1Brain(BankDepositAllTask bankDepositAllTask,
                         TrainingSkillTask trainingSkillTask,
                         CharHelper charHelper, CharactersApiWrapper charactersApi,
-                        BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, TaskAcceptNewItemTask taskAcceptNewItemTask) {
+                        BankFetchItemsAndCraftTask bankFetchItemsAndCraftTask, WishListWorker wishListWorker, TaskAcceptNewItemTask taskAcceptNewItemTask) {
         this.bankDepositAllTask = bankDepositAllTask;
         this.trainingSkillTask = trainingSkillTask;
         this.charactersApi = charactersApi;
         this.charHelper = charHelper;
-        this.wishList = wishList;
+        this.wishListWorker = wishListWorker;
         this.bankFetchItemsAndCraftTask = bankFetchItemsAndCraftTask;
         this.taskAcceptNewItemTask = taskAcceptNewItemTask;
     }
@@ -68,7 +66,7 @@ public class MinerT1Brain {
     }
 
     private Optional<Wish> findPossibleItemToCraftFromWishlist(CharacterSchema character) {
-        return wishList.reserveWishThatCanBeCraftedByMe(character);
+        return wishListWorker.reserveWishThatCanBeCraftedByMe(character);
     }
 
 
