@@ -213,8 +213,45 @@ public class FighterT1Brain {
 
     private String findHighestMonsterToHunt(CharacterSchema character) {
         CombatStats charCombatStats = CombatStats.fromCharacter(character);
+        var monster = caches.cachedMonsters.stream()
+                                           .filter(monsterSchema -> monsterSchema.getCode()
+                                                                                 .equals("green_slime"))
+                                           .findFirst()
+                                           .get()
+                ;
+        boolean canBeatGreenSlime = combatSimulator.winMoreThanXPercentAgainst(CombatStats.fromCharacter(character), CombatStats.fromMonster(monster), 95);
+        monster = caches.cachedMonsters.stream()
+                                       .filter(monsterSchema -> monsterSchema.getCode()
+                                                                             .equals("red_slime"))
+                                       .findFirst()
+                                       .get()
+        ;
+        boolean canBeatRedSlime = combatSimulator.winMoreThanXPercentAgainst(CombatStats.fromCharacter(character), CombatStats.fromMonster(monster), 95);
+        monster = caches.cachedMonsters.stream()
+                                       .filter(monsterSchema -> monsterSchema.getCode()
+                                                                             .equals("blue_slime"))
+                                       .findFirst()
+                                       .get()
+        ;
+        boolean canBeatBlueSlime = combatSimulator.winMoreThanXPercentAgainst(CombatStats.fromCharacter(character), CombatStats.fromMonster(monster), 95);
+        monster = caches.cachedMonsters.stream()
+                                       .filter(monsterSchema -> monsterSchema.getCode()
+                                                                             .equals("yellow_slime"))
+                                       .findFirst()
+                                       .get()
+        ;
+        boolean canBeatYellowSlime = combatSimulator.winMoreThanXPercentAgainst(CombatStats.fromCharacter(character), CombatStats.fromMonster(monster), 95);
 
         String rc = "green_slime";
+        if (canBeatGreenSlime && charHelper.cntItemsInBank("green_slimeball") < 100) {
+            rc = "green_slime";
+        } else if (canBeatRedSlime && charHelper.cntItemsInBank("red_slimeball") < 100) {
+            rc = "red_slime";
+        } else if (canBeatBlueSlime && charHelper.cntItemsInBank("blue_slimeball") < 100) {
+            rc = "blue_slime";
+        } else if (canBeatYellowSlime && charHelper.cntItemsInBank("yellow_slimeball") < 100) {
+            rc = "yellow_slime";
+        }
         return rc;
     }
 

@@ -85,6 +85,7 @@ public class AdventureManager {
             getBestItemForSlotTask.equipOrRequestItemArmorForSlot(characterName, ItemSlot.RING2);
             getBestItemForSlotTask.equipOrRequestItemArmorForSlot(characterName, ItemSlot.AMULET);
             getBestItemForSlotTask.equipOrRequestItemArmorForSlot(characterName, ItemSlot.LEG_ARMOR);
+            getBestItemForSlotTask.equipOrRequestItemArmorForSlot(characterName, ItemSlot.BAG);
 
             if (wishListWorker.isHandlingHuntingWish(character)) {
                 continue;

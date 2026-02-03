@@ -3,10 +3,7 @@ package de.tkunkel.game.artifactsmmo.tasks;
 import de.tkunkel.game.artifactsmmo.CharHelper;
 import de.tkunkel.game.artifactsmmo.api.CharactersApiWrapper;
 import de.tkunkel.game.artifactsmmo.helper.ItemHelper;
-import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
-import de.tkunkel.games.artifactsmmo.model.ItemSchema;
-import de.tkunkel.games.artifactsmmo.model.MapSchema;
-import de.tkunkel.games.artifactsmmo.model.SimpleItemSchema;
+import de.tkunkel.games.artifactsmmo.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -20,14 +17,16 @@ public class FarmAndCraftResourceTask {
     private final CharHelper characterHelper;
     private final CraftItemTask craftItemTask;
     private final FarmResourceTask farmResourceTask;
+    private final BankFetchItemTask bankFetchItemTask;
 
-    public FarmAndCraftResourceTask(CharHelper charHelper, ItemHelper itemHelper, CharactersApiWrapper charactersApi, CharHelper characterHelper, CraftItemTask craftItemTask, FarmResourceTask farmResourceTask) {
+    public FarmAndCraftResourceTask(CharHelper charHelper, ItemHelper itemHelper, CharactersApiWrapper charactersApi, CharHelper characterHelper, CraftItemTask craftItemTask, FarmResourceTask farmResourceTask, BankFetchItemTask bankFetchItemTask) {
         this.charHelper = charHelper;
         this.itemHelper = itemHelper;
         this.charactersApi = charactersApi;
         this.characterHelper = characterHelper;
         this.craftItemTask = craftItemTask;
         this.farmResourceTask = farmResourceTask;
+        this.bankFetchItemTask = bankFetchItemTask;
     }
 
     public void farmResource(String characterName, String resourceToFarm, int amount) {
@@ -48,8 +47,16 @@ public class FarmAndCraftResourceTask {
         ItemSchema itemSchema = itemHelper.findItemDefinition(itemCode)
                                           .get();
         if (itemSchema.getCraft() == null) {
-            // farm
-            farmResource(charName, itemCode, quantity);
+            CharacterSchema character = charactersApi.getCharacterCharactersNameGet(charName)
+                                                     .getData();
+            if (characterHelper.canCanGatherItem(character, itemCode)) {
+                // farm
+                farmResource(charName, itemCode, quantity);
+            } else if (characterHelper.cntItemsInBank(itemCode) >= quantity) {
+                bankFetchItemTask.fetchItemFromBank(character, itemCode, quantity);
+            } else {
+                System.out.println("Hm?");
+            }
         } else {
             // craft
             hasNeededResources = itemSchema.getCraft()
@@ -72,7 +79,9 @@ public class FarmAndCraftResourceTask {
                         farmAndCraft(charName, neededItem.getCode(), missing);
                     }
                 }
+
                 // do all crafting
+                // TODO process them from bottom down, how? no idea
                 for (SimpleItemSchema neededItem : itemSchema.getCraft()
                                                              .getItems()) {
                     if (itemHelper.findItemDefinition(neededItem.getCode())

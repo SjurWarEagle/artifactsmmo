@@ -38,8 +38,9 @@ public class BankDepositGoldIfRichTask {
         charHelper.waitUntilCooldownDone(character.getName());
 
         DepositWithdrawGoldSchema goldDeposit = new DepositWithdrawGoldSchema().quantity(character.getGold());
-        myCharactersApi.actionDepositBankGoldMyNameActionBankDepositGoldPost(character.getName(), goldDeposit
-        );
+        if (character.getGold() > 0) {
+            myCharactersApi.actionDepositBankGoldMyNameActionBankDepositGoldPost(character.getName(), goldDeposit);
+        }
         charHelper.waitUntilCooldownDone(character.getName());
     }
 

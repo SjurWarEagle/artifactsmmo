@@ -76,7 +76,9 @@ public class TrainingSkillTask {
                                      return isRelevantSkill && charHasEnoughSkill;
 
                                  })
-                                 .filter(itemSchema -> resourcesCanBeFarmedOrAreInBank(character, itemSchema))
+                                 .filter(itemSchema -> {
+                                     return resourcesCanBeFarmedOrAreInBank(character, itemSchema.getCode());
+                                 })
                                  .sorted((itemSchema1, itemSchema2) -> {
                                      int level1 = itemSchema1.getLevel();
                                      int level2 = itemSchema2.getLevel();
@@ -172,23 +174,32 @@ public class TrainingSkillTask {
                  .compareTo(o2.getName());
     }
 
-    private boolean resourcesCanBeFarmedOrAreInBank(CharacterSchema character, ItemSchema itemSchema) {
+    private boolean resourcesCanBeFarmedOrAreInBank(CharacterSchema character, String itemCode) {
+
+        ItemSchema itemSchema = itemHelper.findItemDefinition(itemCode)
+                                          .get();
         if (itemSchema.getCraft() == null ||
                 itemSchema.getCraft()
                           .getItems() == null) {
-            // TODO check if returning false here is correct
+            boolean canGather = characterHelper.canCanGatherItem(character, itemSchema.getCode());
+            boolean inBank = characterHelper.cntItemsInBank(itemSchema.getCode()) >= 10;
+            return canGather || inBank;
+        }
+
+        Skill skill = Skill.fromValue(itemSchema.getCraft()
+                                                .getSkill()
+                                                .getValue());
+        if (!characterHelper.charHasEnoughSkill(character, skill, itemSchema.getCraft()
+                                                                            .getLevel()
+        )) {
+            // cannot craft
             return false;
         }
 
         return itemSchema.getCraft()
                          .getItems()
                          .stream()
-                         .allMatch(simpleItemSchema -> {
-                                       boolean canHarvest = characterHelper.canCanGatherResources(character, simpleItemSchema.getCode());
-
-                                       int cntInBank = characterHelper.cntItemsInBank(simpleItemSchema.getCode());
-                                       return cntInBank >= simpleItemSchema.getQuantity() || canHarvest;
-                                   }
+                         .allMatch(simpleItemSchema -> resourcesCanBeFarmedOrAreInBank(character, simpleItemSchema.getCode())
                          )
                 ;
     }
