@@ -411,6 +411,15 @@ public class CharHelper {
                            .sum();
     }
 
+    public int cntItemsInBankAndInventory(String characterName, String itemCode) {
+        DataPageSimpleItemSchema bankItemsGet = myAccountApi.getBankItemsMyBankItemsGet(itemCode, 1, 100);
+        return bankItemsGet.getData()
+                           .stream()
+                           .mapToInt(SimpleItemSchema::getQuantity)
+                           .sum()
+                + cntItemsInInventory(characterName, itemCode);
+    }
+
     public int cntItemsInInventory(String characterName, String itemCode) {
         CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
         return character.getData()

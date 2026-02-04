@@ -212,47 +212,33 @@ public class FighterT1Brain {
     }
 
     private String findHighestMonsterToHunt(CharacterSchema character) {
-        CombatStats charCombatStats = CombatStats.fromCharacter(character);
+
+        // TODO find a way to remove the hardcoded values
+        String rc = "green_slime";
+        if (canBeatAndStorageLow(character, "green_slime", "green_slimeball")) {
+            rc = "green_slime";
+        } else if (canBeatAndStorageLow(character, "red_slime", "red_slimeball")) {
+            rc = "red_slime";
+        } else if (canBeatAndStorageLow(character, "blue_slime", "blue_slimeball")) {
+            rc = "blue_slime";
+        } else if (canBeatAndStorageLow(character, "yellow_slime", "yellow_slimeball")) {
+            rc = "yellow_slime";
+        } else if (canBeatAndStorageLow(character, "chicken", "feather")) {
+            rc = "chicken";
+        }
+        return rc;
+    }
+
+    private boolean canBeatAndStorageLow(CharacterSchema character, String monsterCode, String itemCode) {
         var monster = caches.cachedMonsters.stream()
                                            .filter(monsterSchema -> monsterSchema.getCode()
-                                                                                 .equals("green_slime"))
+                                                                                 .equals(monsterCode))
                                            .findFirst()
                                            .get()
                 ;
-        boolean canBeatGreenSlime = combatSimulator.winMoreThanXPercentAgainst(CombatStats.fromCharacter(character), CombatStats.fromMonster(monster), 95);
-        monster = caches.cachedMonsters.stream()
-                                       .filter(monsterSchema -> monsterSchema.getCode()
-                                                                             .equals("red_slime"))
-                                       .findFirst()
-                                       .get()
-        ;
-        boolean canBeatRedSlime = combatSimulator.winMoreThanXPercentAgainst(CombatStats.fromCharacter(character), CombatStats.fromMonster(monster), 95);
-        monster = caches.cachedMonsters.stream()
-                                       .filter(monsterSchema -> monsterSchema.getCode()
-                                                                             .equals("blue_slime"))
-                                       .findFirst()
-                                       .get()
-        ;
-        boolean canBeatBlueSlime = combatSimulator.winMoreThanXPercentAgainst(CombatStats.fromCharacter(character), CombatStats.fromMonster(monster), 95);
-        monster = caches.cachedMonsters.stream()
-                                       .filter(monsterSchema -> monsterSchema.getCode()
-                                                                             .equals("yellow_slime"))
-                                       .findFirst()
-                                       .get()
-        ;
-        boolean canBeatYellowSlime = combatSimulator.winMoreThanXPercentAgainst(CombatStats.fromCharacter(character), CombatStats.fromMonster(monster), 95);
-
-        String rc = "green_slime";
-        if (canBeatGreenSlime && charHelper.cntItemsInBank("green_slimeball") < 100) {
-            rc = "green_slime";
-        } else if (canBeatRedSlime && charHelper.cntItemsInBank("red_slimeball") < 100) {
-            rc = "red_slime";
-        } else if (canBeatBlueSlime && charHelper.cntItemsInBank("blue_slimeball") < 100) {
-            rc = "blue_slime";
-        } else if (canBeatYellowSlime && charHelper.cntItemsInBank("yellow_slimeball") < 100) {
-            rc = "yellow_slime";
-        }
-        return rc;
+        boolean canBeat = combatSimulator.winMoreThanXPercentAgainst(CombatStats.fromCharacter(character), CombatStats.fromMonster(monster), 95);
+        boolean storageLow = charHelper.cntItemsInBankAndInventory(character.getName(), itemCode) < 100;
+        return canBeat && storageLow;
     }
 
 }
