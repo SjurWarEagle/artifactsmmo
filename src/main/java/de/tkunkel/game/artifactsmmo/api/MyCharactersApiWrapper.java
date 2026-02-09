@@ -98,7 +98,9 @@ public class MyCharactersApiWrapper {
             return rc;
         } catch (ApiException e) {
             logger.warn("Problems with actionFightMyNameActionFightPost(" + fightRequest.toJson() + ")", e);
-            throw new RuntimeException(e);
+            CharacterFightResponseSchema fightResponse = new CharacterFightResponseSchema();
+            return fightResponse;
+            // throw new RuntimeException(e);
         }
     }
 

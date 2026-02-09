@@ -1,5 +1,7 @@
 package de.tkunkel.game.artifactsmmo.combat;
 
+import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
+import de.tkunkel.games.artifactsmmo.model.MonsterSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -100,5 +102,11 @@ public class CombatSimulator {
             }
         }
 
+    }
+
+    public boolean winMoreThanXPercentAgainst(CharacterSchema character, MonsterSchema monsterSchema, int percent) {
+        CombatStats attacker = CombatStats.fromCharacter(character);
+        CombatStats defender = CombatStats.fromMonster(monsterSchema);
+        return winMoreThanXPercentAgainst(attacker, defender, percent);
     }
 }

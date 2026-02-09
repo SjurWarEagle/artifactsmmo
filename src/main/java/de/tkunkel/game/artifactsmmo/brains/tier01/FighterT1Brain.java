@@ -225,6 +225,8 @@ public class FighterT1Brain {
             rc = "yellow_slime";
         } else if (canBeatAndStorageLow(character, "chicken", "feather")) {
             rc = "chicken";
+        } else if (canBeatAndStorageLow(character, "cow", "cowhide")) {
+            rc = "cow";
         }
         return rc;
     }

@@ -415,6 +415,7 @@ public class CharHelper {
         DataPageSimpleItemSchema bankItemsGet = myAccountApi.getBankItemsMyBankItemsGet(itemCode, 1, 100);
         return bankItemsGet.getData()
                            .stream()
+
                            .mapToInt(SimpleItemSchema::getQuantity)
                            .sum()
                 + cntItemsInInventory(characterName, itemCode);
@@ -738,4 +739,89 @@ public class CharHelper {
         }
         return true;
     }
+
+    public boolean canHuntItem(CharacterSchema character, String itemCode) {
+        ItemSchema resource = caches.cachedItems.stream()
+                                                .filter(itemDef -> itemDef.getCode()
+                                                                          .equalsIgnoreCase(itemCode)
+                                                )
+                                                .findFirst()
+                                                .get()
+                ;
+        var monster = caches.cachedMonsters.stream()
+                                           .filter(resourceSchema -> resourceSchema.getDrops()
+                                                                                   .stream()
+                                                                                   .anyMatch(dropRateSchema -> dropRateSchema.getCode()
+                                                                                                                             .equalsIgnoreCase(resource.getCode())))
+                                           .findFirst()
+                ;
+        if (monster.isEmpty()) {
+            // this is no resource to hunt
+            return false;
+        }
+        return combatSimulator.winMoreThanXPercentAgainst(character, monster.get(), 90);
+    }
+
+    public boolean canCraftItemAndFarmParts(CharacterSchema character, String itemCode) {
+        ItemSchema resource = caches.cachedItems.stream()
+                                                .filter(itemDef -> itemDef.getCode()
+                                                                          .equalsIgnoreCase(itemCode)
+                                                )
+                                                .findFirst()
+                                                .get()
+                ;
+        if (resource.getCraft() == null) {
+            // this is no resource to craft
+            return false;
+        }
+        boolean canObtainResources = resource.getCraft()
+                                             .getItems()
+                                             .stream()
+                                             .allMatch(simpleItemSchema -> canFarmItem(character, simpleItemSchema.getCode())
+                                                     || canCanGatherItem(character, simpleItemSchema.getCode())
+                                                     || canCraftItemAndFarmParts(character, simpleItemSchema.getCode()))
+                ;
+
+        if (!canObtainResources) {
+            return false;
+        }
+
+        var harvestSkill = Skill.fromValue(resource.getCraft()
+                                                   .getSkill()
+                                                   .getValue());
+        return charHasEnoughSkill(character, harvestSkill, resource.getCraft()
+                                                                   .getLevel()
+        );
+    }
+
+    public boolean canFarmItem(CharacterSchema character, String itemCode) {
+        var resourceOptional = caches.cachedItems.stream()
+                                                 .filter(itemDef -> itemDef.getCode()
+                                                                           .equalsIgnoreCase(itemCode)
+                                                 )
+                                                 .findFirst()
+                ;
+        if (resourceOptional.isEmpty()) {
+            logger.warn("Cannot find " + itemCode + " in cached items");
+        }
+        ItemSchema resource = resourceOptional.get();
+        var resourceSource = caches.cachedResources.stream()
+                                                   .filter(resourceSchema -> resourceSchema.getDrops()
+                                                                                           .stream()
+                                                                                           .anyMatch(dropRateSchema -> dropRateSchema.getCode()
+                                                                                                                                     .equalsIgnoreCase(resource.getCode())))
+                                                   .findFirst()
+                ;
+        if (resourceSource.isEmpty()) {
+            // this is no resource to gather
+            return false;
+        }
+        var harvestSkill = Skill.fromValue(resourceSource.get()
+                                                         .getSkill()
+                                                         .getValue());
+        return charHasEnoughSkill(character, harvestSkill, resourceSource.get()
+                                                                         .getLevel()
+        );
+    }
+
 }

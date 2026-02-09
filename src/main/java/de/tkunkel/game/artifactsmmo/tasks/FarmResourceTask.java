@@ -8,7 +8,8 @@ import de.tkunkel.game.artifactsmmo.helper.ItemHelper;
 import de.tkunkel.games.artifactsmmo.model.CharacterResponseSchema;
 import de.tkunkel.games.artifactsmmo.model.GatheringSkill;
 import de.tkunkel.games.artifactsmmo.model.MapSchema;
-import de.tkunkel.games.artifactsmmo.model.ResourceSchema;
+import de.tkunkel.games.artifactsmmo.model.Skill;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,27 @@ public class FarmResourceTask {
         this.myCharactersApi = myCharactersApi;
     }
 
+    public boolean canFarmResource(String characterName, String resourceToFarm) {
+
+        CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
+        if (itemHelper.findLocationWhereToFarm(character.getData(), resourceToFarm)
+                      .isEmpty()) {
+            return false;
+        }
+        MapSchema whereToGather = itemHelper.findLocationWhereToFarm(character.getData(), resourceToFarm)
+                                            .get();
+        Optional<Pair<GatheringSkill, Integer>> neededSkill = findSkillNeededToFarm(whereToGather);
+        if (neededSkill.isPresent()) {
+            var skill = Skill.fromValue(neededSkill.get()
+                                                   .getLeft()
+                                                   .getValue());
+            return charHelper.charHasEnoughSkill(character.getData(), skill, neededSkill.get()
+                                                                                        .getRight()
+            );
+        }
+        return false;
+    }
+
     public void farmResource(String characterName, String resourceToFarm, int amount) {
 
         CharacterResponseSchema character = charactersApi.getCharacterCharactersNameGet(characterName);
@@ -43,9 +65,10 @@ public class FarmResourceTask {
         }
         MapSchema whereToGather = itemHelper.findLocationWhereToFarm(character.getData(), resourceToFarm)
                                             .get();
-        Optional<GatheringSkill> neededSkill = findSkillNeededToFarm(whereToGather);
+        Optional<Pair<GatheringSkill, Integer>> neededSkill = findSkillNeededToFarm(whereToGather);
         if (neededSkill.isPresent()) {
             getBestItemForSlotTask.equipOrRequestBestToolForSkill(character.getData(), neededSkill.get()
+                                                                                                  .getLeft()
                                                                                                   .name()
             );
         }
@@ -59,7 +82,7 @@ public class FarmResourceTask {
         }
     }
 
-    private Optional<GatheringSkill> findSkillNeededToFarm(MapSchema whereToGather) {
+    private Optional<Pair<GatheringSkill, Integer>> findSkillNeededToFarm(MapSchema whereToGather) {
         if (whereToGather.getInteractions()
                          .getContent() == null) {
             return Optional.empty();
@@ -71,7 +94,7 @@ public class FarmResourceTask {
         return caches.cachedResources.stream()
                                      .filter(resourceSchema -> resourceSchema.getCode()
                                                                              .equals(resourceCode))
-                                     .map(ResourceSchema::getSkill)
+                                     .map(x -> Pair.of(x.getSkill(), x.getLevel()))
                                      .findFirst()
                 ;
 

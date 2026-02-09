@@ -48,9 +48,9 @@ public class Starter {
         if (this.environment.getActiveProfiles().length > 0
                 && this.environment.getActiveProfiles()[0].equalsIgnoreCase("guiOnly")) {
         } else {
-            // adventureManager.addAndStartAdventurer("Fin", AdventurerClass.FISHER);
+            adventureManager.addAndStartAdventurer("Fin", AdventurerClass.FISHER);
             adventureManager.addAndStartAdventurer("Sjur", AdventurerClass.FIGHTER);
-            // adventureManager.addAndStartAdventurer("Melanie", AdventurerClass.MINER);
+            adventureManager.addAndStartAdventurer("Melanie", AdventurerClass.MINER);
             adventureManager.addAndStartAdventurer("Wolfgang", AdventurerClass.WOODWORKER);
             adventureManager.addAndStartAdventurer("Albrecht", AdventurerClass.ALCHEMIST);
         }

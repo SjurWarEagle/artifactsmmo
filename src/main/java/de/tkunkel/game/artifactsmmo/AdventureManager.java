@@ -7,6 +7,7 @@ import de.tkunkel.game.artifactsmmo.shopping.WishList;
 import de.tkunkel.game.artifactsmmo.shopping.WishListWorker;
 import de.tkunkel.game.artifactsmmo.tasks.BankDepositAllTask;
 import de.tkunkel.game.artifactsmmo.tasks.BankDepositGoldIfRichTask;
+import de.tkunkel.game.artifactsmmo.tasks.FillStorageTask;
 import de.tkunkel.game.artifactsmmo.tasks.GetBestItemForSlotTask;
 import de.tkunkel.games.artifactsmmo.model.CharacterSchema;
 import de.tkunkel.games.artifactsmmo.model.ItemSlot;
@@ -35,11 +36,12 @@ public class AdventureManager {
     private final TaskHelper taskHelper;
     private final BankDepositGoldIfRichTask bankDepositGoldIfRichTask;
     private final CharactersApiWrapper charactersApi;
+    private final FillStorageTask fillStorageTask;
 
     public AdventureManager(ApiHolder apiHolder, BankDepositAllTask bankDepositAllTask,
                             GetBestItemForSlotTask getBestItemForSlotTask, MinerT1Brain minerBrain, FighterT1Brain fighterBrain,
                             FisherT1Brain fisherBrain, WoodworkerT1Brain woodworkerBrain, AlchemistT1Brain alchemistBrain,
-                            WishList wishList, WishListWorker wishListWorker, TaskHelper taskHelper, BankDepositGoldIfRichTask bankDepositGoldIfRichTask, CharactersApiWrapper charactersApi) {
+                            WishList wishList, WishListWorker wishListWorker, TaskHelper taskHelper, BankDepositGoldIfRichTask bankDepositGoldIfRichTask, CharactersApiWrapper charactersApi, FillStorageTask fillStorageTask) {
         this.apiHolder = apiHolder;
         this.bankDepositAllTask = bankDepositAllTask;
         this.getBestItemForSlotTask = getBestItemForSlotTask;
@@ -53,6 +55,7 @@ public class AdventureManager {
         this.taskHelper = taskHelper;
         this.bankDepositGoldIfRichTask = bankDepositGoldIfRichTask;
         this.charactersApi = charactersApi;
+        this.fillStorageTask = fillStorageTask;
     }
 
     public void addAndStartAdventurer(String name, AdventurerClass adventurerClass) {
@@ -108,6 +111,9 @@ public class AdventureManager {
 
 
             bankDepositGoldIfRichTask.depositGoldInBank(character);
+
+            fillStorageTask.fillStorage(characterName);
+
             // nothing to craft, so use default
             switch (adventurerClass) {
                 case MINER -> minerBrain.runBaseLoop(characterName);
