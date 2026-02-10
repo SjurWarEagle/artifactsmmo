@@ -171,7 +171,7 @@ public class CharHelper {
                                                                       .equals(ConditionOperator.GT)
                                  && conditionSchema.getCode()
                                                    .equalsIgnoreCase("level")
-                                 && charLevel >= conditionSchema.getValue()
+                                 && charLevel > conditionSchema.getValue()
                          ));
     }
 

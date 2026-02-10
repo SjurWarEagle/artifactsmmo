@@ -35,7 +35,7 @@ public class HuntMonsterTask {
         this.combatSimulator = combatSimulator;
     }
 
-    public boolean hunt(String characterName, String monsterToHunt) {
+    public CharacterFightResponseSchema hunt(String characterName, String monsterToHunt) {
         CharacterResponseSchema character = charactersApiWrapper.getCharacterCharactersNameGet(characterName);
         Optional<MonsterSchema> monster = caches.cachedMonsters.stream()
                                                                .filter(monsterSchema -> monsterSchema.getCode()
@@ -48,7 +48,7 @@ public class HuntMonsterTask {
                                                                .findFirst()
                 ;
         if (monster.isEmpty()) {
-            return false;
+            return null;
         }
         MonsterSchema target = monster.get();
         Optional<MapSchema> monsterSpawns = mapHelper.findClosestLocationWhereMonsterSpawns(character.getData(), target.getCode());
@@ -63,7 +63,7 @@ public class HuntMonsterTask {
         CharacterFightResponseSchema fightResponse = myCharactersApi.actionFightMyNameActionFightPost(characterName, new FightRequestSchema());
         charHelper.waitUntilCooldownDone(fightResponse.getData()
                                                       .getCooldown());
-        return true;
+        return fightResponse;
     }
 
 }

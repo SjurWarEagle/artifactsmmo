@@ -28,9 +28,11 @@ public class HuntForItemTask {
     private final MonsterHelper monsterHelper;
     private final MyCharactersApiWrapper myCharactersApi;
     private final CombatSimulator combatSimulator;
+    private final HuntMonsterTask huntMonsterTask;
+    private final GetBestItemForSlotTask getBestItemForSlotTask;
 
     public HuntForItemTask(CharactersApiWrapper charactersApiWrapper, CharHelper charHelper, MyCharactersApiWrapper myCharactersApi,
-                           MapHelper mapHelper, MonsterHelper monsterHelper, CombatSimulator combatSimulator
+                           MapHelper mapHelper, MonsterHelper monsterHelper, CombatSimulator combatSimulator, HuntMonsterTask huntMonsterTask, GetBestItemForSlotTask getBestItemForSlotTask
     ) {
         this.charactersApiWrapper = charactersApiWrapper;
         this.charHelper = charHelper;
@@ -38,10 +40,13 @@ public class HuntForItemTask {
         this.mapHelper = mapHelper;
         this.monsterHelper = monsterHelper;
         this.combatSimulator = combatSimulator;
+        this.huntMonsterTask = huntMonsterTask;
+        this.getBestItemForSlotTask = getBestItemForSlotTask;
     }
 
     public int huntForItem(String characterName, String itemToHunt) {
         CharacterResponseSchema character = charactersApiWrapper.getCharacterCharactersNameGet(characterName);
+        getBestItemForSlotTask.equipOrRequestBestWeapon(characterName);
         List<MonsterSchema> monstersThatDropThis = monsterHelper.findMonstersThatDropThis(itemToHunt);
         Optional<MonsterSchema> optionalTarget = monstersThatDropThis.stream()
                                                                      .filter(monsterSchema -> {
@@ -65,12 +70,7 @@ public class HuntForItemTask {
         charHelper.moveToLocationSync(characterName, spawnLocation);
 
         while (totalDrops.get() <= 0) {
-            charHelper.waitUntilCooldownDone(characterName);
-            charHelper.healIfNeededSync(characterName);
-            charHelper.waitUntilCooldownDone(characterName);
-            CharacterFightResponseSchema fightResponse = myCharactersApi.actionFightMyNameActionFightPost(characterName, new FightRequestSchema());
-            charHelper.waitUntilCooldownDone(fightResponse.getData()
-                                                          .getCooldown());
+            CharacterFightResponseSchema fightResponse = huntMonsterTask.hunt(characterName, target.getCode());
             for (CharacterMultiFightResultSchema characterMultiFightResultSchema : fightResponse.getData()
                                                                                                 .getFight()
                                                                                                 .getCharacters()) {

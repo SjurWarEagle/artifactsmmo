@@ -23,7 +23,7 @@ public class CombatStats {
 
     public static CombatStats fromCharacter(CharacterSchema character) {
         var rc = new CombatStats();
-        rc.hp = character.getHp();
+        rc.hp = character.getMaxHp();
         rc.attackEarth = character.getAttackEarth();
         rc.attackAir = character.getAttackAir();
         rc.attackWater = character.getAttackWater();

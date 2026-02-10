@@ -37,18 +37,18 @@ public class FillStorageTask {
         ArrayList<String> wantedItems = new ArrayList();
         wantedItems.add("green_slimeball");
         wantedItems.add("feather");
-        wantedItems.add("gudgeon");
+        // wantedItems.add("gudgeon");
         wantedItems.add("copper_ore");
         wantedItems.add("sunflower");
-        wantedItems.add("red_slimeball");
-        wantedItems.add("yellow_slimeball");
-        wantedItems.add("cowhide");
         wantedItems.add("iron_ore");
+        wantedItems.add("yellow_slimeball");
+        wantedItems.add("birch_wood");
+        wantedItems.add("coal");
+        wantedItems.add("red_slimeball");
+        wantedItems.add("cowhide");
         wantedItems.add("algae");
         wantedItems.add("nettle_leaf");
         wantedItems.add("trout");
-        wantedItems.add("coal");
-        wantedItems.add("birch_wood");
         wantedItems.add("spruce_wood");
         wantedItems.add("ash_wood");
         for (String itemCode : wantedItems) {
@@ -64,14 +64,26 @@ public class FillStorageTask {
                     inBank = charHelper.cntItemsInBank(itemCode);
                     inInventory = charHelper.cntItemsInInventory(characterName, itemCode);
                     desiredAmount = 1000 - inInventory - inBank;
-                    obtainResource(characterName, itemCode, desiredAmount);
+                    int amountToCollect = decideHowMuchToCollect(characterName, itemCode, desiredAmount);
+                    obtainResource(characterName, itemCode, amountToCollect);
+
                     bankDepositAllTask.depositInventoryInBank(characterName);
                 }
 
             } else {
-                logger.warn("Not possible to get " + itemCode + " unknown how it can be obtained.");
+                // logger.warn("Not possible to get " + itemCode + ", it's unknown how it can be obtained.");
             }
         }
+    }
+
+    private int decideHowMuchToCollect(String characterName, String itemCode, int desiredAmount) {
+        int itemsInInventory = charHelper.cntItemsInInventory(characterName, itemCode);
+        CharacterSchema character = charactersApi.getCharacterCharactersNameGet(characterName)
+                                                 .getData();
+        int maxInventorySize = character.getInventoryMaxItems();
+        int amountToCollect = Math.min(desiredAmount, (maxInventorySize - itemsInInventory) / 2);
+        return amountToCollect;
+
     }
 
     private void obtainResource(String characterName, String itemCode, int desiredAmount) {
@@ -101,9 +113,4 @@ public class FillStorageTask {
         return isCraftable || isFarmable || isHuntable;
     }
 
-    private boolean storageLow(String charName, String itemCode) {
-        boolean storageLow = charHelper.cntItemsInBankAndInventory(charName, itemCode) < 100;
-        return storageLow;
-
-    }
 }
