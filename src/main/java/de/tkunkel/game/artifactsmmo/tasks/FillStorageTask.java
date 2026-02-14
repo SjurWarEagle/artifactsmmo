@@ -35,20 +35,21 @@ public class FillStorageTask {
 
     public void fillStorage(String characterName) {
         ArrayList<String> wantedItems = new ArrayList();
-        wantedItems.add("green_slimeball");
-        wantedItems.add("feather");
-        // wantedItems.add("gudgeon");
         wantedItems.add("copper_ore");
+        wantedItems.add("feather");
         wantedItems.add("sunflower");
         wantedItems.add("iron_ore");
+        wantedItems.add("green_slimeball");
+        wantedItems.add("blue_slimeball");
         wantedItems.add("yellow_slimeball");
-        wantedItems.add("birch_wood");
-        wantedItems.add("coal");
         wantedItems.add("red_slimeball");
+        wantedItems.add("coal");
         wantedItems.add("cowhide");
+        wantedItems.add("gudgeon");
+        wantedItems.add("trout");
         wantedItems.add("algae");
         wantedItems.add("nettle_leaf");
-        wantedItems.add("trout");
+        wantedItems.add("birch_wood");
         wantedItems.add("spruce_wood");
         wantedItems.add("ash_wood");
         for (String itemCode : wantedItems) {
